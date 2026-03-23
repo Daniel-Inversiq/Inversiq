@@ -1,26 +1,26 @@
 {% extends "app/layout.html" %}
 {% block content %}
-<div class="space-y-7">
-  <section class="rounded-[30px] border border-sky-200/70 bg-gradient-to-br from-white via-sky-50/40 to-white p-7 shadow-sm">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Vandaag</h1>
-        <p class="mt-1 text-sm text-slate-600">Pak eerst deze acties op en houd je pipeline in beweging.</p>
-        <p class="mt-3 text-sm text-slate-500">
-          {{ open_quotes|length }} open offertes · {{ followups|length }} follow-ups klaar voor opvolging
+<div class="space-y-3.5">
+  <section class="rounded-xl border border-sky-200/70 bg-gradient-to-br from-white via-sky-50/40 to-white px-5 py-6 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="pt-1">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Vandaag te regelen</h1>
+        <p class="mt-1.5 text-sm text-slate-600">Begin met wat nu aandacht nodig heeft.</p>
+        <p class="mt-2.5 text-sm text-slate-500">
+          {{ open_quotes|length }} open offertes · {{ followups|length }} aanvragen om op te volgen
         </p>
       </div>
-      <div class="flex flex-wrap gap-2.5">
-        <a href="/app/leads" class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700">
+      <div class="flex flex-wrap gap-2 lg:items-center lg:justify-end">
+        <a href="/app/leads" class="inline-flex h-9 items-center justify-center rounded-lg bg-sky-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700">
           Bekijk open offertes
         </a>
-        <a href="/app/leads" class="inline-flex h-10 items-center justify-center rounded-xl border border-sky-200 bg-white px-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-50">
-          Plan follow-up
+        <a href="/app/leads" class="inline-flex h-9 items-center justify-center rounded-lg border border-sky-200 bg-white px-3.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-50">
+          Opvolging plannen
         </a>
       </div>
     </div>
     {% if open_quotes|length == 0 %}
-      <div class="mt-5 rounded-2xl border border-dashed border-sky-200 bg-white/80 px-4 py-4 text-sm text-slate-600">
+      <div class="mt-4 rounded-xl border border-dashed border-sky-200 bg-white/80 px-4 py-3.5 text-sm text-slate-600">
         Nog geen open offertes, maak je eerste offerte.
         {% if tenant is defined and tenant and tenant.slug %}
           <a href="/intake/{{ tenant.slug }}" class="ml-2 font-semibold text-sky-700 hover:text-sky-800">Start nieuwe offerte</a>
@@ -29,141 +29,163 @@
     {% endif %}
   </section>
 
-  <section>
-    <div class="mb-3">
-      <h2 class="text-base font-semibold text-slate-900">Overzicht</h2>
-    </div>
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Omzet deze maand</p>
-        <p id="kpi-month-revenue" class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">€ 0</p>
+  <section class="space-y-2.5">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Overzicht</h2>
+    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+      <article class="flex min-h-[104px] flex-col justify-between rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Omzet maand</p>
+        <p id="kpi-month-revenue" class="mt-1.5 text-3xl font-semibold leading-none tracking-tight text-slate-900">€ 0</p>
       </article>
-      <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Offertes verzonden</p>
-        <p class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{{ quotes_sent_this_month }}</p>
+      <article class="flex min-h-[104px] flex-col justify-between rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Offertes verzonden</p>
+        <p class="mt-1.5 text-3xl font-semibold leading-none tracking-tight text-slate-900">{{ quotes_sent_this_month }}</p>
       </article>
-      <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Conversie %</p>
-        <p id="kpi-sign-rate" class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">0%</p>
+      <article class="flex min-h-[104px] flex-col justify-between rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Akkoord %</p>
+        <p id="kpi-sign-rate" class="mt-1.5 text-3xl font-semibold leading-none tracking-tight text-slate-900">0%</p>
       </article>
-      <article class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Open offertes</p>
-        <p id="kpi-open-offers" class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{{ open_quotes|length }}</p>
+      <article class="flex min-h-[104px] flex-col justify-between rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Te doen</p>
+        <p id="kpi-open-offers" class="mt-1.5 text-3xl font-semibold leading-none tracking-tight text-slate-900">{{ open_quotes|length }}</p>
       </article>
     </div>
   </section>
 
-  <section class="grid gap-6 xl:grid-cols-12">
-    <article class="rounded-[24px] border border-slate-200/80 bg-white shadow-sm xl:col-span-8">
-      <div class="border-b border-slate-100 px-5 py-4">
-        <h3 class="text-lg font-semibold text-slate-900">Openstaande offertes</h3>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full">
-          <thead>
-            <tr class="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th class="px-5 py-3 font-medium">Klanten</th>
-              <th class="px-5 py-3 font-medium">Bedrag</th>
-              <th class="px-5 py-3 font-medium">Status</th>
-              <th class="px-5 py-3 font-medium">Actie</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for q in open_quotes %}
-              <tr class="border-b border-slate-100 last:border-0">
-                <td class="px-5 py-3 text-sm font-medium text-slate-800">{{ q.customer_name }}</td>
-                <td class="px-5 py-3 text-sm text-slate-700">{{ q.total_display }}</td>
-                <td class="px-5 py-3">
-                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ q.status_badge }}">{{ q.status_label }}</span>
-                </td>
-                <td class="px-5 py-3">
-                  <a href="/app/leads/{{ q.id }}" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
-                    Open
-                  </a>
-                </td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500">
-                  Geen open offertes - lekker bezig.
-                  {% if tenant is defined and tenant and tenant.slug %}
-                    <a href="/intake/{{ tenant.slug }}" class="ml-2 font-semibold text-sky-700 hover:text-sky-800">Maak nieuwe offerte</a>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </article>
-
-    <article class="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm xl:col-span-4">
-      <h3 class="text-lg font-semibold text-slate-900">Opvolging</h3>
-      <div class="mt-4 space-y-3">
-        {% for item in followups %}
-          <a href="{{ item.href }}" class="block rounded-xl border border-slate-200 px-3.5 py-3 transition hover:border-slate-300 hover:bg-slate-50">
-            <p class="truncate text-sm font-semibold text-slate-900">{{ item.customer_name }}</p>
-            <p class="mt-1 text-sm text-slate-700">{{ item.next_action }}</p>
-            <p class="mt-1 text-xs text-slate-500">{{ item.next_action_at_human or "Geen datum" }}</p>
+  <section class="grid grid-cols-1 gap-3.5 xl:grid-cols-12">
+    <div class="space-y-3.5 xl:col-span-8">
+      <article class="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+        <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+          <h3 class="text-base font-semibold text-slate-900 lg:text-lg">Offertes die nog lopen</h3>
+          <a href="/app/leads" class="inline-flex h-8 items-center rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+            Alle offertes
           </a>
-        {% else %}
-          <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-            Geen opvolging gepland.
-            <a href="/app/leads" class="ml-1 font-semibold text-sky-700 hover:text-sky-800">Bekijk klanten</a>
-          </div>
-        {% endfor %}
-      </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-slate-100/80 text-left text-[11px] uppercase tracking-wide text-slate-500">
+                <th class="px-5 py-2.5 font-semibold">Klanten</th>
+                <th class="px-5 py-2.5 font-semibold">Bedrag</th>
+                <th class="px-5 py-2.5 font-semibold">Stand van zaken</th>
+                <th class="px-5 py-2.5 font-semibold">Actie</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100/80">
+              {% for q in open_quotes %}
+                <tr class="align-middle">
+                  <td class="px-5 py-2.5 text-sm font-medium text-slate-800">{{ q.customer_name }}</td>
+                  <td class="px-5 py-2.5 text-sm font-medium text-slate-700">{{ q.total_display }}</td>
+                  <td class="px-5 py-2.5">
+                    <span class="inline-flex rounded-full border border-slate-200/80 bg-slate-50/50 px-2.5 py-1 text-xs font-semibold {{ q.status_badge }}">{{ q.status_label }}</span>
+                  </td>
+                  <td class="px-5 py-2.5">
+                    <a href="/app/leads/{{ q.id }}" class="inline-flex h-6.5 items-center rounded-md border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                      Bekijk
+                    </a>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500">
+                    Geen open offertes - lekker bezig.
+                    {% if tenant is defined and tenant and tenant.slug %}
+                      <a href="/intake/{{ tenant.slug }}" class="ml-2 font-semibold text-sky-700 hover:text-sky-800">Maak nieuwe offerte</a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </article>
 
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-        <h4 class="text-sm font-semibold text-slate-900">Abonnement</h4>
-        <div class="mt-2 text-sm text-slate-600">
-          <span class="font-medium text-slate-700">Plan:</span> {{ current_plan_code }}
+      <section id="secondary-section" class="hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Recente activiteit</h3>
+            <p class="mt-0.5 text-sm text-slate-500">Omzettrend en statusverdeling</p>
+          </div>
+          <p id="current-month-revenue" class="rounded-md bg-slate-50 px-2.5 py-1 text-sm font-semibold text-slate-700">€ 0 deze maand</p>
         </div>
-        <div class="mt-1 text-sm text-slate-600">
-          <span class="font-medium text-slate-700">Status:</span> {{ subscription_status }}
-          {% if subscription_status == "trialing" and trial_days_left is not none %}
-            · {{ trial_days_left }} dagen over
+        <div id="secondary-empty" class="mt-4 hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
+          <p class="text-sm font-semibold text-slate-700">Nog geen data beschikbaar</p>
+          <p class="mt-1 text-sm text-slate-500">Zodra je offertes verstuurt zie je hier je resultaten</p>
+        </div>
+        <div id="secondary-charts" class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-5">
+          <div class="xl:col-span-3">
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Omzet over tijd</p>
+            <div id="revenue-chart-wrap" class="h-64 rounded-xl border border-slate-100 bg-white p-2.5">
+              <canvas id="revenue-by-month-chart"></canvas>
+            </div>
+            <div id="revenue-empty" class="hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+              Nog geen data beschikbaar
+            </div>
+          </div>
+          <div class="xl:col-span-2">
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Statusverdeling</p>
+            <div id="status-chart-wrap" class="flex h-64 items-center justify-center rounded-xl border border-slate-100 bg-white p-2.5">
+              <canvas id="status-breakdown-chart" class="max-h-[200px] max-w-[200px]"></canvas>
+            </div>
+            <div id="status-empty" class="hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+              Nog geen data beschikbaar
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="space-y-3 xl:col-span-4">
+      <article class="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+        <div class="mb-2.5 flex items-center justify-between gap-2">
+          <h3 class="text-base font-semibold text-slate-900">Opvolging</h3>
+          <a href="/app/leads" class="text-xs font-semibold text-sky-700 hover:text-sky-800">Bekijk alles</a>
+        </div>
+        <div class="space-y-2">
+          {% for item in followups %}
+            <a href="{{ item.href }}" class="block rounded-lg border border-slate-200 px-3 py-2.5 transition hover:border-slate-300 hover:bg-slate-50">
+              <p class="truncate text-sm font-semibold text-slate-900">{{ item.customer_name }}</p>
+              <p class="mt-0.5 text-sm text-slate-700">{{ item.next_action }}</p>
+              <p class="mt-1 text-xs text-slate-500">{{ item.next_action_at_human or "Geen datum" }}</p>
+            </a>
+          {% else %}
+            <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center text-sm text-slate-600">
+              <div class="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-400">
+                <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8">
+                  <path d="M8 7h8M8 12h8M8 17h5" stroke-linecap="round"></path>
+                  <path d="M6 3h12a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2Z" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </div>
+              Geen opvolging gepland.
+              <a href="/app/leads" class="ml-1 font-semibold text-sky-700 hover:text-sky-800">Plan opvolging</a>
+            </div>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="rounded-xl border border-slate-200/60 bg-slate-50/60 p-3 shadow-none">
+        <h4 class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">ABONNEMENT</h4>
+        <p class="mt-1 text-sm font-semibold text-slate-800">
+          {{ current_plan_code or "Pro" }}
+        </p>
+        <p class="mt-0.5 text-xs text-slate-600">
+          {% if subscription_status == "trialing" %}
+            Proefperiode
+          {% elif subscription_status == "active" %}
+            Actief
+          {% elif subscription_status %}
+            {{ subscription_status|replace('_', ' ')|title }}
+          {% else %}
+            Onbekend
           {% endif %}
-        </div>
-        <a href="/app/billing" class="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100">
+          {% if subscription_status == "trialing" and trial_days_left is not none %}
+            · {{ trial_days_left }} dagen gratis
+          {% endif %}
+        </p>
+        <a href="/app/billing" class="mt-1.5 inline-flex h-6.5 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100">
           Beheer abonnement
         </a>
-      </div>
-    </article>
-  </section>
-
-  <section id="secondary-section" class="hidden rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm">
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        <h3 class="text-base font-semibold text-slate-900">Recente activiteit</h3>
-        <p class="mt-1 text-sm text-slate-500">Omzettrend</p>
-      </div>
-      <p id="current-month-revenue" class="text-sm font-semibold text-slate-700">€ 0 deze maand</p>
-    </div>
-    <div id="secondary-empty" class="mt-4 hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
-      <p class="text-sm font-semibold text-slate-700">Nog geen data beschikbaar</p>
-      <p class="mt-1 text-sm text-slate-500">Zodra je offertes verstuurt zie je hier je resultaten</p>
-    </div>
-    <div id="secondary-charts" class="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Omzet over tijd</p>
-        <div id="revenue-chart-wrap" class="h-64">
-          <canvas id="revenue-by-month-chart"></canvas>
-        </div>
-        <div id="revenue-empty" class="hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-          Nog geen data beschikbaar
-        </div>
-      </div>
-      <div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Statusverdeling</p>
-        <div id="status-chart-wrap" class="flex h-64 items-center justify-center">
-          <canvas id="status-breakdown-chart" class="max-h-[200px] max-w-[200px]"></canvas>
-        </div>
-        <div id="status-empty" class="hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-          Nog geen data beschikbaar
-        </div>
-      </div>
-    </div>
+      </article>
+    </aside>
   </section>
 </div>
 

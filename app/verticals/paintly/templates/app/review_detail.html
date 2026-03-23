@@ -20,7 +20,7 @@
             REVIEW_NODIG
           </span>
 
-          <span class="text-sm text-slate-400">Offerte #{{ lead.id }}</span>
+          <span class="text-sm text-slate-400">Offerte #{{ (lead.id|string)[-6:]|upper }}</span>
         </div>
 
         <div>

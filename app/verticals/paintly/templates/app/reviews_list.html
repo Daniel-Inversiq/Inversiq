@@ -85,7 +85,7 @@
             <!-- Offerte -->
             <td class="px-5 py-4 align-top">
               <div class="text-sm font-medium text-slate-900">
-                #{{ (lead.id|string)[:8] }}
+                Offerte #{{ (lead.id|string)[-6:]|upper }}
               </div>
 
               {% set raw_notes = (lead.project_notes or lead.notes or "") %}

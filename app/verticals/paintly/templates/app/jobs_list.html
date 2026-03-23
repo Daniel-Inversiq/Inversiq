@@ -144,7 +144,7 @@
                 <a href="/app/jobs/{{ j.id }}" class="font-medium text-slate-800 transition hover:text-sky-600">
                   #{{ j.id }}
                 </a>
-                <div class="mt-1 text-xs text-slate-400">Offerte #{{ j.lead_id }}</div>
+                <div class="mt-1 text-xs text-slate-400">Offerte #{{ (j.lead_id|string)[-6:]|upper }}</div>
               </td>
 
               <!-- Status -->

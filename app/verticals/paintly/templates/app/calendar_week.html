@@ -107,7 +107,7 @@
                     <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
                       <span>#{{ u.job_id }}</span>
                       <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                      <span>Offerte #{{ u.lead_id }}</span>
+                      <span>Offerte #{{ (u.lead_id|string)[-6:]|upper }}</span>
                     </div>
                     </div>
 
@@ -278,7 +278,7 @@
                           <span class="font-medium">#{{ it.job_id }}</span>
                           {% if it.lead_id %}
                             <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                            <span>Offerte #{{ it.lead_id }}</span>
+                            <span>Offerte #{{ (it.lead_id|string)[-6:]|upper }}</span>
                           {% endif %}
                         </div>
                       </div>

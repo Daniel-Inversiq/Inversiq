@@ -113,9 +113,9 @@
     <p class="small text-soft">
       Referentie:
       {% if project and project.estimate_id %}
-        #{{ project.estimate_id }}
+        Offerte #{{ (project.estimate_id|string)[-6:]|upper }}
       {% elif project and project.lead_id %}
-        #{{ project.lead_id }}
+        Offerte #{{ (project.lead_id|string)[-6:]|upper }}
       {% endif %}
     </p>
     {% if project and project.date %}
@@ -303,7 +303,7 @@
       De definitieve prijs kan na verificatie nog worden aangepast.
     </p>
     {% if project and project.lead_id %}
-      <p>Referentie: Offerte #{{ project.lead_id }}</p>
+      <p>Referentie: Offerte #{{ (project.lead_id|string)[-6:]|upper }}</p>
     {% endif %}
   </div>
 </body>

@@ -37,7 +37,7 @@
           </div>
           <div>
             <h1 class="text-xl font-semibold tracking-tight text-slate-900">Vraag je gratis offerte aan</h1>
-            <p class="mt-1 text-sm text-slate-500">Binnen enkele minuten geregeld</p>
+            <p class="mt-1 text-sm text-slate-500">Binnen een paar minuten geregeld</p>
             {% if tenant is defined and tenant %}
             <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
               <span>Voor</span>
@@ -50,7 +50,7 @@
         </div>
         <div class="hidden sm:flex items-center gap-2 text-xs">
           <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700">Gratis en vrijblijvend</span>
-          <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">Snelle prijsindicatie op basis van je foto's</span>
+          <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">Hoe beter de foto's, hoe nauwkeuriger de prijs</span>
         </div>
       </div>
     </div>
@@ -61,7 +61,7 @@
     <div class="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
       <div class="mb-2 flex items-center justify-between text-sm">
         <span class="font-medium text-slate-700">Stap <span x-text="step"></span> van 4</span>
-        <span class="text-slate-500" x-text="['Contact', 'Project', 'Foto\\'s', 'Controle'][step - 1]"></span>
+        <span class="text-slate-500" x-text="['Contact', 'Werk', 'Foto\\'s', 'Controle'][step - 1]"></span>
       </div>
       <div class="h-2 rounded-full bg-slate-100">
         <div class="h-2 rounded-full bg-sky-500 transition-all duration-300" :style="`width: ${(step / 4) * 100}%`"></div>
@@ -82,9 +82,9 @@
         <div class="border-b border-slate-100 px-5 py-4">
           <h2 class="text-lg font-semibold text-slate-900" x-show="step === 1">Wie ben je?</h2>
           <h2 class="text-lg font-semibold text-slate-900" x-show="step === 2">Wat moet er geschilderd worden?</h2>
-          <h2 class="text-lg font-semibold text-slate-900" x-show="step === 3">Upload foto's van de ruimte</h2>
+          <h2 class="text-lg font-semibold text-slate-900" x-show="step === 3">Upload foto's van het werk</h2>
           <h2 class="text-lg font-semibold text-slate-900" x-show="step === 4">Bijna klaar</h2>
-          <p class="mt-1 text-sm text-slate-500" x-show="step === 3">Hoe duidelijker de foto's, hoe beter je prijs</p>
+          <p class="mt-1 text-sm text-slate-500" x-show="step === 3">Hoe beter de foto's, hoe nauwkeuriger de prijs</p>
         </div>
 
         <div class="p-5">
@@ -105,7 +105,7 @@
 
           <section data-step="2" x-show="step === 2" class="space-y-4">
             <div>
-              <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Type werkzaamheden *</span>
+              <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Wat wil je laten schilderen? *</span>
               <div id="jobTypeGroup" class="grid gap-2 sm:grid-cols-3">
                 <label class="cursor-pointer">
                   <input type="radio" name="job_type" value="interior" class="peer sr-only step-2-input" checked />
@@ -144,7 +144,7 @@
             </div>
 
             <div>
-              <label for="project_description" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Beschrijf wat je wilt laten schilderen *</label>
+              <label for="project_description" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Wat moet er gebeuren? *</label>
               <textarea id="project_description" name="project_description" rows="5" required class="step-2-input w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none resize-y focus:border-slate-300 focus:ring-2 focus:ring-slate-100" placeholder="Bijvoorbeeld: woonkamer en hal, alleen wanden, kleine reparaties gewenst."></textarea>
             </div>
           </section>
@@ -158,14 +158,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                   </svg>
                 </div>
-                <div class="text-sm font-semibold text-slate-900">Klik om je foto's te kiezen</div>
+                <div class="text-sm font-semibold text-slate-900">Klik om foto's toe te voegen</div>
                 <div class="mt-1 text-xs text-slate-500">Upload 1-5 foto's (JPG, PNG of WebP) - max 15MB per foto</div>
               </div>
               <div id="fileList" class="mt-4 space-y-2"></div>
               <div id="uploadStatus" class="mt-3 text-center text-xs text-slate-500">Nog geen bestanden geselecteerd</div>
               <div id="photoKeysContainer"></div>
             </label>
-            <p class="text-xs text-slate-500">Snelle prijsindicatie op basis van je foto's.</p>
+            <p class="text-xs text-slate-500">Hoe beter de foto's, hoe nauwkeuriger de prijs.</p>
           </section>
 
           <section data-step="4" x-show="step === 4" class="space-y-4">
@@ -181,7 +181,7 @@
                 <div class="flex justify-between gap-3"><dt class="text-slate-500">Foto's</dt><dd id="summaryPhotos" class="font-medium text-right">0</dd></div>
               </dl>
             </div>
-            <p class="text-xs text-slate-500">Gratis en vrijblijvend - je ontvangt snel een prijsindicatie.</p>
+            <p class="text-xs text-slate-500">Gratis en vrijblijvend. Binnen een paar minuten geregeld.</p>
           </section>
         </div>
 
@@ -189,8 +189,8 @@
           <div class="flex items-center justify-between gap-3">
             <button type="button" id="prevBtn" x-show="step > 1" @click="step = Math.max(step - 1, 1)" class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">Vorige</button>
             <div class="ml-auto flex items-center gap-3">
-              <button type="button" id="nextBtn" x-show="step < 4" class="inline-flex h-11 items-center justify-center rounded-xl bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm hover:bg-sky-600">Volgende</button>
-              <button type="submit" id="submitBtn" x-show="step === 4" class="inline-flex h-11 items-center justify-center rounded-xl bg-sky-500 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50">Ontvang mijn offerte</button>
+              <button type="button" id="nextBtn" x-show="step < 4" class="inline-flex h-11 items-center justify-center rounded-xl bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm hover:bg-sky-600">Volgende stap</button>
+              <button type="submit" id="submitBtn" x-show="step === 4" class="inline-flex h-11 items-center justify-center rounded-xl bg-sky-500 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50">Offerte aanvragen</button>
             </div>
           </div>
         </div>
@@ -201,8 +201,8 @@
           <div class="font-semibold text-slate-900">Waarom nu aanvragen?</div>
           <ul class="mt-2 space-y-2 text-slate-600">
             <li>Gratis en vrijblijvend</li>
-            <li>Binnen enkele minuten geregeld</li>
-            <li>Snelle prijsindicatie op basis van je foto's</li>
+            <li>Binnen een paar minuten geregeld</li>
+            <li>Hoe beter de foto's, hoe nauwkeuriger de prijs</li>
           </ul>
         </div>
       </aside>
@@ -216,8 +216,8 @@
           <div style="height:16px;width:16px;border-radius:999px;border:2px solid rgba(248,250,252,0.7);border-top-color:transparent;animation:ai-spin 0.9s linear infinite;"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;">
-          <div style="font-size:14px;font-weight:600;color:#f9fafb;">AI analyseert uw foto's...</div>
-          <div style="font-size:11px;color:#cbd5f5;">Dit duurt meestal maar een paar seconden.</div>
+          <div style="font-size:14px;font-weight:600;color:#f9fafb;">We bekijken je foto's...</div>
+          <div style="font-size:11px;color:#cbd5f5;">Dit duurt meestal een paar seconden.</div>
         </div>
       </div>
       <ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.8;color:#e2e8f0;">
@@ -360,7 +360,7 @@
         if (!city.value.trim()) { markInvalid(city); showErrorBox("Vul de woonplaats in."); return false; }
         if (!zip.value.trim()) { markInvalid(zip); showErrorBox("Vul de postcode in."); return false; }
         if (!state.value.trim()) { markInvalid(state); showErrorBox("Vul de provincie-regio in."); return false; }
-        if (!description.value.trim()) { markInvalid(description); showErrorBox("Beschrijf wat je wilt laten schilderen."); return false; }
+        if (!description.value.trim()) { markInvalid(description); showErrorBox("Vertel kort wat er moet gebeuren."); return false; }
       }
 
       if (step === 3) {
@@ -522,7 +522,7 @@
       const oldBtnText = submitBtn.innerHTML;
       try {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = "Bezig met versturen...";
+        submitBtn.innerHTML = "Bezig met aanvragen...";
 
         const id = await ensureLeadId();
         if (leadIdInput) leadIdInput.value = String(id);

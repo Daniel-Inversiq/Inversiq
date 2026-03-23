@@ -8,16 +8,16 @@
       Abonnement
     </p>
     <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[26px]">
-      Kies het plan dat bij je bedrijf past
+      Kies een abonnement dat bij je werk past
     </h2>
     <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-      Eén plek voor offertes, opvolging en professionele communicatie richting je klanten. Upgrade wanneer je meer volume of merkbouw nodig hebt.
+      Regel je offertes en klantcontact op één plek. Schaal op als je meer aanvragen krijgt.
     </p>
   </header>
 
   {% if billing_status_error %}
     <div class="mt-5 rounded-2xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-      Je abonnement is niet actief. Kies een plan om offertes te kunnen versturen.
+      Je abonnement is niet actief. Kies een abonnement om offertes te versturen.
     </div>
   {% endif %}
 
@@ -72,7 +72,7 @@
           onclick="openBillingPortal()"
           class="text-sm font-medium text-sky-600 underline-offset-4 transition hover:text-sky-700 hover:underline"
         >
-          Betaling beheren
+          Beheer abonnement
         </button>
       </div>
     </div>
@@ -170,7 +170,7 @@
     </div>
 
     <p class="mt-6 text-center text-xs text-slate-500">
-      Prijzen zijn exclusief btw. Je kunt facturen en betaalmethoden beheren via <button type="button" onclick="openBillingPortal()" class="font-medium text-sky-600 underline-offset-2 hover:underline">betaling beheren</button>.
+      Prijzen zijn exclusief btw. Je kunt facturen en betaalmethoden beheren via <button type="button" onclick="openBillingPortal()" class="font-medium text-sky-600 underline-offset-2 hover:underline">beheer abonnement</button>.
     </p>
   </section>
 </div>
@@ -186,11 +186,11 @@
       });
 
       if (!response.ok) {
-        let message = "Upgrade mislukt. Probeer het later opnieuw.";
+        let message = "Kiezen van abonnement mislukt. Probeer het later opnieuw.";
         try {
           const errorData = await response.json();
           if (errorData && errorData.detail) {
-            message = `Upgrade mislukt: ${errorData.detail}`;
+            message = `Kiezen van abonnement mislukt: ${errorData.detail}`;
           }
         } catch (e) {
           // ignore JSON parse errors
@@ -207,7 +207,7 @@
 
       window.location.href = data.checkout_url;
     } catch (err) {
-      alert("Er ging iets mis bij het starten van de upgrade.");
+      alert("Er ging iets mis bij het kiezen van je abonnement.");
     }
   }
 
@@ -234,7 +234,7 @@
           return;
         }
 
-        alert("Kon billing portal niet openen. Probeer het later opnieuw.");
+        alert("Kon abonnementsbeheer niet openen. Probeer het later opnieuw.");
         return;
       }
 
@@ -246,7 +246,7 @@
 
       window.location.href = data.portal_url;
     } catch (err) {
-      alert("Er ging iets mis bij het openen van de billing portal.");
+      alert("Er ging iets mis bij het openen van abonnementsbeheer.");
     }
   }
 </script>

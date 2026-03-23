@@ -55,7 +55,7 @@
         <div class="min-w-0">
           <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Offerte</p>
           <div class="mt-1 flex flex-wrap items-center gap-2.5">
-            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">#{{ lead.id }}</h1>
+            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Offerte #{{ (lead.id|string)[-6:]|upper }}</h1>
             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ lead_status_badge }}">
               {{ status_labels.get(st, 'Nieuw') }}
             </span>
@@ -81,7 +81,7 @@
         {% if quote_ui and quote_ui.can_view %}
           <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
              href="/app/leads/{{ lead.id }}/estimate" target="_blank">
-            Open offerte
+            Bekijk offerte
           </a>
         {% endif %}
         {% set ent = (entitlements.export_pdf if entitlements is defined and entitlements else None) %}
@@ -101,7 +101,7 @@
         {% if quote_ui and quote_ui.can_copy_link and lead.public_token %}
           <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
              href="/e/{{ lead.public_token }}" target="_blank">
-            Publiek bekijken
+            Bekijk klantlink
           </a>
           <button class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
                   type="button"
@@ -134,7 +134,7 @@
         </div>
         <div>
           <div class="text-sm font-semibold text-emerald-900">Offerte verzonden</div>
-          <div class="mt-0.5 text-xs text-emerald-700">De klant ontvangt de e-mail binnenkort</div>
+          <div class="mt-0.5 text-xs text-emerald-700">De klant krijgt de e-mail zo binnen</div>
         </div>
       </div>
     </div>
@@ -234,12 +234,12 @@
               </div>
             </div>
             <div class="rounded-xl bg-slate-50/90 px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">Offerte-check</div>
+              <div class="text-[11px] font-medium text-slate-500">Controle</div>
               {% set q = quote_ui or {} %}
               {% set qs = q.quote_status or 'none' %}
               {% if qs == 'review' %}
                 <div class="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                  Handmatige controle
+                  Even nalopen
                 </div>
               {% elif qs in ['generated','sent','accepted'] %}
                 <div class="mt-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
