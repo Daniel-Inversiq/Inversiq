@@ -359,11 +359,17 @@ def aggregate_images_to_quote_inputs(
         review_reasons.append(sanity["reason"])
 
     # Image count sanity
+    # For single-photo cases, avoid false positives from fallback-only defaults:
+    # only treat low confidence as review-worthy when we have concrete negative
+    # evidence or a clearly weak vision signal.
+    single_photo = len(preds) == 1
+    single_photo_conf_is_actionable = bool(evidences) or (vision_conf < 0.55)
+
     if len(preds) == 0:
         needs_review = True
         review_reasons.append("no_images")
 
-    elif len(preds) == 1 and overall < 0.55:
+    elif single_photo and overall < 0.55 and single_photo_conf_is_actionable:
         needs_review = True
         review_reasons.append("few_images_low_confidence")
 
@@ -429,7 +435,9 @@ def aggregate_images_to_quote_inputs(
             review_reasons.append("surface_damage_detected")
 
     # Confidence-based review (new, explicit)
-    if overall < 0.55:
+    # Keep broad rule for multi-image cases; for single-photo, gate on
+    # actionable signals to avoid fallback-only false positives.
+    if overall < 0.55 and ((not single_photo) or single_photo_conf_is_actionable):
         needs_review = True
         review_reasons.append("low_overall_confidence")
 

@@ -2,15 +2,24 @@
 {% block content %}
 
 <div class="space-y-6">
+  {% set reason_labels = {
+    'photo_validation_low_confidence': 'Foto onduidelijk',
+    'no_images': "Geen foto's",
+    'low_overall_confidence': 'AI onzeker',
+    'low_vision_signal_confidence': 'Weinig visuele info'
+  } %}
 
   <!-- Header -->
   <div class="rounded-[28px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
       <div>
         <div class="text-sm text-slate-400">Review</div>
-        <h1 class="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Review wachtrij</h1>
+        <h1 class="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Offertes die controle nodig hebben</h1>
         <div class="mt-2 text-sm text-slate-500">
-          Offertes die handmatige review nodig hebben voordat ze naar de klant worden verstuurd
+          Controleer en corrigeer deze aanvragen voordat ze naar de klant gaan
+        </div>
+        <div class="mt-3 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+          {{ (leads|length) if leads else 0 }} offertes wachten op controle
         </div>
       </div>
 
@@ -55,23 +64,23 @@
       </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full">
+    <div class="overflow-x-auto p-3">
+      <table class="min-w-full border-separate border-spacing-y-3">
         <thead>
           <tr class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
-            <th class="px-5 py-4 text-left font-medium">Klant</th>
-            <th class="px-5 py-4 text-left font-medium">Offerte</th>
-            <th class="px-5 py-4 text-left font-medium">Bijgewerkt</th>
-            <th class="px-5 py-4 text-left font-medium">Status</th>
-            <th class="px-5 py-4 text-right font-medium">Actie</th>
+            <th class="px-4 py-2 text-left font-medium">Klant</th>
+            <th class="px-4 py-2 text-left font-medium">Offerte</th>
+            <th class="px-4 py-2 text-left font-medium">Bijgewerkt</th>
+            <th class="px-4 py-2 text-left font-medium">Status</th>
+            <th class="px-4 py-2 text-right font-medium">Actie</th>
           </tr>
         </thead>
         <tbody>
           {% for lead in leads %}
-          <tr class="border-b border-slate-100 last:border-0 transition hover:bg-slate-50/70">
+          <tr class="rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:bg-slate-50/70">
             <!-- Customer -->
-            <td class="px-5 py-4 align-top">
-              <div class="font-medium text-slate-900">
+            <td class="px-4 py-4 align-top">
+              <div class="text-base font-semibold text-slate-900">
                 {{ lead.customer_name or lead.name or "Onbekend" }}
               </div>
               <div class="mt-1 text-sm text-slate-500">
@@ -83,40 +92,67 @@
             </td>
 
             <!-- Offerte -->
-            <td class="px-5 py-4 align-top">
+            <td class="px-4 py-4 align-top">
               <div class="text-sm font-medium text-slate-900">
                 Offerte #{{ (lead.id|string)[-6:]|upper }}
+              </div>
+              <div class="mt-1 text-sm text-slate-600">
+                {{ (lead.address or lead.customer_address or "Adres onbekend") }}{% if lead.city %}, {{ lead.city }}{% endif %}
               </div>
 
               {% set raw_notes = (lead.project_notes or lead.notes or "") %}
               {% set safe_notes = (raw_notes.split("VISION_JSON=")[0] | trim) %}
+              {% set row_reasons = (
+                lead.review_reasons if lead.review_reasons
+                else (
+                  lead.needs_review_reasons if lead.needs_review_reasons
+                  else (
+                    lead.meta.review_reasons if lead.meta and lead.meta.review_reasons
+                    else (
+                      lead.meta.needs_review_reasons if lead.meta and lead.meta.needs_review_reasons
+                      else []
+                    )
+                  )
+                )
+              ) %}
 
               {% if safe_notes %}
                 <div class="mt-1 max-w-[520px] text-sm text-slate-500 line-clamp-2">
                   {{ safe_notes }}
                 </div>
               {% endif %}
+
+              {% if row_reasons and row_reasons|length > 0 %}
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                  {% for reason in row_reasons[:2] %}
+                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      {{ reason_labels.get(reason, reason|replace('_', ' ')|capitalize) }}
+                    </span>
+                  {% endfor %}
+                </div>
+              {% endif %}
             </td>
 
             <!-- Updated -->
-            <td class="px-5 py-4 align-top">
-              <div class="text-sm text-slate-600">
-                {{ lead.updated_at or lead.created_at }}
+            <td class="px-4 py-4 align-top">
+              {% set ts = (lead.updated_at or lead.created_at) %}
+              <div class="text-sm text-slate-600 js-relative-time" data-ts="{{ ts }}">
+                {{ ts }}
               </div>
             </td>
 
             <!-- Status -->
-            <td class="px-5 py-4 align-top">
+            <td class="px-4 py-4 align-top">
               <span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
                 Review nodig
               </span>
             </td>
 
             <!-- Action -->
-            <td class="px-5 py-4 align-top text-right">
-              <a class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
+            <td class="px-4 py-4 align-top text-right">
+              <a class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
                  href="/app/reviews/{{ lead.id }}">
-                Reviewen
+                Controleer offerte
               </a>
             </td>
           </tr>
@@ -128,5 +164,31 @@
 
   {% endif %}
 </div>
+
+<script>
+  (function () {
+    function toRelativeLabel(input) {
+      if (!input) return '';
+      var ts = String(input).replace(' ', 'T');
+      var date = new Date(ts);
+      if (Number.isNaN(date.getTime())) return input;
+      var now = new Date();
+      var diffMs = Math.max(0, now - date);
+      var diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 60) return (diffMin <= 1 ? '1 min geleden' : diffMin + ' min geleden');
+      var diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return (diffHours === 1 ? '1 uur geleden' : diffHours + ' uur geleden');
+      var diffDays = Math.floor(diffHours / 24);
+      return (diffDays === 1 ? '1 dag geleden' : diffDays + ' dagen geleden');
+    }
+
+    var nodes = document.querySelectorAll('.js-relative-time');
+    nodes.forEach(function (el) {
+      var raw = el.getAttribute('data-ts');
+      var rel = toRelativeLabel(raw);
+      if (rel) el.textContent = rel;
+    });
+  })();
+</script>
 
 {% endblock %}

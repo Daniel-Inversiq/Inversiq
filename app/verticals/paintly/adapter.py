@@ -232,12 +232,9 @@ class PaintlyAdapter(VerticalAdapter):
                 demo_force = bool(flag)
                 if demo_force:
                     needs_review = True
-                else:
-                    # Normale demo-flow: nooit NEEDS_REVIEW forceren.
-                    needs_review = False
             except Exception:
-                # Failsafe: als er iets misgaat, liever SUCCEEDED dan een kapotte flow.
-                needs_review = False
+                # Failsafe: keep engine decision on payload parsing issues.
+                pass
 
             lead.status = "NEEDS_REVIEW" if needs_review else "SUCCEEDED"
             lead.error_message = None

@@ -15,13 +15,12 @@ from aether.engine.context import PipelineState, StepResult
 
 from decimal import Decimal, InvalidOperation
 
-from app.models import Lead, Tenant
+from app.models import Lead, LeadFile, Tenant
 from app.models.upload_record import UploadRecord, UploadStatus
 from app.services.photo_quality.inference import predict_photo_quality
 from app.services.tenant_pricing import apply_paintly_tenant_pricing_overrides
 from app.services.storage import get_storage
 from app.tasks.vision_task import run_vision_for_lead
-from app.verticals.paintly.needs_review import needs_review_from_output
 from app.verticals.paintly.pricing_engine_us import (
     run_pricing_engine,
     load_rules_default,
@@ -141,12 +140,27 @@ def step_photo_quality_v1(
         )
 
     image_refs: List[str] = []
+    seen_refs: set[str] = set()
     for r in rows:
         ok_mime = isinstance(r.mime, str) and r.mime.startswith("image/")
         ok_ext = _looks_like_image(getattr(r, "object_key", "") or "")
         if ok_mime or ok_ext:
             if isinstance(r.object_key, str) and r.object_key:
-                image_refs.append(r.object_key)
+                if r.object_key not in seen_refs:
+                    seen_refs.add(r.object_key)
+                    image_refs.append(r.object_key)
+
+    # Real intake flow can have LeadFile rows without UploadRecord linkage yet.
+    # Fall back to LeadFile.s3_key so photo-quality analyzes the same images
+    # that the vision step already uses successfully.
+    if not image_refs:
+        lf_rows = db.query(LeadFile).filter(LeadFile.lead_id == lead.id).all()
+        for lf in lf_rows:
+            key = getattr(lf, "s3_key", None)
+            if isinstance(key, str) and key and _looks_like_image(key):
+                if key not in seen_refs:
+                    seen_refs.add(key)
+                    image_refs.append(key)
 
     logger.info("PHOTO_QUALITY image_refs=%s", len(image_refs))
 
@@ -169,11 +183,17 @@ def step_photo_quality_v1(
     storage = get_storage()
     tenant_id = str(getattr(lead, "tenant_id", ""))
 
-    threshold_bad = 0.60
+    min_confidence = 0.70
+    min_quality_score = 0.60
     try:
-        params = getattr(step, "params", None) or {}
-        if isinstance(params, dict) and params.get("threshold_bad") is not None:
-            threshold_bad = float(params["threshold_bad"])
+        # Engine config stores step options in `with`; parsed StepConfig exposes
+        # that as `with_`. Keep optional `params` fallback for compatibility.
+        step_opts = getattr(step, "with_", None) or getattr(step, "params", None) or {}
+        if isinstance(step_opts, dict):
+            if step_opts.get("min_confidence") is not None:
+                min_confidence = float(step_opts["min_confidence"])
+            if step_opts.get("min_quality_score") is not None:
+                min_quality_score = float(step_opts["min_quality_score"])
     except Exception:
         pass
 
@@ -183,21 +203,40 @@ def step_photo_quality_v1(
         tenant_id=tenant_id,
     )
 
-    is_bad = (res.quality == "bad") or (float(res.score_bad or 0.0) >= threshold_bad)
-    reasons = res.reasons or (["photo_quality_bad"] if is_bad else [])
+    validation = {
+        "relevant": bool(res.relevant),
+        "quality_score": float(res.quality_score or 0.0),
+        "confidence": float(res.confidence or 0.0),
+        "issues": list(res.issues or []),
+    }
+    review_reasons: List[str] = []
+    if not validation["relevant"]:
+        review_reasons.append("photo_not_relevant")
+    if validation["confidence"] < min_confidence:
+        review_reasons.append("photo_validation_low_confidence")
+    if validation["quality_score"] < min_quality_score:
+        review_reasons.append("photo_quality_score_low")
+    review_reasons.extend(validation["issues"])
+    review_required = bool(review_reasons)
 
     return StepResult(
         status="OK",
         data={
             "photo_quality": {
-                "quality": res.quality,
-                "score_bad": float(res.score_bad or 0.0),
-                "reasons": reasons,
-                "bad": bool(is_bad),
+                # New validation response shape
+                "validation": validation,
+                # Backward-compatible aliases for existing callers
+                "quality": "good" if validation["quality_score"] >= 0.6 else "bad",
+                "score_bad": float(max(0.0, min(1.0, 1.0 - validation["quality_score"]))),
+                "reasons": review_reasons,
+                "bad": bool(review_required),
+                # Explicit routing signal for downstream review logic
+                "review_required": review_required,
+                "review_reasons": review_reasons,
                 "n_images": len(image_refs),
             }
         },
-        meta={"reasons": reasons},
+        meta={"reasons": review_reasons},
     )
 
 
@@ -225,6 +264,12 @@ def step_aggregate_v1(
 
     vision_raw = (state.data.get("steps") or {}).get("vision", {}).get("vision_raw")
     vision_raw = _ensure_obj(vision_raw)
+    # run_vision_for_lead returns wrapper dict with image_predictions;
+    # unwrap to the list expected by aggregate_vision.
+    if isinstance(vision_raw, dict):
+        image_predictions = vision_raw.get("image_predictions")
+        if image_predictions is not None:
+            vision_raw = _ensure_obj(image_predictions)
 
     # --- area ophalen uit intake_payload of lead.square_meters ---
     estimated_area_m2 = None
@@ -446,11 +491,17 @@ def step_render_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
     if not isinstance(pricing_raw, dict):
         pricing_raw = {}
 
-    # meta / reasons (needs_review runs after render step)
+    # meta / reasons
     meta = pricing.get("meta") if isinstance(pricing.get("meta"), dict) else {}
-    reasons = meta.get("needs_review_reasons") or []
+    reasons = meta.get("needs_review_reasons") or meta.get("review_reasons") or []
     if not isinstance(reasons, list):
         reasons = []
+    reasons = [str(x) for x in reasons if x is not None]
+
+    needs_review_step = (state.data.get("steps") or {}).get("needs_review", {}) or {}
+    needs_review_flag = bool(
+        needs_review_step.get("needs_review", False) or len(reasons) > 0
+    )
 
     is_provisional = "provisional_total" in reasons
 
@@ -460,7 +511,7 @@ def step_render_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
     except Exception:
         grand_total = None
 
-    pricing_ready = _is_nonzero_money(grand_total) and (not is_provisional)
+    pricing_ready = _is_nonzero_money(grand_total) and (not is_provisional) and (not needs_review_flag)
 
     # -------------------------
     # Intake payload → context
@@ -669,6 +720,8 @@ def step_render_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
         "pricing_ready": pricing_ready,
         "pricing_is_estimate": bool(is_provisional),
         "needs_review": needs_review_ctx,
+        "needs_review_flag": needs_review_flag,
+        "review_reasons": reasons,
         "scope_bullets": _default_scope_bullets(),
         "exclusions": _default_exclusions(),
         "show_tax": False,
@@ -784,6 +837,10 @@ def _decide_paintly_needs_review(
     # Hard blockers coming from photo quality (true absence of photos)
     HARD_PHOTO_REASONS = {
         "no_photos",
+        "no_readable_photos",
+        "photo_not_relevant",
+        "photo_validation_low_confidence",
+        "photo_quality_score_low",
     }
 
     hard_reason_present = any(
@@ -810,6 +867,10 @@ def _decide_paintly_needs_review(
 def step_needs_review_v1(
     state: PipelineState, step: StepConfig, assets: dict
 ) -> StepResult:
+    # Local import avoids package-level circular import during engine step module load:
+    # aether.engine.steps -> app.verticals -> adapter -> aether.engine.facade -> aether.engine.steps
+    from app.verticals.paintly.needs_review import needs_review_from_output
+
     # -----------------------------
     # Manual override: skip review
     # -----------------------------
@@ -901,8 +962,8 @@ def step_needs_review_v1(
     prior_reasons = []
     pq_bad = False
     if isinstance(pq, dict):
-        prior_reasons = pq.get("reasons") or []
-        pq_bad = bool(pq.get("bad"))
+        prior_reasons = (pq.get("review_reasons") or pq.get("reasons") or [])
+        pq_bad = bool(pq.get("review_required", pq.get("bad")))
         if pq_bad and not prior_reasons:
             prior_reasons = ["photo_quality_bad"]
 
@@ -917,10 +978,14 @@ def step_needs_review_v1(
     if isinstance(estimate, dict):
         meta = estimate.get("meta") if isinstance(estimate.get("meta"), dict) else {}
         meta["needs_review_reasons"] = merged_reasons
+        meta["review_reasons"] = merged_reasons
         meta["needs_review_hard"] = {
             "pq_bad": pq_bad,
             "pricing_blocked": pricing_blocked,
         }
+        # Canonical top-level aliases used by estimate renderers/templates.
+        estimate["needs_review"] = needs_review
+        estimate["review_reasons"] = merged_reasons
         estimate["meta"] = meta
 
     print(

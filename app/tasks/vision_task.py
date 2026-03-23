@@ -179,3 +179,5 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
             f"Vision output has empty surfaces for lead_id={lead_id}. "
             f"images={len(image_paths)} preds={len(image_predictions)}"
         )
+
+    return vision_output

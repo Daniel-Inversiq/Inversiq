@@ -12,9 +12,24 @@ from app.services.storage import Storage
 
 @dataclass
 class PhotoQualityResult:
-    quality: str  # "good" | "bad"
-    score_bad: float
-    reasons: List[str]
+    # New AI validation contract
+    relevant: bool
+    quality_score: float  # 0..1, higher is better
+    confidence: float  # 0..1, confidence in this validation decision
+    issues: List[str]
+
+    # Backward-compatible helpers for old callers.
+    @property
+    def quality(self) -> str:
+        return "good" if self.quality_score >= 0.6 else "bad"
+
+    @property
+    def score_bad(self) -> float:
+        return float(max(0.0, min(1.0, 1.0 - self.quality_score)))
+
+    @property
+    def reasons(self) -> List[str]:
+        return self.issues
 
 
 def _maybe_strip_tenant(object_key: str, tenant_id: str) -> str:
@@ -86,10 +101,16 @@ def predict_photo_quality(
     storage must support download_to_temp_path(tenant_id, key) (your S3Storage/LocalStorage does).
     """
     if not image_refs:
-        return PhotoQualityResult("bad", 0.99, ["no_photos"])
+        return PhotoQualityResult(
+            relevant=False,
+            quality_score=0.0,
+            confidence=0.0,
+            issues=["no_photos"],
+        )
 
     sharps: List[float] = []
     reasons_all: List[str] = []
+    analyzed_count = 0
 
     for obj in image_refs[:5]:
         key_wo_tenant = _maybe_strip_tenant(obj, tenant_id)
@@ -105,6 +126,7 @@ def predict_photo_quality(
 
         sharp, rs = _analyze_image(tmp_path)
         sharps.append(sharp)
+        analyzed_count += 1
         reasons_all.extend(rs)
 
         # cleanup (best effort)
@@ -117,22 +139,37 @@ def predict_photo_quality(
 
     if not sharps:
         # nothing analyzable
-        reasons = list(dict.fromkeys(reasons_all)) or ["no_readable_photos"]
-        return PhotoQualityResult("bad", 0.99, reasons)
+        issues = list(dict.fromkeys(reasons_all)) or ["no_readable_photos"]
+        return PhotoQualityResult(
+            relevant=False,
+            quality_score=0.0,
+            confidence=0.2,
+            issues=issues,
+        )
 
     best = max(sharps)
 
-    # Map best sharpness to bad probability in [0.05..0.95]
-    # best >= 80 => ~0.05 bad
-    # best <= 20 => ~0.95 bad
-    score = float(np.clip((80.0 - best) / 60.0, 0.0, 1.0))
-    score_bad = 0.05 + 0.90 * score
+    # Quality mapping:
+    # - best <= 20  -> 0.0
+    # - best >= 80  -> 1.0
+    quality_score = float(np.clip((best - 20.0) / 60.0, 0.0, 1.0))
 
-    # Decision: if at least one photo is sharp enough, we call it good
-    quality = "good" if best >= 80 else "bad"
+    issues = list(dict.fromkeys(reasons_all))
 
-    reasons = list(dict.fromkeys(reasons_all))
-    if quality == "good":
-        reasons = [r for r in reasons if r != "too_blurry"]
+    # Confidence increases with analyzable evidence, decreases on noisy signals.
+    confidence = 0.55 + 0.35 * min(float(analyzed_count) / 3.0, 1.0)
+    if "download_failed" in issues or "photo_unreadable" in issues:
+        confidence -= 0.15
+    if "resolution_too_low" in issues:
+        confidence -= 0.10
+    confidence = float(np.clip(confidence, 0.0, 1.0))
 
-    return PhotoQualityResult(quality, score_bad, reasons)
+    # Relevant as long as we could analyze at least one image.
+    relevant = analyzed_count > 0
+
+    return PhotoQualityResult(
+        relevant=relevant,
+        quality_score=quality_score,
+        confidence=confidence,
+        issues=issues,
+    )

@@ -9,7 +9,10 @@
         "steps": [
             {
                 "id": "photo_quality",
-                "use": "photo_quality.v1"
+                "use": "photo_quality.v1",
+                "with": {
+                    "min_confidence": 0.65
+                }
             },
             {
                 "id": "vision",
@@ -28,16 +31,17 @@
                 "use": "output.v1"
             },
             {
+                "id": "needs_review",
+                "use": "needs_review.v1",
+                "on_needs_review": "CONTINUE"
+            },
+            {
                 "id": "render_html",
                 "use": "render.v1"
             },
             {
                 "id": "store_html",
                 "use": "store_html.v1"
-            },
-            {
-                "id": "needs_review",
-                "use": "needs_review.v1"
             }
         ]
     }

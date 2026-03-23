@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import zlib
 
 from datetime import datetime, timezone, timedelta
 
@@ -20,6 +21,29 @@ def _friendly_processing_error(_: str | None = None) -> str:
     return "Er ging iets mis bij het opstellen van je offerte. Probeer het opnieuw of ga terug."
 
 
+def _short_customer_reference(lead: Lead | None, lead_id: str | None) -> str | None:
+    """
+    Display-only short reference for customer-facing pages.
+    Keeps internal lead_id unchanged.
+    """
+    raw = (lead_id or "").strip()
+    if not raw:
+        return None
+
+    # Stable 4-digit numeric suffix based on internal id.
+    number = (zlib.crc32(raw.encode("utf-8")) % 9000) + 1000
+    year = datetime.now(timezone.utc).year
+
+    if lead is not None:
+        created_at = getattr(lead, "created_at", None)
+        if isinstance(created_at, datetime):
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            year = created_at.year
+
+    return f"PA-{year}-{number}"
+
+
 def _map_lead_status_for_ui(*, lead_status: str, lead_id: str) -> tuple[str, str | None, str | None]:
     """
     UI status flow:
@@ -33,7 +57,11 @@ def _map_lead_status_for_ui(*, lead_status: str, lead_id: str) -> tuple[str, str
     if s in {"SUCCEEDED", "NEEDS_REVIEW"}:
         # SUCCEEDED: route that is immediately available when estimate_html_key exists.
         # NEEDS_REVIEW: customer thank-you flow.
-        redirect_url = f"/quotes/{lead_id}/html" if s == "SUCCEEDED" else "/thank-you"
+        redirect_url = (
+            f"/quotes/{lead_id}/html"
+            if s == "SUCCEEDED"
+            else f"/thank-you?lead_id={lead_id}&review=1"
+        )
         return "done", redirect_url, None
     if s == "FAILED":
         return "failed", None, None
@@ -231,12 +259,25 @@ def offerte_redirect(lead_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/thank-you", response_class=HTMLResponse)
-def thank_you_page(request: Request, lead_id: str | None = None) -> HTMLResponse:
+def thank_you_page(
+    request: Request,
+    lead_id: str | None = None,
+    review: str | None = None,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    is_review_mode = (review or "").strip().lower() in {"1", "true", "yes"}
+    lead = None
+    if lead_id:
+        lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    short_reference = _short_customer_reference(lead, lead_id)
+
     return request.app.state.templates.TemplateResponse(
         "thank_you.html",
         {
             "request": request,
             "lead_id": lead_id,
+            "customer_reference": short_reference,
+            "is_review_mode": is_review_mode,
         },
     )
 

@@ -2360,8 +2360,8 @@ def app_reviews_list(
             ),
             or_(Lead.tenant_id == tenant, Lead.tenant_id == "public"),
         )
-        # MVP: sorteer simpel en robuust op primaire sleutel
-        .order_by(desc(Lead.id))
+        # Sorteer op aanmaakmoment (nieuwste eerst), onafhankelijk van updates
+        .order_by(desc(Lead.created_at), desc(Lead.id))
         .limit(200)
         .all()
     )

@@ -97,13 +97,21 @@
       </div>
       <div>
         <h1>Bedankt voor uw aanvraag</h1>
-        <p>
-          We hebben uw aanvraag goed ontvangen.<br />
-          We gaan nu verder met de verwerking van uw gegevens en nemen indien nodig contact met u op.
-        </p>
-        {% if lead_id %}
+        {% if is_review_mode %}
+          <p>
+            We hebben je aanvraag goed ontvangen.<br />
+            Een specialist controleert de foto's handmatig voor een nauwkeurige prijsinschatting.<br />
+            Je ontvangt daarna zo snel mogelijk je voorstel.
+          </p>
+        {% else %}
+          <p>
+            We hebben uw aanvraag goed ontvangen.<br />
+            We gaan nu verder met de verwerking van uw gegevens en nemen indien nodig contact met u op.
+          </p>
+        {% endif %}
+        {% if customer_reference %}
           <div class="lead">
-            Uw aanvraagnummer: <code>{{ lead_id }}</code>
+            Uw aanvraagnummer: <code>{{ customer_reference }}</code>
           </div>
         {% endif %}
       </div>
