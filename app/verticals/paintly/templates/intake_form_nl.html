@@ -119,17 +119,27 @@
                   <input type="radio" name="job_type" value="both" class="peer sr-only step-2-input" />
                   <span class="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition peer-checked:border-sky-500 peer-checked:bg-sky-50 peer-checked:text-sky-700">Binnen &amp; buiten</span>
                 </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="job_type" value="other_repair" class="peer sr-only step-2-input" />
+                  <span class="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition peer-checked:border-sky-500 peer-checked:bg-sky-50 peer-checked:text-sky-700">Overig / herstelwerk</span>
+                </label>
               </div>
             </div>
 
             <div>
-              <label for="square_meters" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Geschatte oppervlakte (m²) *</label>
-              <input id="square_meters" name="square_meters" type="number" min="5" step="1" required class="step-2-input h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" placeholder="Bijv. 75" />
+              <label for="square_meters" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Oppervlakte (m²) *</label>
+              <input id="square_meters" name="square_meters" type="number" min="5" step="1" required class="step-2-input h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" placeholder="35" />
+              <p class="mt-2 text-xs text-slate-500">Weet je het niet precies? Een schatting is prima</p>
+            </div>
+
+            <div id="otherRepairWrapper" class="hidden">
+              <label for="other_repair_details" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Wat moet er gebeuren?</label>
+              <input id="other_repair_details" name="other_repair_details" type="text" class="step-2-input h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" placeholder="Bijv. houtrot herstel, kozijn reparatie of schuurwerk" disabled />
             </div>
 
             <div class="grid gap-4 sm:grid-cols-3">
               <div class="sm:col-span-3">
-                <label for="street" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Waar moet er geschilderd worden? *</label>
+                <label for="street" class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Adres *</label>
                 <input id="street" name="street" type="text" autocomplete="street-address" required class="step-2-input h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" placeholder="Straat en huisnummer" />
               </div>
               <div>
@@ -288,6 +298,7 @@
       input.name = "photo_keys";
       input.value = key;
       photoKeysContainer.appendChild(input);
+      return input;
     }
 
     function formatBytes(bytes) {
@@ -305,16 +316,47 @@
             <div class="text-xs text-slate-500">${formatBytes(file.size)}</div>
           </div>
         </div>
-        <span class="status-badge inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">Bezig met uploaden...</span>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="status-badge inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">Bezig met uploaden...</span>
+          <button type="button" class="remove-file-btn hidden text-sm font-medium text-slate-500 hover:text-rose-600">Verwijder</button>
+        </div>
       `;
-      return { row, badge: row.querySelector(".status-badge") };
+      return {
+        row,
+        badge: row.querySelector(".status-badge"),
+        removeBtn: row.querySelector(".remove-file-btn"),
+      };
+    }
+
+    function refreshUploadedStatus() {
+      const total = form.querySelectorAll("input[name='photo_keys']").length;
+      if (total > 0) {
+        uploadStatus.textContent = `✓ ${total} foto('s) gereed`;
+        uploadStatus.className = "mt-3 text-center text-xs font-medium text-emerald-600";
+      } else {
+        uploadStatus.textContent = "Nog geen bestanden geselecteerd.";
+        uploadStatus.className = "mt-3 text-center text-xs text-slate-500";
+      }
+      if (getStep() === 4) fillSummary();
     }
 
     function selectedJobTypeLabel() {
       const radio = form.querySelector("input[name='job_type']:checked");
       if (!radio) return "-";
-      const map = { interior: "Binnen", exterior: "Buiten", both: "Binnen & buiten" };
+      const map = { interior: "Binnen", exterior: "Buiten", both: "Binnen & buiten", other_repair: "Overig / herstelwerk" };
       return map[radio.value] || radio.value;
+    }
+
+    function syncOtherRepairField() {
+      const selected = form.querySelector("input[name='job_type']:checked");
+      const wrapper = document.getElementById("otherRepairWrapper");
+      const input = document.getElementById("other_repair_details");
+      const isOtherRepair = selected?.value === "other_repair";
+      if (!wrapper || !input) return;
+      wrapper.classList.toggle("hidden", !isOtherRepair);
+      input.disabled = !isOtherRepair;
+      input.required = isOtherRepair;
+      if (!isOtherRepair) input.value = "";
     }
 
     function fillSummary() {
@@ -353,8 +395,14 @@
         const state = form.querySelector("#state");
         const description = form.querySelector("#project_description");
         const jobType = form.querySelector("input[name='job_type']:checked");
+        const otherRepairDetails = form.querySelector("#other_repair_details");
 
         if (!jobType) { showErrorBox("Kies een type werkzaamheden."); return false; }
+        if (jobType.value === "other_repair" && otherRepairDetails && !otherRepairDetails.value.trim()) {
+          markInvalid(otherRepairDetails);
+          showErrorBox("Omschrijf kort wat er moet gebeuren.");
+          return false;
+        }
         if (!sqm.value || Number(sqm.value) <= 0) { markInvalid(sqm); showErrorBox("Vul een geldige oppervlakte in."); return false; }
         if (!street.value.trim()) { markInvalid(street); showErrorBox("Vul straat en huisnummer in."); return false; }
         if (!city.value.trim()) { markInvalid(city); showErrorBox("Vul de woonplaats in."); return false; }
@@ -450,6 +498,11 @@
       }
     });
 
+    form.querySelectorAll("input[name='job_type']").forEach((radio) => {
+      radio.addEventListener("change", syncOtherRepairField);
+    });
+    syncOtherRepairField();
+
     fileInput.addEventListener("change", async function() {
       clearErrorBox();
       const files = Array.from(this.files || []);
@@ -477,18 +530,24 @@
       try {
         let uploaded = 0;
         for (const f of files) {
-          const { row, badge } = createFileRow(f);
+          const { row, badge, removeBtn } = createFileRow(f);
           fileList.appendChild(row);
           const key = await uploadFileToS3(f);
-          createHiddenPhotoKey(key);
+          const keyInput = createHiddenPhotoKey(key);
           uploaded += 1;
           badge.textContent = "Geupload";
           badge.className = "status-badge inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700";
+          if (removeBtn) {
+            removeBtn.classList.remove("hidden");
+            removeBtn.addEventListener("click", () => {
+              row.remove();
+              keyInput.remove();
+              refreshUploadedStatus();
+            });
+          }
           uploadStatus.textContent = `${uploaded}/${files.length} foto('s) geupload`;
         }
-        const total = form.querySelectorAll("input[name='photo_keys']").length;
-        uploadStatus.textContent = `✓ ${total} foto('s) gereed`;
-        uploadStatus.className = "mt-3 text-center text-xs font-medium text-emerald-600";
+        refreshUploadedStatus();
       } catch (err) {
         const msg = String(err?.message || err || "");
         if (msg.includes("Vul eerst je contactgegevens in")) showErrorBox("Vul eerst je naam, e-mailadres en telefoonnummer in voordat je foto's uploadt.");
