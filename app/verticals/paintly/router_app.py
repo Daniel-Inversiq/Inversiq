@@ -1380,6 +1380,21 @@ def app_lead_detail(
         "can_download_pdf": can_download_pdf,
         "public_quote_url": public_quote_url,
     }
+    logger.info(
+        "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
+        getattr(lead, "id", None),
+        bool(raw_status == "NEEDS_REVIEW"),
+        raw_status,
+        quote_status,
+        effective_total_display or getattr(lead, "final_price", None),
+        "priced" if bool(effective_total_display or getattr(lead, "final_price", None)) else "tbd",
+        "app/lead_detail.html",
+        bool(quote_status == "review"),
+        None,
+        None,
+        None,
+        None,
+    )
 
     # Tenant-level entitlements for per-lead UI (PDF export button, etc.).
     tenant = (
@@ -2366,6 +2381,59 @@ def app_reviews_list(
         .all()
     )
 
+    try:
+        lead_statuses = sorted({getattr(l, "status", None) for l in leads})
+    except Exception:
+        lead_statuses = []
+    logger.debug(
+        "APP_REVIEWS_LIST_DEBUG tenant=%s leads_count=%s lead_statuses=%r needs_review_hard_present=%s",
+        tenant,
+        len(leads),
+        lead_statuses,
+        any(getattr(l, "needs_review_hard", None) for l in leads),
+    )
+
+    # Extra debug: how many leads exist per tenant filter and what we selected.
+    try:
+        needs_review_count_current_tenant = (
+            db.query(Lead)
+            .filter(
+                Lead.status == "NEEDS_REVIEW",
+                Lead.tenant_id == tenant,
+            )
+            .count()
+        )
+        needs_review_count_public = (
+            db.query(Lead)
+            .filter(
+                Lead.status == "NEEDS_REVIEW",
+                Lead.tenant_id == "public",
+            )
+            .count()
+        )
+    except Exception:
+        needs_review_count_current_tenant = None
+        needs_review_count_public = None
+
+    try:
+        selected_lead_rows = [
+            {
+                "id": getattr(l, "id", None),
+                "tenant_id": getattr(l, "tenant_id", None),
+                "status": getattr(l, "status", None),
+            }
+            for l in leads[:50]
+        ]
+    except Exception:
+        selected_lead_rows = []
+
+    logger.debug(
+        "APP_REVIEWS_LIST_DEBUG counts tenant_needs_review=%r public_needs_review=%r selected_leads_first50=%r",
+        needs_review_count_current_tenant,
+        needs_review_count_public,
+        selected_lead_rows,
+    )
+
     context = _dashboard_context(
         request,
         current_user,
@@ -2433,11 +2501,11 @@ def app_review_detail(
         # object_key staat bij jou als "public/uploads/...."
         # storage verwacht meestal key ZONDER tenant prefix:
         tenant_prefix = f"{lead.tenant_id}/"
-        key = (
-            object_key[len(tenant_prefix) :]
-            if object_key.startswith(tenant_prefix)
-            else object_key
-        )
+        key = object_key
+        # Some historical records may contain the tenant prefix multiple times.
+        while key.startswith(tenant_prefix):
+            key = key[len(tenant_prefix) :]
+        key = key.lstrip("/")
 
         try:
             if hasattr(storage, "presigned_get_url"):

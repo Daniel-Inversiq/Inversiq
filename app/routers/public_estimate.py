@@ -203,8 +203,23 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
                 or meta_has_wall_repair
             )
         ) or strong_damage_hit:
+            logger.info(
+                "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
+                getattr(lead, "id", None),
+                True,
+                status_upper,
+                "public_estimate",
+                None,
+                "tbd",
+                "inline_review_html",
+                True,
+                False,
+                False,
+                False,
+                meta_reasons,
+            )
             return HTMLResponse(
-                content="""
+                content=f"""
 <!doctype html>
 <html lang="nl">
 <head>
@@ -213,26 +228,47 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
   <title>Offerte in review — Paintly</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
-  <div class="flex min-h-screen items-center justify-center px-4">
-    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<body class="min-h-screen bg-gray-50 text-slate-900 antialiased">
+  <div class="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
+    <div class="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
+      <div class="flex items-center gap-4">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01M4.93 4.93l14.14 14.14M12 5a7 7 0 00-7 7v5h14v-5a7 7 0 00-7-7z" />
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
-          <h1 class="text-base font-semibold text-slate-900">Je offerte wordt handmatig gecontroleerd</h1>
-          <p class="mt-1 text-xs text-slate-500">
-            We hebben je aanvraag ontvangen. Door de staat van de wanden is een korte handmatige review nodig
-            voordat we een definitieve prijs kunnen tonen.
-          </p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Paintly bevestiging</p>
+          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+            Bedankt, we gaan uw aanvraag controleren
+          </h1>
         </div>
       </div>
-      <div class="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        In de meeste gevallen ontvang je binnen korte tijd een bijgewerkte offerte per e-mail.
+
+      <p class="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
+        We hebben uw foto's goed ontvangen. Omdat dit project extra controle vraagt,
+        bekijkt een specialist de situatie handmatig. U ontvangt daarna zo snel mogelijk
+        een nauwkeurige prijsinschatting.
+      </p>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Foto's ontvangen</span>
+        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Handmatige controle</span>
+        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Reactie zo snel mogelijk</span>
+      </div>
+
+      <div class="my-6 h-px w-full bg-slate-200"></div>
+
+      <div class="text-center">
+        <p class="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Aanvraagnummer</p>
+        <span class="mt-2 inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-4 py-1.5 text-sm font-semibold tracking-wide text-slate-800">
+          #{str(getattr(lead, "id", ""))[-8:].upper()}
+        </span>
+      </div>
+
+      <div class="mt-6 rounded-2xl bg-amber-50 px-5 py-4 text-center text-sm text-amber-900 ring-1 ring-amber-200">
+        In de meeste gevallen ontvangt u binnen korte tijd een bijgewerkte offerte per e-mail.
       </div>
     </div>
   </div>
@@ -368,6 +404,21 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
         lead_status=lead_status,
         iframe_url=iframe_url,
         body_html=body_html or "",
+    )
+    logger.info(
+        "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
+        getattr(lead, "id", None),
+        bool(lead_status == "NEEDS_REVIEW"),
+        lead_status,
+        "public_quote_page",
+        None,
+        "unknown",
+        "public/quote_page.html",
+        False,
+        None,
+        None,
+        None,
+        None,
     )
     return HTMLResponse(content=page_html)
 

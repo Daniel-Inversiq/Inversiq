@@ -239,6 +239,45 @@ class PaintlyAdapter(VerticalAdapter):
             lead.status = "NEEDS_REVIEW" if needs_review else "SUCCEEDED"
             lead.error_message = None
 
+            total_price = None
+            price_mode = "tbd"
+            pricing_status = "computed"
+            try:
+                est_for_log = (
+                    estimate_obj
+                    if isinstance(estimate_obj, dict)
+                    else {}
+                )
+                totals = (
+                    est_for_log.get("totals")
+                    if isinstance(est_for_log.get("totals"), dict)
+                    else {}
+                )
+                total_price = totals.get("grand_total", totals.get("pre_tax"))
+                if total_price is not None:
+                    price_mode = "priced"
+            except Exception:
+                total_price = None
+                price_mode = "tbd"
+
+            # Outward-facing labeling polish: review cases should not be logged
+            # as normal priced auto-quotes, even if an internal price exists.
+            if needs_review:
+                price_mode = "tbd"
+                pricing_status = "computed_review"
+
+            logger.info(
+                "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s",
+                getattr(lead, "id", None),
+                needs_review,
+                getattr(lead, "status", None),
+                pricing_status,
+                total_price,
+                price_mode,
+                "estimate.html",
+                bool(needs_review),
+            )
+
             # Best-effort ML training snapshot (dataset capture only)
             intake_snapshot: Dict[str, Any] = {}
             try:

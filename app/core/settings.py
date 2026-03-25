@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "aether-api"
     ENABLE_DEV_ROUTES: bool = False
     ENABLE_LLM_PRICING: bool = False
+    # Paintly: nieuwe vision flow staat standaard aan; zet ENABLE_PAINTLY=false om uit te zetten.
+    ENABLE_PAINTLY: bool = True
 
     AWS_PROFILE: Optional[str] = None
     AWS_SESSION_TOKEN: Optional[str] = None

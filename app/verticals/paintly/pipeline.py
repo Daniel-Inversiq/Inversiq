@@ -130,6 +130,7 @@ def compute_quote_for_lead(db: Session, lead: Lead, render_html: bool = True) ->
     # --------------------------------------------------
     # 1) Vision stage
     # --------------------------------------------------
+    vision_raw: Any = None
     try:
         vision_raw = run_vision_for_lead(db, lead.id)
         vision_raw = _ensure_obj(vision_raw)
@@ -198,6 +199,56 @@ def compute_quote_for_lead(db: Session, lead: Lead, render_html: bool = True) ->
                 else {}
             )
             meta["area_m2"] = area.get("value_m2", None)
+
+        # New vision provider signals (optional, backwards-compatible)
+        if isinstance(vision_raw, dict):
+            lead_aggregate = (
+                vision_raw.get("lead_aggregate")
+                if isinstance(vision_raw.get("lead_aggregate"), dict)
+                else None
+            )
+            if lead_aggregate is not None:
+                meta["vision_lead_aggregate"] = lead_aggregate
+                meta["vision_uncertainty_score"] = lead_aggregate.get(
+                    "uncertainty_score"
+                )
+                meta["vision_coverage_score"] = lead_aggregate.get("coverage_score")
+                meta["vision_evidence_score"] = lead_aggregate.get("evidence_score")
+                meta["vision_aggregate_needs_review"] = bool(
+                    lead_aggregate.get("needs_review", False)
+                )
+                meta["vision_aggregate_review_reasons"] = lead_aggregate.get(
+                    "review_reasons", []
+                )
+
+            photo_predictions = vision_raw.get("photo_predictions")
+            if isinstance(photo_predictions, list):
+                usable_count = 0
+                low_usability_count = 0
+                for p in photo_predictions:
+                    if not isinstance(p, dict):
+                        continue
+                    if bool(p.get("photo_is_usable")):
+                        usable_count += 1
+                    try:
+                        if float(p.get("photo_usability_score", 0.0)) < 0.5:
+                            low_usability_count += 1
+                    except Exception:
+                        pass
+                meta["vision_photo_count"] = len(photo_predictions)
+                meta["vision_usable_photo_count"] = usable_count
+                meta["vision_low_usability_photo_count"] = low_usability_count
+
+            vision_results = vision_raw.get("vision_results")
+            if isinstance(vision_results, list):
+                fallback_used = any(
+                    isinstance(vr, dict) and str(vr.get("provider")) == "fallback"
+                    for vr in vision_results
+                )
+                meta["vision_fallback_used"] = fallback_used
+
+            if str(vision_raw.get("reason", "")) == "provider_fallback_to_legacy":
+                meta["vision_fallback_used"] = True
 
         estimate["meta"] = meta
 

@@ -185,6 +185,13 @@ def step_photo_quality_v1(
 
     min_confidence = 0.70
     min_quality_score = 0.60
+    # Confidence threshold for triggering manual review.
+    # Below this threshold => hard review trigger.
+    # Between this threshold and `min_confidence` => soft diagnostic only.
+    PHOTO_REVIEW_CONFIDENCE_THRESHOLD = 0.60
+    # Quality threshold for hard review. Between this threshold and
+    # `min_quality_score` stays a soft warning only.
+    PHOTO_REVIEW_QUALITY_THRESHOLD = 0.45
     try:
         # Engine config stores step options in `with`; parsed StepConfig exposes
         # that as `with_`. Keep optional `params` fallback for compatibility.
@@ -210,14 +217,35 @@ def step_photo_quality_v1(
         "issues": list(res.issues or []),
     }
     review_reasons: List[str] = []
+    hard_review_required = False
     if not validation["relevant"]:
         review_reasons.append("photo_not_relevant")
-    if validation["confidence"] < min_confidence:
-        review_reasons.append("photo_validation_low_confidence")
-    if validation["quality_score"] < min_quality_score:
-        review_reasons.append("photo_quality_score_low")
-    review_reasons.extend(validation["issues"])
-    review_required = bool(review_reasons)
+        hard_review_required = True
+
+    photo_confidence = float(validation["confidence"] or 0.0)
+    if photo_confidence < min_confidence:
+        if photo_confidence < PHOTO_REVIEW_CONFIDENCE_THRESHOLD:
+            review_reasons.append("photo_validation_low_confidence")
+            hard_review_required = True
+        else:
+            # Soft diagnostic only: keep in reasons/logs but do not
+            # auto-escalate to NEEDS_REVIEW.
+            review_reasons.append("photo_validation_low_confidence_soft")
+
+    photo_quality_score = float(validation["quality_score"] or 0.0)
+    if photo_quality_score < min_quality_score:
+        if photo_quality_score < PHOTO_REVIEW_QUALITY_THRESHOLD:
+            review_reasons.append("photo_quality_score_low")
+            hard_review_required = True
+        else:
+            review_reasons.append("photo_quality_score_low_soft")
+
+    # Keep existing behavior for actual photo-quality issues.
+    issues = list(validation.get("issues") or [])
+    if issues:
+        hard_review_required = True
+    review_reasons.extend(issues)
+    review_required = bool(hard_review_required)
 
     return StepResult(
         status="OK",
@@ -264,9 +292,39 @@ def step_aggregate_v1(
 
     vision_raw = (state.data.get("steps") or {}).get("vision", {}).get("vision_raw")
     vision_raw = _ensure_obj(vision_raw)
-    # run_vision_for_lead returns wrapper dict with image_predictions;
-    # unwrap to the list expected by aggregate_vision.
+
+    # `run_vision_for_lead` (new OpenAI provider) returns a wrapper dict:
+    # - image_predictions: legacy compat shape (issues/substrate_confidence)
+    # - lead_aggregate: source-of-truth for needs_review + review_reasons (incl. surface_preparation_required)
+    # Paintly aggregate heuristics operate on `image_predictions`, so we unwrap
+    # for pricing variables, but we keep `lead_aggregate.review_reasons` to
+    # drive the final review routing.
+    raw_aggregate_needs_review = None
+    raw_aggregate_review_reasons = None
     if isinstance(vision_raw, dict):
+        lead_aggregate = (
+            vision_raw.get("lead_aggregate")
+            if isinstance(vision_raw.get("lead_aggregate"), dict)
+            else None
+        )
+
+        # Prefer wrapper keys, fallback to lead_aggregate keys.
+        raw_aggregate_needs_review = vision_raw.get("needs_review", None)
+        if raw_aggregate_needs_review is None and isinstance(lead_aggregate, dict):
+            raw_aggregate_needs_review = lead_aggregate.get("needs_review", None)
+
+        raw_aggregate_review_reasons = vision_raw.get("review_reasons", None)
+        if raw_aggregate_review_reasons is None and isinstance(lead_aggregate, dict):
+            raw_aggregate_review_reasons = lead_aggregate.get("review_reasons", None)
+
+        logger.info(
+            "RAW_VISION_AGGREGATE lead_id=%s needs_review=%r review_reasons=%r",
+            getattr(lead, "id", None),
+            raw_aggregate_needs_review,
+            raw_aggregate_review_reasons,
+        )
+
+        # Unwrap to the list expected by paintly aggregate_vision.
         image_predictions = vision_raw.get("image_predictions")
         if image_predictions is not None:
             vision_raw = _ensure_obj(image_predictions)
@@ -310,6 +368,27 @@ def step_aggregate_v1(
         scope=scope,
     )
     vision = _ensure_obj(vision)
+
+    # Merge vision provider review flags from `lead_aggregate` back into the
+    # paintly aggregate output (so needs_review routing matches validate/debug).
+    if isinstance(vision, dict):
+        if raw_aggregate_needs_review is not None:
+            vision["needs_review"] = bool(
+                vision.get("needs_review", False) or raw_aggregate_needs_review
+            )
+
+        if raw_aggregate_review_reasons is not None:
+            rr = raw_aggregate_review_reasons
+            if not isinstance(rr, list):
+                rr = [rr]
+            rr = [str(x) for x in rr if x is not None and str(x).strip()]
+
+            existing = vision.get("review_reasons") or []
+            if not isinstance(existing, list):
+                existing = [existing]
+            existing = [str(x) for x in existing if x is not None]
+
+            vision["review_reasons"] = list(dict.fromkeys(existing + rr))
 
     return StepResult(status="OK", data={"vision": vision})
 
@@ -832,6 +911,10 @@ def _decide_paintly_needs_review(
         "peeling_wallcovering_detected",
         "repair_work_required",
         "surface_damage_detected",
+        # Provider/aggregate prep trigger must remain a hard blocker.
+        "surface_preparation_required",
+        # keep prefixed variant consistent with needs_review_from_output
+        "vision:surface_preparation_required",
     }
 
     # Hard blockers coming from photo quality (true absence of photos)
@@ -843,22 +926,92 @@ def _decide_paintly_needs_review(
         "photo_quality_score_low",
     }
 
+    # Extra diagnostic gate (kept for logging); explicit hard codes above still
+    # force review on their own.
+    surface_prep_present = (
+        ("surface_preparation_required" in merged_reasons)
+        or ("vision:surface_preparation_required" in merged_reasons)
+    )
+    LOW_RELIABILITY_REASONS = {
+        "high_uncertainty",
+        "no_usable_photos",
+        "low_coverage_score",
+        "photo_validation_low_confidence",
+        "photo_quality_score_low",
+        "photo_not_relevant",
+        "no_readable_photos",
+        "no_photos",
+    }
+    low_reliability_present = any(r in LOW_RELIABILITY_REASONS for r in merged_reasons)
+    surface_prep_hard_blocker = bool(surface_prep_present and low_reliability_present)
+
+    # Minimal decision-layer expansion:
+    # Some providers/aggregators surface structural damage/prep as free-text or
+    # variant reason labels. Treat those as hard blockers too so content-heavy
+    # wall issues (not just photo-quality issues) can force review.
+    structural_keywords = (
+        "damaged wall",
+        "wall damage",
+        "peeling paint",
+        "flaking paint",
+        "exposed substrate",
+        "substrate exposed",
+        "preparation required",
+        "surface preparation required",
+        "repair required",
+    )
+    structural_text_reasons = []
+    for r in merged_reasons:
+        txt = str(r or "").strip().lower()
+        if txt and any(k in txt for k in structural_keywords):
+            structural_text_reasons.append(str(r))
+    structural_text_hard_blocker = bool(structural_text_reasons)
+
     hard_reason_present = any(
         (r in HARD_ESTIMATE_REASONS)
         or (r in HARD_AGGREGATE_REASONS)
         or (r in HARD_PHOTO_REASONS)
         or (r in HARD_STRUCTURAL_REASONS)
         for r in merged_reasons
-    )
+    ) or surface_prep_hard_blocker or structural_text_hard_blocker
+
+    triggered_rules: list[str] = []
+    if pricing_blocked:
+        triggered_rules.append("pricing_blocked")
+
+    # Exact hard reason codes that triggered the decision.
+    for r in merged_reasons:
+        if (
+            (r in HARD_ESTIMATE_REASONS)
+            or (r in HARD_AGGREGATE_REASONS)
+            or (r in HARD_PHOTO_REASONS)
+            or (r in HARD_STRUCTURAL_REASONS)
+        ):
+            triggered_rules.append(r)
+    if surface_prep_hard_blocker:
+        triggered_rules.append("surface_preparation_required_with_low_reliability")
+    if structural_text_hard_blocker:
+        triggered_rules.append("structural_text_reason_detected")
+        triggered_rules.extend(structural_text_reasons)
+
+    # Keep aggregate_needs_review coupled to explicit prep blockers so the
+    # final decision cannot silently fall back to SUCCEEDED for this case.
+    aggregate_surface_prep_blocker = bool(aggregate_needs_review and surface_prep_present)
+    if aggregate_surface_prep_blocker and "surface_preparation_required" not in triggered_rules:
+        triggered_rules.append("surface_preparation_required")
 
     # Final decision:
     # - pricing_blocked is always a hard blocker
     # - other hard blockers come from the explicit sets above
     # - aggregate_needs_review alone is NOT enough anymore; it must surface
     #   at least one concrete hard reason code in review_reasons.
-    needs_review = bool(pricing_blocked or hard_reason_present)
+    needs_review = bool(
+        pricing_blocked
+        or hard_reason_present
+        or aggregate_surface_prep_blocker
+    )
 
-    return needs_review, merged_reasons, pricing_blocked
+    return needs_review, merged_reasons, pricing_blocked, triggered_rules
 
 
 # -------------------------
@@ -870,6 +1023,9 @@ def step_needs_review_v1(
     # Local import avoids package-level circular import during engine step module load:
     # aether.engine.steps -> app.verticals -> adapter -> aether.engine.facade -> aether.engine.steps
     from app.verticals.paintly.needs_review import needs_review_from_output
+
+    lead = (assets or {}).get("lead")
+    lead_id = getattr(lead, "id", None)
 
     # -----------------------------
     # Manual override: skip review
@@ -961,13 +1117,25 @@ def step_needs_review_v1(
 
     prior_reasons = []
     pq_bad = False
+    photo_confidence = None
     if isinstance(pq, dict):
         prior_reasons = (pq.get("review_reasons") or pq.get("reasons") or [])
         pq_bad = bool(pq.get("review_required", pq.get("bad")))
+        try:
+            v = pq.get("validation") if isinstance(pq.get("validation"), dict) else {}
+            if v:
+                photo_confidence = float(v.get("confidence", None))
+        except Exception:
+            photo_confidence = None
         if pq_bad and not prior_reasons:
             prior_reasons = ["photo_quality_bad"]
 
-    needs_review, merged_reasons, pricing_blocked = _decide_paintly_needs_review(
+    (
+        needs_review,
+        merged_reasons,
+        pricing_blocked,
+        triggered_rules,
+    ) = _decide_paintly_needs_review(
         pq_bad=pq_bad,
         prior_reasons=prior_reasons,
         aggregate_needs_review=aggregate_needs_review,
@@ -988,6 +1156,18 @@ def step_needs_review_v1(
         estimate["review_reasons"] = merged_reasons
         estimate["meta"] = meta
 
+        # Targeted logging for review routing debugging:
+        logger.info(
+            "ESTIMATE_META_NEEDS_REVIEW_REASONS lead_id=%s needs_review_reasons=%r",
+            lead_id,
+            meta.get("needs_review_reasons"),
+        )
+        logger.info(
+            "FINAL_MERGED_REASONS lead_id=%s merged_reasons=%r",
+            lead_id,
+            merged_reasons,
+        )
+
     print(
         "NEEDS_REVIEW DEBUG:",
         {
@@ -996,6 +1176,18 @@ def step_needs_review_v1(
             "aggregate_needs_review": aggregate_needs_review,
             "merged_reasons": merged_reasons,
         },
+    )
+
+    final_status = "NEEDS_REVIEW" if needs_review else "SUCCEEDED"
+    logger.info(
+        "REVIEW_DECISION lead_id=%s pq_bad=%r aggregate_needs_review=%r photo_confidence=%r merged_reasons=%r triggered_rules=%r final_status=%s",
+        lead_id,
+        pq_bad,
+        aggregate_needs_review,
+        photo_confidence,
+        merged_reasons,
+        triggered_rules,
+        final_status,
     )
 
     return StepResult(

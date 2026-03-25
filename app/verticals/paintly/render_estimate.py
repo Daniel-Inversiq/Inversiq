@@ -125,7 +125,15 @@ def render_estimate_html_v2(
     # ensure list[str]
     review_reasons = [str(x) for x in review_reasons if x is not None]
 
-    pricing_ready = (not needs_review_flag) and (len(review_reasons) == 0)
+    # Minimal output mapping fix:
+    # - SUCCEEDED path (needs_review=False) should show normal pricing even when
+    #   soft/informational review reasons are present.
+    # - NEEDS_REVIEW path (needs_review=True) should not show a definitive price.
+    pricing_ready = not needs_review_flag
+    is_provisional = ("provisional_total" in review_reasons) or (
+        "missing_total" in review_reasons
+    )
+    show_prices = bool(pricing_ready or is_provisional)
 
     # scope + exclusions blocks
     scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
@@ -182,6 +190,13 @@ def render_estimate_html_v2(
     else:
         vat = _calc_vat(pricing)
 
+    total_price = (
+        vat.get("total_incl_vat")
+        if isinstance(vat, dict)
+        else None
+    )
+    price_mode = "priced" if show_prices else "tbd"
+
     # Debug: log final pricing/meta/vat snapshot before templating
     try:
         from app.verticals.paintly.router_app import logger as paintly_logger  # type: ignore
@@ -195,6 +210,29 @@ def render_estimate_html_v2(
                 pricing.get("totals"),
                 meta,
                 vat,
+            )
+            paintly_logger.info(
+                "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
+                (
+                    (lead or {}).get("id")
+                    if isinstance(lead, dict)
+                    else None
+                ),
+                needs_review_flag,
+                (
+                    (lead or {}).get("status")
+                    if isinstance(lead, dict)
+                    else None
+                ),
+                "render_estimate_html_v2",
+                total_price,
+                price_mode,
+                "estimate.html",
+                bool(needs_review_flag),
+                show_prices,
+                pricing_ready,
+                is_provisional,
+                review_reasons,
             )
         except Exception:
             pass
@@ -314,7 +352,7 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
     elif not isinstance(review_reasons, list):
         review_reasons = [str(review_reasons)]
     review_reasons = [str(x) for x in review_reasons if x is not None]
-    pricing_ready = (not needs_review_flag) and (len(review_reasons) == 0)
+    pricing_ready = not needs_review_flag
 
     scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
     if not scope_bullets:

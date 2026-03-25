@@ -273,6 +273,11 @@ async def complete_upload(
         raise HTTPException(status_code=403, detail="tenant_mismatch")
 
     key_without_tenant = req.object_key[len(prefix) :]
+    # Normalize historical malformed keys that may repeat the tenant prefix.
+    # Example: "acme/acme/uploads/..." should become "uploads/..."
+    while key_without_tenant.startswith(prefix):
+        key_without_tenant = key_without_tenant[len(prefix) :]
+    key_without_tenant = key_without_tenant.lstrip("/")
 
     st = get_storage()
 
@@ -386,6 +391,9 @@ async def complete_upload(
                     )
                     adapter = PaintlyAdapter()
                     adapter.compute_quote(db, req.lead_id)
+                    # The engine writes lead.status as part of compute_quote;
+                    # refresh to ensure we log the final persisted status.
+                    db.refresh(lead)
                     logger.info(
                         "AUTO_COMPUTE_UPLOAD_TRIGGER_DONE lead=%s status=%s",
                         lead_id_value,
@@ -465,6 +473,20 @@ async def local_upload(
         st.save_bytes(tenant_id, key_without_tenant, data, content_type=ctype)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"local_upload_failed:{e}")
+
+    # Debug: confirm what path we wrote to (local only).
+    try:
+        full_path = st._full_path(tenant_id, key_without_tenant)  # type: ignore[attr-defined]
+        logger.info(
+            "UPLOAD_LOCAL_SAVED tenant_id=%r key_without_tenant=%r full_path=%s exists=%r size_bytes=%s",
+            tenant_id,
+            key_without_tenant,
+            str(full_path),
+            bool(full_path.exists() and full_path.is_file()),
+            int(full_path.stat().st_size) if (full_path.exists() and full_path.is_file()) else None,
+        )
+    except Exception:
+        logger.debug("UPLOAD_LOCAL_SAVED_PATH_INFO_FAILED", exc_info=True)
 
     object_key = f"{tenant_id}/{key_without_tenant}"
 

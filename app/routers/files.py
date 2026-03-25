@@ -92,16 +92,67 @@ def serve_local_file(tenant_id: str, file_path: str):
         raise HTTPException(status_code=404, detail="Local file serving not enabled")
 
     key = (file_path or "").lstrip("/")
-    full_path = storage._full_path(tenant_id, key)  # type: ignore[attr-defined]
+
+    def _tenant_id_sane(tid: str) -> bool:
+        # Keep it conservative to avoid turning path segments into arbitrary paths.
+        tid = (tid or "").strip()
+        if not tid or len(tid) > 120:
+            return False
+        # Allowed chars in our system are basically "slug-ish".
+        return all(ch.isalnum() or ch in {"_", "-", "."} for ch in tid)
+
+    attempts: list[dict[str, Any]] = []
+
+    def _try_resolve(tid: str, k: str, why: str):
+        k2 = (k or "").lstrip("/")
+        full_path = storage._full_path(tid, k2)  # type: ignore[attr-defined]
+        exists = bool(full_path.exists() and full_path.is_file())
+        attempts.append(
+            {
+                "why": why,
+                "tenant_id": tid,
+                "key": k2,
+                "full_path": str(full_path),
+                "exists": exists,
+                "size_bytes": int(full_path.stat().st_size) if exists else None,
+            }
+        )
+        return full_path if exists else None
+
+    # 1) direct lookup (expected: key without tenant prefix)
+    direct = _try_resolve(tenant_id, key, "direct")
+
+    # 2) normalize double-prefixes inside file_path: e.g. key="acme/acme/uploads/.."
+    alt_key = key
+    self_prefix = f"{tenant_id}/"
+    while alt_key.startswith(self_prefix):
+        alt_key = alt_key[len(self_prefix) :].lstrip("/")
+    alt1 = None if alt_key == key else _try_resolve(tenant_id, alt_key, "strip_self_prefix_loop")
+
+    # 3) legacy/malformed: file_path begins with some other tenant id: e.g. key="default/uploads/.."
+    alt2 = None
+    if "/" in key:
+        first, rest = key.split("/", 1)
+        if first != tenant_id and _tenant_id_sane(first) and rest:
+            alt2 = _try_resolve(first, rest, "key_includes_other_tenant_prefix")
+
+    resolved = direct or alt1 or alt2
     logger.info(
-        "FILES_ROUTE_LOCAL_LOOKUP tenant_id=%r key=%r path=%s exists=%r",
+        "FILES_ROUTE_LOCAL_RESOLVE tenant_id=%r requested_key=%r resolved=%r attempts_count=%s",
         tenant_id,
         key,
-        str(full_path),
-        bool(full_path.exists() and full_path.is_file()),
+        str(resolved) if resolved else None,
+        len(attempts),
     )
 
-    if not full_path.exists() or not full_path.is_file():
+    if not resolved:
+        # Provide the attempted keys/paths for debugging; keep response unchanged.
+        logger.warning(
+            "FILES_ROUTE_LOCAL_NOT_FOUND tenant_id=%r requested_key=%r attempts=%r",
+            tenant_id,
+            key,
+            attempts,
+        )
         raise HTTPException(status_code=404, detail="File not found")
 
-    return FileResponse(path=str(full_path))
+    return FileResponse(path=str(resolved))

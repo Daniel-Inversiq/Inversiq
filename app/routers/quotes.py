@@ -312,8 +312,17 @@ def publish_quote(
     # Idempotent: al klaar -> direct naar lead detail offerteview
     if lead.status in ("SUCCEEDED", "NEEDS_REVIEW"):
         inc("publish_idempotent_total")
+        redirect_target = (
+            f"/app/reviews/{lead.id}" if lead.status == "NEEDS_REVIEW" else f"/app/leads/{lead.id}/estimate"
+        )
+        logger.info(
+            "INTAKE_REVIEW_DECISION lead_id=%s idempotent_status=%s redirect_target=%r",
+            lead.id,
+            lead.status,
+            redirect_target,
+        )
         return RedirectResponse(
-            url=f"/app/leads/{lead.id}/estimate",
+            url=redirect_target,
             status_code=303,
         )
 
@@ -336,6 +345,7 @@ def publish_quote(
         _set_failed(db, lead, str(e))
 
     # RUNNING
+    old_status = getattr(lead, "status", None)
     lead.status = "RUNNING"
     lead.error_message = None
     lead.updated_at = datetime.utcnow()
@@ -381,9 +391,66 @@ def publish_quote(
 
         lead.estimate_json = json.dumps(estimate_dict, ensure_ascii=False, default=str)
         lead.estimate_html_key = html_key
-        lead.status = "NEEDS_REVIEW" if needs_review else "SUCCEEDED"
+
+        review_reasons = []
+        try:
+            if isinstance(estimate_dict, dict):
+                review_reasons = (estimate_dict.get("meta") or {}).get("needs_review_reasons") or []
+        except Exception:
+            review_reasons = []
+
+        new_status = "NEEDS_REVIEW" if needs_review else "SUCCEEDED"
+        prev_status = getattr(lead, "status", None)
+        lead.status = new_status
         lead.updated_at = datetime.utcnow()
         db.commit()
+
+        # Best-effort persist reasons if the model supports it.
+        try:
+            if needs_review and hasattr(lead, "needs_review_reasons"):
+                setattr(lead, "needs_review_reasons", review_reasons)
+                logger.info(
+                    "QUOTE_STATUS_WRITE lead_id=%s old_status=%r new_status=%r source_route=%r needs_review_reasons=%r",
+                    lead.id,
+                    prev_status,
+                    new_status,
+                    "publish_quote",
+                    review_reasons,
+                )
+            else:
+                logger.info(
+                    "QUOTE_STATUS_WRITE lead_id=%s old_status=%r new_status=%r source_route=%r needs_review_reasons_present=%s",
+                    lead.id,
+                    prev_status,
+                    new_status,
+                    "publish_quote",
+                    bool(review_reasons),
+                )
+                if needs_review and review_reasons:
+                    logger.info(
+                        "QUOTE_STATUS_WRITE_REASONS lead_id=%s needs_review_reasons=%r",
+                        lead.id,
+                        review_reasons,
+                    )
+        except Exception:
+            logger.info(
+                "QUOTE_STATUS_WRITE lead_id=%s old_status=%r new_status=%r source_route=%r",
+                lead.id,
+                prev_status,
+                new_status,
+                "publish_quote",
+            )
+
+        redirect_target = (
+            f"/app/reviews/{lead.id}" if new_status == "NEEDS_REVIEW" else f"/app/leads/{lead.id}/estimate"
+        )
+        logger.info(
+            "INTAKE_REVIEW_DECISION lead_id=%s final_needs_review=%s persisted_status=%s redirect_target=%r",
+            lead.id,
+            needs_review,
+            lead.status,
+            redirect_target,
+        )
 
         # If the quote fully succeeded, send the customer "estimate ready" email
         if lead.status == "SUCCEEDED":
@@ -432,11 +499,10 @@ def publish_quote(
         )
         logger.info("PUBLISH_FLOW_DONE lead=%s status=%s", lead.id, lead.status)
 
-        # Na succesvolle compute_quote: redirect direct naar lead detail offerteview
-        return RedirectResponse(
-            url=f"/app/leads/{lead.id}/estimate",
-            status_code=303,
-        )
+        # Na compute_quote:
+        # - NEEDS_REVIEW -> redirect naar review detail
+        # - SUCCEEDED -> redirect naar normale offerte
+        return RedirectResponse(url=redirect_target, status_code=303)
 
     except Exception as e:
         # keep exception details visible for internal debugging
