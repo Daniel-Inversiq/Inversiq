@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import os
 import time
 from typing import Any
 from urllib.parse import urlparse
@@ -192,6 +193,11 @@ def _is_remote_image_access_error(exc: Exception) -> bool:
     )
 
 
+def _env_truthy(name: str, default: str = "false") -> bool:
+    val = (os.getenv(name, default) or "").strip().lower()
+    return val in {"1", "true", "yes", "y", "on"}
+
+
 def call_openai_vision(
     image_url: str,
     user_prompt: str,
@@ -308,19 +314,28 @@ def build_image_input(
     host = (parsed.hostname or "").lower() if parsed.hostname else ""
     url_lc = normalized_url.lower()
     is_local_dev = host in {"localhost", "127.0.0.1"} or "localhost" in url_lc or "127.0.0.1" in url_lc
+    force_data_url_requested = bool(force_data_url or _env_truthy("VISION_FORCE_DATA_URL", "false"))
+    allow_remote_url = _env_truthy("VISION_ALLOW_REMOTE_URL", "0")
 
-    if (not is_local_dev) and (not force_data_url):
+    if (not is_local_dev) and (not force_data_url_requested):
         logger.info("Vision image transport via remote_url=%r", normalized_url)
         return {"type": "input_image", "image_url": normalized_url, "detail": "high"}
 
     local_path = metadata.get("local_path", "") or ""
     if not local_path:
+        if force_data_url_requested and allow_remote_url:
+            logger.warning(
+                "Vision data_url forced but local_path missing; remote_url explicitly allowed. image_url=%r",
+                normalized_url,
+            )
+            return {"type": "input_image", "image_url": normalized_url, "detail": "high"}
         logger.error(
-            "Vision local dev image transport requested but metadata['local_path'] is missing/empty. image_url=%r metadata_keys=%s",
+            "Vision data_url transport requested but metadata['local_path'] is missing/empty. image_url=%r metadata_keys=%s force_data_url=%s",
             normalized_url,
             sorted(metadata.keys()),
+            force_data_url_requested,
         )
-        raise RuntimeError("local_path_missing_for_dev_image_transport")
+        raise RuntimeError("local_path_missing_for_data_url_transport")
 
     try:
         with open(local_path, "rb") as f:
