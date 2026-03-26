@@ -796,6 +796,19 @@ def normalize_vision_output(
             inp.photo_id,
         )
 
+    # Escalate explicit peeling/wall-damage signals to hard review flags.
+    # This keeps the existing prep signal, but ensures clear structural paint
+    # damage cannot be treated as non-blocking-only.
+    peeling_damage_detected = any(
+        d.type == "peeling_paint" and float(d.confidence or 0.0) >= 0.55
+        for d in damages
+    )
+    if peeling_damage_detected:
+        review_flags.add("surface_damage_detected")
+        review_flags.add("repair_work_required")
+        if has_unfinished_exposed_hint:
+            review_flags.add("substrate_visible")
+
     if photo_usability_score < 0.5:
         review_flags.add("low_photo_usability")
     if uncertainty_score >= 0.7:

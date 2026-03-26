@@ -1050,16 +1050,29 @@ def _decide_paintly_needs_review(
     if aggregate_surface_prep_blocker and "surface_preparation_required_gated" not in triggered_rules:
         triggered_rules.append("surface_preparation_required_gated")
 
+    # Explicit allowlisted exception:
+    # allow SUCCEEDED only when aggregate asks for review but every collected
+    # reason is explicitly non-blocking (e.g. surface prep note only).
+    allowlisted_aggregate_only = bool(
+        aggregate_needs_review
+        and not blocking_review_reasons
+        and bool(merged_reasons)
+        and all(_reason_is_non_blocking(r) for r in merged_reasons)
+    )
+
     # Final decision:
-    # - pricing_blocked is always a hard blocker
-    # - other hard blockers come from the explicit sets above
-    # - aggregate_needs_review alone is NOT enough anymore; it must surface
-    #   at least one concrete hard reason code in review_reasons.
+    # - aggregate_needs_review OR any blocking reason now escalates to review
+    # - except for the explicit allowlisted aggregate-only case above
     needs_review = bool(
+    (
         pricing_blocked
         or hard_reason_present
         or aggregate_surface_prep_blocker
+        or aggregate_needs_review
+        or bool(blocking_review_reasons)
     )
+    and (not allowlisted_aggregate_only)
+)
 
     logger.info(
         "REVIEW_BLOCKING_FILTER lead_id=%s merged_reasons=%s "

@@ -12,7 +12,11 @@ from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 
 from app.core.settings import settings
-from app.domain.vision_models import PhotoQualityInput, VisionPhotoPrediction, VisionStepInput
+from app.domain.vision_models import (
+    PhotoQualityInput,
+    VisionPhotoPrediction,
+    VisionStepInput,
+)
 from app.models import Lead, LeadFile
 from app.models.upload_record import UploadRecord
 from app.services.photo_quality.inference import predict_photo_quality
@@ -63,11 +67,7 @@ def _collect_image_paths(files: List[Any], lead: Lead) -> List[str]:
         if lp:
             try:
                 p = Path(str(lp))
-                ok = (
-                    p.exists()
-                    and p.is_file()
-                    and p.stat().st_size > 0
-                )
+                ok = p.exists() and p.is_file() and p.stat().st_size > 0
                 logger.debug(
                     "VISION_PHOTO_RESOLVE local_path_attr idx=%s lead_id=%s source=%s file_source_id=%r raw_s3_key=%r raw_object_key=%r s3_key=%r filename=%r local_path=%r local_path_ok=%s",
                     idx,
@@ -174,9 +174,7 @@ def _collect_image_paths(files: List[Any], lead: Lead) -> List[str]:
 
                 # Always copy to stable name to avoid spaces/collisions
                 suffix = p.suffix or (Path(cand_key).suffix or ".jpg")
-                safe_name = (
-                    f"{getattr(f, 'id', 'file')}_{uuid4().hex}{suffix}"
-                )
+                safe_name = f"{getattr(f, 'id', 'file')}_{uuid4().hex}{suffix}"
                 dst = tmp_dir / safe_name
                 if not dst.exists() or dst.stat().st_size == 0:
                     shutil.copyfile(p, dst)
@@ -295,9 +293,7 @@ def _resolve_vision_file_sources(
                 id=getattr(lf, "id", None),
                 s3_key=key,
                 raw_s3_key=raw_s3_key,
-                content_type=str(
-                    getattr(lf, "content_type", None) or "image/jpeg"
-                ),
+                content_type=str(getattr(lf, "content_type", None) or "image/jpeg"),
                 local_path=getattr(lf, "local_path", None),
                 source="lead_file",
             )
@@ -395,7 +391,9 @@ def _build_image_url_for_vision(storage, tenant_id: str, key: str) -> str:
     )
 
 
-def _build_photo_quality_input(issues: List[str], quality_score: float) -> PhotoQualityInput:
+def _build_photo_quality_input(
+    issues: List[str], quality_score: float
+) -> PhotoQualityInput:
     issues_lc = {str(i).strip().lower() for i in issues}
     blur_detected = "too_blurry" in issues_lc
     too_dark = "too_dark" in issues_lc
@@ -417,13 +415,22 @@ def _build_photo_quality_input(issues: List[str], quality_score: float) -> Photo
     )
 
 
-def _legacy_image_prediction_from_photo_pred(pred: VisionPhotoPrediction) -> Dict[str, Any]:
+def _legacy_image_prediction_from_photo_pred(
+    pred: VisionPhotoPrediction,
+) -> Dict[str, Any]:
     if pred.surfaces:
         best_surface = max(
             pred.surfaces,
             key=lambda s: float(s.confidence) * float(s.approximate_coverage),
         )
-        if best_surface.type in {"wall", "ceiling", "trim", "window_frame", "door", "wood"}:
+        if best_surface.type in {
+            "wall",
+            "ceiling",
+            "trim",
+            "window_frame",
+            "door",
+            "wood",
+        }:
             substrate = "gipsplaat"
         elif best_surface.type in {"facade", "stairs", "metal"}:
             substrate = "beton"
@@ -638,9 +645,7 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
             # Step 1..3 for a single photo (do not abort the whole lead).
             try:
                 # Step 1: existing photo-quality inference (per photo).
-                pq = predict_photo_quality(
-                    [key], storage=storage, tenant_id=tenant_id
-                )
+                pq = predict_photo_quality([key], storage=storage, tenant_id=tenant_id)
                 photo_quality = _build_photo_quality_input(
                     issues=list(getattr(pq, "issues", []) or []),
                     quality_score=float(getattr(pq, "quality_score", 0.0) or 0.0),
@@ -685,7 +690,9 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
                 }
 
                 removed_none_keys = [k for k, v in raw_metadata.items() if v is None]
-                sanitized_metadata = {str(k): str(v) for k, v in raw_metadata.items() if v is not None}
+                sanitized_metadata = {
+                    str(k): str(v) for k, v in raw_metadata.items() if v is not None
+                }
 
                 logger.info(
                     "VISION_METADATA_SANITIZED lead_id=%s removed_none_keys=%s sanitized_metadata=%r",
@@ -745,6 +752,37 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
                     result.source,
                 )
 
+                logger.info(
+                    "VISION_PHOTO_CLASSIFICATION lead_id=%s photo_id=%s provider=%s "
+                    "review_flags=%r usability=%.3f uncertainty=%.3f relevance=%.3f "
+                    "surfaces=%r damages=%r raw_review_flags=%r raw_summary=%r",
+                    lead.id,
+                    photo_id,
+                    result.source,
+                    list(result.prediction.review_flags or []),
+                    float(result.prediction.photo_usability_score or 0.0),
+                    float(result.prediction.uncertainty_score or 0.0),
+                    float(result.prediction.quote_relevance_score or 0.0),
+                    [
+                        {
+                            "label": getattr(s, "type", None),
+                            "conf": float(getattr(s, "confidence", 0.0)),
+                            "cov": float(getattr(s, "approximate_coverage", 0.0)),
+                        }
+                        for s in (result.prediction.surfaces or [])
+                    ],
+                    [
+                        {
+                            "label": getattr(d, "type", None),
+                            "conf": float(getattr(d, "confidence", 0.0)),
+                            "severity": getattr(d, "severity", None),
+                        }
+                        for d in (result.prediction.damages or [])
+                    ],
+                    (result.raw_response or {}).get("review_flags"),
+                    (result.raw_response or {}).get("summary"),
+                )
+
                 photo_predictions.append(result.prediction)
                 photo_inputs.append(step_input.model_dump())
                 vision_results.append(
@@ -801,8 +839,7 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
 
         # Compatibility bridge: keep existing pricing pipeline input shape.
         image_predictions = [
-            _legacy_image_prediction_from_photo_pred(pred)
-            for pred in photo_predictions
+            _legacy_image_prediction_from_photo_pred(pred) for pred in photo_predictions
         ]
 
         # TODO: Persist photo_predictions/lead_aggregate once a dedicated storage field/repository is finalized.
