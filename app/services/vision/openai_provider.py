@@ -180,6 +180,18 @@ def build_vision_user_prompt(inp: VisionStepInput) -> str:
     )
 
 
+def _is_remote_image_access_error(exc: Exception) -> bool:
+    msg = str(exc or "").lower()
+    return (
+        ("403" in msg)
+        or ("forbidden" in msg)
+        or ("access denied" in msg)
+        or ("cannot access" in msg)
+        or ("failed to download" in msg)
+        or ("image_url" in msg and "invalid" in msg)
+    )
+
+
 def call_openai_vision(
     image_url: str,
     user_prompt: str,
@@ -203,21 +215,53 @@ def call_openai_vision(
     image_input = build_image_input(image_url=image_url, metadata=metadata)
 
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
-    response = client.responses.create(
-        model=model_name,
-        input=[
-            {"role": "developer", "content": [{"type": "input_text", "text": VISION_DEVELOPER_PROMPT}]},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": user_prompt},
-                    image_input,
-                ],
-            },
-        ],
-        text={"format": {"type": "json_schema", "name": VISION_RAW_SCHEMA["name"], "schema": VISION_RAW_SCHEMA["schema"], "strict": True}},
-        extra_headers={"X-Client-Request-Id": client_request_id},
-    )
+    try:
+        response = client.responses.create(
+            model=model_name,
+            input=[
+                {"role": "developer", "content": [{"type": "input_text", "text": VISION_DEVELOPER_PROMPT}]},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": user_prompt},
+                        image_input,
+                    ],
+                },
+            ],
+            text={"format": {"type": "json_schema", "name": VISION_RAW_SCHEMA["name"], "schema": VISION_RAW_SCHEMA["schema"], "strict": True}},
+            extra_headers={"X-Client-Request-Id": client_request_id},
+        )
+    except Exception as exc:
+        if _is_remote_image_access_error(exc):
+            try:
+                fallback_image_input = build_image_input(
+                    image_url=image_url, metadata=metadata, force_data_url=True
+                )
+                logger.warning(
+                    "Vision remote_url rejected; retrying with data_url request_id=%s image_url=%r err=%s",
+                    client_request_id,
+                    image_url,
+                    exc,
+                )
+                response = client.responses.create(
+                    model=model_name,
+                    input=[
+                        {"role": "developer", "content": [{"type": "input_text", "text": VISION_DEVELOPER_PROMPT}]},
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "input_text", "text": user_prompt},
+                                fallback_image_input,
+                            ],
+                        },
+                    ],
+                    text={"format": {"type": "json_schema", "name": VISION_RAW_SCHEMA["name"], "schema": VISION_RAW_SCHEMA["schema"], "strict": True}},
+                    extra_headers={"X-Client-Request-Id": client_request_id},
+                )
+            except Exception:
+                raise exc
+        else:
+            raise
 
     elapsed_ms = int((time.perf_counter() - started) * 1000)
 
@@ -249,7 +293,9 @@ def call_openai_vision(
     return raw, elapsed_ms, model_name
 
 
-def build_image_input(image_url: str, metadata: dict[str, str]) -> dict[str, Any]:
+def build_image_input(
+    image_url: str, metadata: dict[str, str], force_data_url: bool = False
+) -> dict[str, Any]:
     """
     OpenAI vision transport helper.
 
@@ -263,7 +309,7 @@ def build_image_input(image_url: str, metadata: dict[str, str]) -> dict[str, Any
     url_lc = normalized_url.lower()
     is_local_dev = host in {"localhost", "127.0.0.1"} or "localhost" in url_lc or "127.0.0.1" in url_lc
 
-    if not is_local_dev:
+    if (not is_local_dev) and (not force_data_url):
         logger.info("Vision image transport via remote_url=%r", normalized_url)
         return {"type": "input_image", "image_url": normalized_url, "detail": "high"}
 
