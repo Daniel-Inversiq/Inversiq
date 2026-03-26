@@ -176,12 +176,20 @@ def aggregate_predictions(preds: list[VisionPhotoPrediction]) -> LeadVisionAggre
     if uncertainty_score > 0.7:
         review_reasons.add("high_uncertainty")
 
+    # Signals that may be informative for pricing context, but should not by
+    # themselves force manual review routing.
+    NON_BLOCKING_REVIEW_REASONS = {
+        "surface_preparation_required",
+    }
     surface_prep_present = "surface_preparation_required" in review_reasons
+    blocking_review_reasons = {
+        r for r in review_reasons if r not in NON_BLOCKING_REVIEW_REASONS
+    }
     needs_review = (
         usable_count == 0
         or coverage_score < 0.2
         or uncertainty_score > 0.7
-        or "surface_preparation_required" in review_reasons
+        or bool(blocking_review_reasons)
     )
 
     logger.debug(

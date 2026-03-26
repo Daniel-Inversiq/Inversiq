@@ -21,6 +21,7 @@ from app.services.photo_quality.inference import predict_photo_quality
 from app.services.tenant_pricing import apply_paintly_tenant_pricing_overrides
 from app.services.storage import get_storage
 from app.tasks.vision_task import run_vision_for_lead
+from app.verticals.paintly.render_estimate import render_estimate_html
 from app.verticals.paintly.pricing_engine_us import (
     run_pricing_engine,
     load_rules_default,
@@ -31,6 +32,26 @@ from app.verticals.paintly.vision_aggregate_us import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Review reason codes that may appear in merged output but must not alone force
+# NEEDS_REVIEW when pricing/totals are otherwise valid (priced output path).
+NON_BLOCKING_REVIEW_REASONS = frozenset(
+    {
+        "surface_preparation_required",
+        "few_images_low_confidence",
+        "low_overall_confidence",
+        "wall_repair_or_wallpaper_likely",
+    }
+)
+
+
+def _reason_is_non_blocking(r: object) -> bool:
+    s = str(r or "").strip()
+    if s in NON_BLOCKING_REVIEW_REASONS:
+        return True
+    if s.startswith("vision:") and s[7:].strip() in NON_BLOCKING_REVIEW_REASONS:
+        return True
+    return False
 
 
 def _ensure_obj(x: Any) -> Any:
@@ -301,6 +322,7 @@ def step_aggregate_v1(
     # drive the final review routing.
     raw_aggregate_needs_review = None
     raw_aggregate_review_reasons = None
+    raw_file_skip_reasons = None
     if isinstance(vision_raw, dict):
         lead_aggregate = (
             vision_raw.get("lead_aggregate")
@@ -316,12 +338,14 @@ def step_aggregate_v1(
         raw_aggregate_review_reasons = vision_raw.get("review_reasons", None)
         if raw_aggregate_review_reasons is None and isinstance(lead_aggregate, dict):
             raw_aggregate_review_reasons = lead_aggregate.get("review_reasons", None)
+        raw_file_skip_reasons = vision_raw.get("file_skip_reasons", None)
 
         logger.info(
-            "RAW_VISION_AGGREGATE lead_id=%s needs_review=%r review_reasons=%r",
+            "RAW_VISION_AGGREGATE lead_id=%s needs_review=%r review_reasons=%r file_skip_reasons=%r",
             getattr(lead, "id", None),
             raw_aggregate_needs_review,
             raw_aggregate_review_reasons,
+            raw_file_skip_reasons,
         )
 
         # Unwrap to the list expected by paintly aggregate_vision.
@@ -389,6 +413,28 @@ def step_aggregate_v1(
             existing = [str(x) for x in existing if x is not None]
 
             vision["review_reasons"] = list(dict.fromkeys(existing + rr))
+
+        # Ingest hard-signal bridge:
+        # if upload/source resolution shows MIME/content-type uncertainty,
+        # surface one explicit reason for final review decisioning.
+        skip_reasons = raw_file_skip_reasons
+        if not isinstance(skip_reasons, list):
+            skip_reasons = [skip_reasons] if skip_reasons is not None else []
+        skip_reasons_txt = [str(x).lower() for x in skip_reasons if x is not None]
+        upload_mime_unverified = any(
+            ("non_image_mime" in txt)
+            or ("bad_content_type" in txt)
+            for txt in skip_reasons_txt
+        )
+        if upload_mime_unverified:
+            existing = vision.get("review_reasons") or []
+            if not isinstance(existing, list):
+                existing = [existing]
+            existing = [str(x) for x in existing if x is not None]
+            vision["review_reasons"] = list(
+                dict.fromkeys(existing + ["upload_mime_unverified"])
+            )
+            vision["needs_review"] = True
 
     return StepResult(status="OK", data={"vision": vision})
 
@@ -783,34 +829,17 @@ def step_render_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
         "included": True,
     }
 
-    needs_review_ctx = {
-        "intro": "We detected uncertainty in the photos. Pricing is shown as TBD until a quick review.",
-        "range_explanation": "A reviewer will confirm surfaces, prep level, and access. You’ll receive a finalized price shortly.",
-        "reasons": reasons,
-    }
-
-    ctx = {
-        "company": _default_company(),
-        "copy": _default_copy(),
-        "project": project,
-        "customer": customer,
-        "lead": lead,
-        "pricing": pricing,
-        "pricing_ready": pricing_ready,
-        "pricing_is_estimate": bool(is_provisional),
-        "needs_review": needs_review_ctx,
-        "needs_review_flag": needs_review_flag,
-        "review_reasons": reasons,
-        "scope_bullets": _default_scope_bullets(),
-        "exclusions": _default_exclusions(),
-        "show_tax": False,
-        "vat": vat,
-        "vat_rate": float(vat_rate_dec),
-        "subject_to_verification_copy": "Final price may adjust after on-site verification.",
-        "validity_copy": "This estimate is valid for 30 days.",
-    }
-
-    html = template.render(**ctx)
+    if str(template_path).endswith("estimate.html"):
+        html = render_estimate_html(pricing)
+        logger.info(
+            "RENDER_HTML_STEP_SOURCE lead_id=%s source=render_estimate_html canonical=True",
+            getattr(lead, "id", None),
+        )
+    else:
+        return StepResult(
+            status="FAILED",
+            error=f"unsupported_render_template:{template_path}",
+        )
     return StepResult(status="OK", data={"estimate_html": html})
 
 
@@ -838,6 +867,11 @@ def step_store_html_v1(
     filename = f"estimate_{lead.id}_{uuid.uuid4().hex}.html"
     html_key = f"leads/{lead.id}/estimates/{today}/{filename}"
     print("STORE_HTML_V1:", html_key)
+    logger.info(
+        "STORE_HTML_CONTEXT lead_id=%s html_length=%s",
+        getattr(lead, "id", None),
+        len(html),
+    )
 
     storage.save_bytes(
         tenant_id=str(getattr(lead, "tenant_id", "")),
@@ -854,6 +888,8 @@ def _decide_paintly_needs_review(
     aggregate_needs_review,
     aggregate_reasons,
     pricing_reasons,
+    photo_confidence=None,
+    lead_id=None,
 ):
     """
     Central helper for Paintly NEEDS_REVIEW logic.
@@ -869,6 +905,10 @@ def _decide_paintly_needs_review(
     merged_reasons = list(
         dict.fromkeys(prior_reasons + aggregate_reasons + pricing_reasons)
     )
+
+    blocking_review_reasons = [
+        r for r in merged_reasons if not _reason_is_non_blocking(r)
+    ]
 
     # Hard blockers coming from pricing/engine-level validation
     PRICING_BLOCKERS = {
@@ -900,6 +940,8 @@ def _decide_paintly_needs_review(
         "no_wall_detected",
         "no_wall_surfaces",
         "no_surfaces",
+        # Upload/content-type uncertainty in image ingest pipeline
+        "upload_mime_unverified",
     }
 
     # Hard blockers coming from structural wall condition / heavy prep signals
@@ -911,10 +953,6 @@ def _decide_paintly_needs_review(
         "peeling_wallcovering_detected",
         "repair_work_required",
         "surface_damage_detected",
-        # Provider/aggregate prep trigger must remain a hard blocker.
-        "surface_preparation_required",
-        # keep prefixed variant consistent with needs_review_from_output
-        "vision:surface_preparation_required",
     }
 
     # Hard blockers coming from photo quality (true absence of photos)
@@ -932,18 +970,9 @@ def _decide_paintly_needs_review(
         ("surface_preparation_required" in merged_reasons)
         or ("vision:surface_preparation_required" in merged_reasons)
     )
-    LOW_RELIABILITY_REASONS = {
-        "high_uncertainty",
-        "no_usable_photos",
-        "low_coverage_score",
-        "photo_validation_low_confidence",
-        "photo_quality_score_low",
-        "photo_not_relevant",
-        "no_readable_photos",
-        "no_photos",
-    }
-    low_reliability_present = any(r in LOW_RELIABILITY_REASONS for r in merged_reasons)
-    surface_prep_hard_blocker = bool(surface_prep_present and low_reliability_present)
+    low_photo_confidence_present = (
+        photo_confidence is not None and float(photo_confidence) < 0.55
+    )
 
     # Minimal decision-layer expansion:
     # Some providers/aggregators surface structural damage/prep as free-text or
@@ -956,31 +985,50 @@ def _decide_paintly_needs_review(
         "flaking paint",
         "exposed substrate",
         "substrate exposed",
-        "preparation required",
-        "surface preparation required",
         "repair required",
     )
     structural_text_reasons = []
-    for r in merged_reasons:
+    for r in blocking_review_reasons:
         txt = str(r or "").strip().lower()
         if txt and any(k in txt for k in structural_keywords):
             structural_text_reasons.append(str(r))
     structural_text_hard_blocker = bool(structural_text_reasons)
 
-    hard_reason_present = any(
+    base_hard_reason_present = any(
         (r in HARD_ESTIMATE_REASONS)
         or (r in HARD_AGGREGATE_REASONS)
         or (r in HARD_PHOTO_REASONS)
         or (r in HARD_STRUCTURAL_REASONS)
-        for r in merged_reasons
-    ) or surface_prep_hard_blocker or structural_text_hard_blocker
+        for r in blocking_review_reasons
+    ) or structural_text_hard_blocker
+
+    heavy_prep_present = any(
+        r in {
+            "substrate_visible",
+            "peeling_wallcovering_detected",
+            "repair_work_required",
+            "surface_damage_detected",
+        }
+        for r in blocking_review_reasons
+    )
+    severe_photo_quality_present = bool(
+        pq_bad
+        or any(
+            r in {"no_usable_photos", "no_readable_photos", "no_photos", "photo_not_relevant"}
+            for r in blocking_review_reasons
+        )
+    )
+    # surface_preparation_required / vision:… are NON_BLOCKING; do not escalate
+    # via the old prep+confidence gate for priced-output policy.
+    surface_prep_hard_blocker = False
+    hard_reason_present = bool(base_hard_reason_present or surface_prep_hard_blocker)
 
     triggered_rules: list[str] = []
     if pricing_blocked:
         triggered_rules.append("pricing_blocked")
 
-    # Exact hard reason codes that triggered the decision.
-    for r in merged_reasons:
+    # Exact hard reason codes that triggered the decision (blocking only).
+    for r in blocking_review_reasons:
         if (
             (r in HARD_ESTIMATE_REASONS)
             or (r in HARD_AGGREGATE_REASONS)
@@ -989,16 +1037,18 @@ def _decide_paintly_needs_review(
         ):
             triggered_rules.append(r)
     if surface_prep_hard_blocker:
-        triggered_rules.append("surface_preparation_required_with_low_reliability")
+        triggered_rules.append("surface_preparation_required_gated")
     if structural_text_hard_blocker:
         triggered_rules.append("structural_text_reason_detected")
         triggered_rules.extend(structural_text_reasons)
 
     # Keep aggregate_needs_review coupled to explicit prep blockers so the
     # final decision cannot silently fall back to SUCCEEDED for this case.
-    aggregate_surface_prep_blocker = bool(aggregate_needs_review and surface_prep_present)
-    if aggregate_surface_prep_blocker and "surface_preparation_required" not in triggered_rules:
-        triggered_rules.append("surface_preparation_required")
+    aggregate_surface_prep_blocker = bool(
+        aggregate_needs_review and surface_prep_present and surface_prep_hard_blocker
+    )
+    if aggregate_surface_prep_blocker and "surface_preparation_required_gated" not in triggered_rules:
+        triggered_rules.append("surface_preparation_required_gated")
 
     # Final decision:
     # - pricing_blocked is always a hard blocker
@@ -1009,6 +1059,15 @@ def _decide_paintly_needs_review(
         pricing_blocked
         or hard_reason_present
         or aggregate_surface_prep_blocker
+    )
+
+    logger.info(
+        "REVIEW_BLOCKING_FILTER lead_id=%s merged_reasons=%s "
+        "blocking_review_reasons=%s final_needs_review=%s",
+        lead_id,
+        merged_reasons,
+        blocking_review_reasons,
+        needs_review,
     )
 
     return needs_review, merged_reasons, pricing_blocked, triggered_rules
@@ -1141,6 +1200,8 @@ def step_needs_review_v1(
         aggregate_needs_review=aggregate_needs_review,
         aggregate_reasons=aggregate_reasons,
         pricing_reasons=reasons,
+        photo_confidence=photo_confidence,
+        lead_id=lead_id,
     )
 
     if isinstance(estimate, dict):

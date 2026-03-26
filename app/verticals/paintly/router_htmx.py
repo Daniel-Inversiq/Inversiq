@@ -147,6 +147,17 @@ def _quote_ui_for_lead(lead: Lead) -> dict[str, Any]:
     can_edit = has_quote_output and raw_status != "ACCEPTED"
     can_regenerate = has_quote_output and raw_status != "ACCEPTED"
 
+    total_price_value = (
+        getattr(lead, "final_price", None)
+        or getattr(lead, "total_amount_display", None)
+    )
+    needs_review = bool(raw_status == "NEEDS_REVIEW")
+    has_total_price = bool(total_price_value)
+    price_mode = "priced" if (has_total_price and not needs_review) else "tbd"
+    pricing_ready = bool((raw_status == "SUCCEEDED") and (not needs_review) and has_total_price)
+    is_provisional = False
+    show_prices = bool(pricing_ready and price_mode == "priced")
+
     return {
         "has_estimate": has_estimate_html,
         "has_quote_output": has_quote_output,
@@ -159,6 +170,13 @@ def _quote_ui_for_lead(lead: Lead) -> dict[str, Any]:
         "can_copy_link": False,
         "can_download_pdf": False,
         "public_quote_url": None,
+        "needs_review": needs_review,
+        "lead_status": raw_status,
+        "total_price": total_price_value,
+        "price_mode": price_mode,
+        "pricing_ready": pricing_ready,
+        "is_provisional": is_provisional,
+        "show_prices": show_prices,
     }
 
 

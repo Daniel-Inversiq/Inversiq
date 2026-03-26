@@ -1367,6 +1367,18 @@ def app_lead_detail(
     # PDF: same inputs as export-pdf route (HTML and/or JSON), any lifecycle stage
     can_download_pdf = has_estimate_html or has_estimate_json
 
+    total_price_value = (
+        effective_total_display
+        or getattr(lead, "final_price", None)
+        or getattr(lead, "total_amount_display", None)
+    )
+    needs_review = bool(raw_status == "NEEDS_REVIEW")
+    has_total_price = bool(total_price_value)
+    price_mode = "priced" if (has_total_price and not needs_review) else "tbd"
+    pricing_ready = bool((raw_status == "SUCCEEDED") and (not needs_review) and has_total_price)
+    is_provisional = False
+    show_prices = bool(pricing_ready and price_mode == "priced")
+
     quote_ui = {
         "has_estimate": has_estimate_html,
         "has_quote_output": has_quote_output,
@@ -1379,20 +1391,27 @@ def app_lead_detail(
         "can_copy_link": can_copy_link,
         "can_download_pdf": can_download_pdf,
         "public_quote_url": public_quote_url,
+        "needs_review": needs_review,
+        "lead_status": raw_status,
+        "total_price": total_price_value,
+        "price_mode": price_mode,
+        "pricing_ready": pricing_ready,
+        "is_provisional": is_provisional,
+        "show_prices": show_prices,
     }
     logger.info(
         "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
         getattr(lead, "id", None),
-        bool(raw_status == "NEEDS_REVIEW"),
+        needs_review,
         raw_status,
         quote_status,
-        effective_total_display or getattr(lead, "final_price", None),
-        "priced" if bool(effective_total_display or getattr(lead, "final_price", None)) else "tbd",
+        total_price_value,
+        price_mode,
         "app/lead_detail.html",
         bool(quote_status == "review"),
-        None,
-        None,
-        None,
+        show_prices,
+        pricing_ready,
+        is_provisional,
         None,
     )
 
@@ -1425,6 +1444,13 @@ def app_lead_detail(
             "job": job,
             "intake_payload_dict": intake_payload_dict,
             "quote_ui": quote_ui,
+            "show_prices": show_prices,
+            "pricing_ready": pricing_ready,
+            "is_provisional": is_provisional,
+            "price_mode": price_mode,
+            "needs_review": needs_review,
+            "total_price": total_price_value,
+            "lead_status": raw_status,
             "photo_previews": photo_previews,
             "tz_name": tz_name,
             "scheduled_input_value": scheduled_input_value,

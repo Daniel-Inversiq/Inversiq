@@ -17,6 +17,11 @@
   {% set square_meters = payload.get('square_meters') or payload.get('sqm') or '' %}
   {% set job_type = payload.get('job_type') or '' %}
   {% set st = (lead.status or '').upper() %}
+  {% set q = quote_ui or {} %}
+  {% set ctx_total_price = total_price if total_price is defined and total_price else q.total_price %}
+  {% set ctx_needs_review = needs_review if needs_review is defined else (q.needs_review if q.needs_review is defined else (st == 'NEEDS_REVIEW')) %}
+  {% set ctx_price_mode = (price_mode if price_mode is defined and price_mode else (q.price_mode if q.price_mode is defined and q.price_mode else ('priced' if ctx_total_price and not ctx_needs_review else 'tbd'))) | lower %}
+  {% set ctx_show_prices = show_prices if show_prices is defined else (q.show_prices if q.show_prices is defined else ((not ctx_needs_review) and (st == 'SUCCEEDED') and (ctx_price_mode == 'priced') and ctx_total_price)) %}
   {% set status_labels = {
     'ACCEPTED': 'Geaccepteerd',
     'DONE': 'Afgerond',
@@ -66,16 +71,21 @@
             <span>{{ header_work_summary }}</span>
           </div>
           <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums sm:text-4xl">
-            {% if effective_total_display %}
+            {% if ctx_show_prices and effective_total_display %}
               {{ effective_total_display }}
-            {% elif lead.final_price is not none %}
+            {% elif ctx_show_prices and lead.final_price is not none %}
               € {{ "%.2f"|format(lead.final_price) }}
-            {% elif lead.total_amount_display %}
+            {% elif ctx_show_prices and lead.total_amount_display %}
               {{ lead.total_amount_display }}
             {% else %}
-              —
+              Prijs: nader te bepalen
             {% endif %}
           </div>
+          {% if not ctx_show_prices %}
+            <div class="mt-1 text-sm text-slate-500">
+              Wordt nog gecontroleerd voor definitieve prijs
+            </div>
+          {% endif %}
         </div>
         <div class="flex flex-shrink-0 flex-wrap items-center gap-2">
         {% if quote_ui and quote_ui.can_view %}

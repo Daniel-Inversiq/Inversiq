@@ -109,7 +109,10 @@ def render_estimate_html_v2(
     meta = pricing.get("meta") if isinstance(pricing.get("meta"), dict) else {}
 
     # NEW canonical fields (from pricing_engine patch)
-    needs_review_flag = bool(pricing.get("needs_review", False))
+    needs_review_raw = pricing.get("needs_review", None)
+    if needs_review_raw is None:
+        needs_review_raw = meta.get("needs_review", False)
+    needs_review_flag = bool(needs_review_raw)
 
     review_reasons = pricing.get("review_reasons")
     if review_reasons is None:
@@ -124,16 +127,6 @@ def render_estimate_html_v2(
 
     # ensure list[str]
     review_reasons = [str(x) for x in review_reasons if x is not None]
-
-    # Minimal output mapping fix:
-    # - SUCCEEDED path (needs_review=False) should show normal pricing even when
-    #   soft/informational review reasons are present.
-    # - NEEDS_REVIEW path (needs_review=True) should not show a definitive price.
-    pricing_ready = not needs_review_flag
-    is_provisional = ("provisional_total" in review_reasons) or (
-        "missing_total" in review_reasons
-    )
-    show_prices = bool(pricing_ready or is_provisional)
 
     # scope + exclusions blocks
     scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
@@ -179,8 +172,12 @@ def render_estimate_html_v2(
         # Reverse-calc VAT components from override_total
         vat_rate = _pick_vat_rate(pricing)
         one_plus = Decimal("1") + vat_rate
-        subtotal_excl = (override_total / one_plus).quantize(MONEY_Q, rounding=ROUND_HALF_UP)
-        vat_amount = (override_total - subtotal_excl).quantize(MONEY_Q, rounding=ROUND_HALF_UP)
+        subtotal_excl = (override_total / one_plus).quantize(
+            MONEY_Q, rounding=ROUND_HALF_UP
+        )
+        vat_amount = (override_total - subtotal_excl).quantize(
+            MONEY_Q, rounding=ROUND_HALF_UP
+        )
         vat = {
             "subtotal_excl_vat": float(subtotal_excl),
             "vat_rate": float(vat_rate),
@@ -190,12 +187,40 @@ def render_estimate_html_v2(
     else:
         vat = _calc_vat(pricing)
 
-    total_price = (
-        vat.get("total_incl_vat")
-        if isinstance(vat, dict)
-        else None
-    )
-    price_mode = "priced" if show_prices else "tbd"
+    total_price = vat.get("total_incl_vat") if isinstance(vat, dict) else None
+    lead_status = str(
+        (
+            ((lead or {}).get("status") if isinstance(lead, dict) else None)
+            or pricing.get("lead_status")
+            or meta.get("lead_status")
+            or ""
+        )
+    ).upper()
+    has_final_total = bool(total_price is not None and float(total_price) > 0)
+    price_mode = str(
+        pricing.get("price_mode")
+        or (meta.get("price_mode") if isinstance(meta, dict) else None)
+        or ("priced" if (has_final_total and not needs_review_flag) else "tbd")
+    ).lower()
+    NON_BLOCKING_RENDER_REASONS = {"surface_preparation_required"}
+    blocking_review_reasons = [
+        r for r in review_reasons if r not in NON_BLOCKING_RENDER_REASONS
+    ]
+    # Render guard: when a definitive total exists and only non-blocking prep
+    # reasons remain, force priced/SUCCEEDED presentation.
+    if has_final_total and (not blocking_review_reasons):
+        if not lead_status:
+            lead_status = "SUCCEEDED"
+        if price_mode != "priced":
+            price_mode = "priced"
+    if lead_status == "SUCCEEDED" and price_mode == "priced" and has_final_total:
+        needs_review_flag = False
+
+    # Final template-facing toggles (derived after all normalizations above).
+    pricing_ready = not needs_review_flag
+    is_provisional = needs_review_flag
+
+    show_prices = not needs_review_flag
 
     # Debug: log final pricing/meta/vat snapshot before templating
     try:
@@ -213,17 +238,9 @@ def render_estimate_html_v2(
             )
             paintly_logger.info(
                 "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
-                (
-                    (lead or {}).get("id")
-                    if isinstance(lead, dict)
-                    else None
-                ),
+                ((lead or {}).get("id") if isinstance(lead, dict) else None),
                 needs_review_flag,
-                (
-                    (lead or {}).get("status")
-                    if isinstance(lead, dict)
-                    else None
-                ),
+                ((lead or {}).get("status") if isinstance(lead, dict) else None),
                 "render_estimate_html_v2",
                 total_price,
                 price_mode,
@@ -232,6 +249,16 @@ def render_estimate_html_v2(
                 show_prices,
                 pricing_ready,
                 is_provisional,
+                review_reasons,
+            )
+            paintly_logger.info(
+                "WEB_ESTIMATE_RENDER_CONTEXT lead_id=%s needs_review_flag=%s show_prices=%s lead_status=%s price_mode=%s total_price=%r review_reasons=%r",
+                ((lead or {}).get("id") if isinstance(lead, dict) else None),
+                needs_review_flag,
+                show_prices,
+                lead_status,
+                price_mode,
+                total_price,
                 review_reasons,
             )
         except Exception:
@@ -245,7 +272,6 @@ def render_estimate_html_v2(
         pricing_labor=pricing_labor,
         pricing_materials=pricing_materials,
         copy=PAINTLY_ESTIMATE_COPY,
-        needs_review=PAINTLY_NEEDS_REVIEW_COPY,
         scope_bullets=scope_bullets,
         exclusions=exclusions,
         project=project,
@@ -255,8 +281,13 @@ def render_estimate_html_v2(
         token=token,
         needs_review_flag=needs_review_flag,
         review_reasons=review_reasons,
+        lead_status=lead_status,
+        price_mode=price_mode,
+        total_price=total_price,
         decision_vars=decision_vars or {},
         assumptions_ctx=assumptions_ctx,
+        show_prices=show_prices,
+        is_provisional=is_provisional,
     )
 
     # Guard: avoid serving unrendered template content
@@ -409,6 +440,10 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
     else:
         vat = _calc_vat(pdf_pricing)
 
+    pricing_ready = not needs_review_flag
+    is_provisional = needs_review_flag
+    show_prices = not needs_review_flag
+
     tmpl = _jinja_env().get_template("estimate_pdf.html")
     html = tmpl.render(
         pricing_ready=pricing_ready,
@@ -429,6 +464,8 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
         review_reasons=review_reasons,
         decision_vars=decision_vars or {},
         assumptions_ctx=assumptions_ctx,
+        show_prices=show_prices,
+        is_provisional=is_provisional,
     )
 
     if "{{" in html or "{%" in html:

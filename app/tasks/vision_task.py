@@ -812,6 +812,7 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
             "image_predictions": image_predictions,
             "photo_predictions": [p.model_dump() for p in photo_predictions],
             "photo_inputs": photo_inputs,
+            "file_skip_reasons": list(file_skip_reasons or [])[:25],
             "lead_aggregate": lead_aggregate.model_dump(),
             "needs_review": bool(lead_aggregate.needs_review),
             "review_reasons": list(lead_aggregate.review_reasons),
