@@ -338,6 +338,20 @@ def quote_status_json(request: Request, lead_id: str, db: Session = Depends(get_
 # PUBLISH (sync compute)
 # =========================
 @router.post("/publish/{lead_id}")
+def publish_quote_route(
+    request: Request,
+    lead_id: str,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    return publish_quote(
+        lead_id=lead_id,
+        background=background,
+        db=db,
+        request=request,
+    )
+
+
 def publish_quote(
     lead_id: str,
     background: BackgroundTasks,
