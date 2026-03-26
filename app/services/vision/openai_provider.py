@@ -864,10 +864,38 @@ def normalize_vision_output(
         d.type == "peeling_paint" and float(d.confidence or 0.0) >= 0.55
         for d in damages
     )
-    if peeling_damage_detected:
+    summary_wallpaper_damage = False
+    summary_repair_damage = False
+    summary_substrate_exposed = False
+    if summary_used:
+        summary_wallpaper_damage = any(
+            kw in summary_lc
+            for kw in (
+                "peeling wallpaper",
+                "torn wallpaper",
+                "loose wallpaper",
+                "peeling wallcovering",
+                "wallpaper removal",
+            )
+        )
+        summary_substrate_exposed = any(
+            kw in summary_lc
+            for kw in (
+                "exposed underlying surface",
+                "exposed substrate",
+                "underlying surface",
+                "bare wall",
+                "exposed plaster",
+            )
+        )
+        summary_repair_damage = ("repair" in summary_lc) and any(
+            ctx in summary_lc for ctx in ("wall", "wallpaper", "surface", "substrate")
+        )
+
+    if peeling_damage_detected or summary_wallpaper_damage or summary_repair_damage:
         review_flags.add("surface_damage_detected")
         review_flags.add("repair_work_required")
-        if has_unfinished_exposed_hint:
+        if has_unfinished_exposed_hint or summary_substrate_exposed:
             review_flags.add("substrate_visible")
 
     if photo_usability_score < 0.5:
