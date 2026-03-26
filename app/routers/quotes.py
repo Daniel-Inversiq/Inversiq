@@ -250,6 +250,41 @@ def _set_failed(db: Session, lead: Lead, msg: str, http_status: int = 400):
     raise HTTPException(status_code=http_status, detail=msg)
 
 
+def _is_public_publish_flow(request: Request | None) -> bool:
+    """
+    Determine whether publish redirect should target public routes.
+    """
+    # Internal/background calls (intake/processing autostart) are public-first.
+    if request is None:
+        return True
+
+    path = (request.url.path or "").lower()
+    if path.startswith("/app"):
+        return False
+    if "/processing/" in path or "/intake" in path:
+        return True
+
+    referer = (request.headers.get("referer") or "").lower()
+    if "/app" in referer:
+        return False
+    if "/intake" in referer or "/processing/" in referer:
+        return True
+
+    # Safe default for direct HTTP calls: keep dashboard behavior.
+    return False
+
+
+def _publish_redirect_target(lead_id: str, status: str, is_public_flow: bool) -> str:
+    is_review = status == "NEEDS_REVIEW"
+    if is_public_flow:
+        return (
+            f"/thank-you?lead_id={lead_id}&review=1"
+            if is_review
+            else f"/offerte/{lead_id}"
+        )
+    return f"/app/reviews/{lead_id}" if is_review else f"/app/leads/{lead_id}/estimate"
+
+
 # =========================
 # FASE 2 — UX endpoints
 # =========================
@@ -263,14 +298,19 @@ def quote_status_page(request: Request, lead_id: str, db: Session = Depends(get_
 
 
 @router.get("/{lead_id}/status.json")
-def quote_status_json(lead_id: str, db: Session = Depends(get_db)):
+def quote_status_json(request: Request, lead_id: str, db: Session = Depends(get_db)):
     lead = _load_lead(db, lead_id)
 
     # ✅ server-side autostart: als NEW, start publish
     if lead.status == "NEW":
         logger.info("STATUS_JSON autostart publish lead=%s", lead.id)
         try:
-            publish_quote(lead_id=lead.id, background=BackgroundTasks(), db=db)
+            publish_quote(
+                lead_id=lead.id,
+                background=BackgroundTasks(),
+                db=db,
+                request=request,
+            )
             # publish_quote commits; reload fresh state for response
             lead = _load_lead(db, lead_id)
         except Exception as e:
@@ -302,8 +342,10 @@ def publish_quote(
     lead_id: str,
     background: BackgroundTasks,
     db: Session = Depends(get_db),
+    request: Request | None = None,
 ):
     lead = _load_lead(db, lead_id)
+    is_public_flow = _is_public_publish_flow(request)
     logger.info("PUBLISH_FLOW_START lead=%s", lead.id)
 
     inc("publish_requests_total")
@@ -312,8 +354,10 @@ def publish_quote(
     # Idempotent: al klaar -> direct naar lead detail offerteview
     if lead.status in ("SUCCEEDED", "NEEDS_REVIEW"):
         inc("publish_idempotent_total")
-        redirect_target = (
-            f"/app/reviews/{lead.id}" if lead.status == "NEEDS_REVIEW" else f"/app/leads/{lead.id}/estimate"
+        redirect_target = _publish_redirect_target(
+            lead_id=str(lead.id),
+            status=str(lead.status),
+            is_public_flow=is_public_flow,
         )
         logger.info(
             "INTAKE_REVIEW_DECISION lead_id=%s idempotent_status=%s redirect_target=%r",
@@ -329,10 +373,15 @@ def publish_quote(
     # Als al bezig -> direct naar lead detail offerteview
     if lead.status == "RUNNING":
         inc("publish_already_running_total")
-        return RedirectResponse(
-            url=f"/app/leads/{lead.id}/estimate",
-            status_code=303,
-        )
+    redirect_target = _publish_redirect_target(
+        lead_id=str(lead.id),
+        status="SUCCEEDED",
+        is_public_flow=is_public_flow,
+    )
+    return RedirectResponse(
+        url=redirect_target,
+        status_code=303,
+    )
 
     files = db.query(LeadFile).filter(LeadFile.lead_id == lead.id).all()
     if not files:
@@ -441,8 +490,10 @@ def publish_quote(
                 "publish_quote",
             )
 
-        redirect_target = (
-            f"/app/reviews/{lead.id}" if new_status == "NEEDS_REVIEW" else f"/app/leads/{lead.id}/estimate"
+        redirect_target = _publish_redirect_target(
+            lead_id=str(lead.id),
+            status=new_status,
+            is_public_flow=is_public_flow,
         )
         logger.info(
             "INTAKE_REVIEW_DECISION lead_id=%s final_needs_review=%s persisted_status=%s redirect_target=%r",
