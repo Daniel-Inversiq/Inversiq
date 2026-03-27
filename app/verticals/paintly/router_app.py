@@ -398,6 +398,256 @@ def _fmt_eur(amount: Decimal | None) -> str | None:
     return f"€ {s}"
 
 
+def _safe_float(val: object) -> float | None:
+    if val is None:
+        return None
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_lines_to_list(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    out: list[str] = []
+    for line in str(raw).splitlines():
+        cleaned = line.strip()
+        if cleaned:
+            out.append(cleaned)
+    return out
+
+
+def _normalize_line_item(raw_item: dict, index: int) -> dict | None:
+    if not isinstance(raw_item, dict):
+        return None
+
+    label = str(raw_item.get("label") or "").strip()
+    description = str(raw_item.get("description") or "").strip()
+    quantity = _safe_float(raw_item.get("quantity"))
+    unit = str(raw_item.get("unit") or "job").strip() or "job"
+    unit_price = _safe_float(raw_item.get("unit_price"))
+    total_raw = _safe_float(raw_item.get("total"))
+
+    if quantity is None or quantity <= 0:
+        quantity = 1.0
+    if unit_price is None or unit_price < 0:
+        unit_price = 0.0
+
+    computed_total = round(float(quantity) * float(unit_price), 2)
+    total = round(total_raw, 2) if total_raw is not None and total_raw >= 0 else computed_total
+
+    if not label and not description and unit_price == 0.0 and total == 0.0:
+        return None
+
+    item_code = str(raw_item.get("code") or f"item_{index + 1}").strip() or f"item_{index + 1}"
+    category = str(raw_item.get("category") or "labor").strip() or "labor"
+    if category not in {"labor", "materials", "other"}:
+        category = "labor"
+
+    normalized = {
+        "code": item_code,
+        "label": label or f"Regel {index + 1}",
+        "description": description or None,
+        "quantity": float(quantity),
+        "unit": unit,
+        "unit_price": float(round(unit_price, 2)),
+        "total": float(total),
+        "category": category,
+    }
+    return normalized
+
+
+def _parse_line_items_json(raw_line_items: str | None) -> list[dict]:
+    if not raw_line_items:
+        return []
+    try:
+        data = json.loads(raw_line_items)
+    except Exception:
+        return []
+    if not isinstance(data, list):
+        return []
+
+    items: list[dict] = []
+    for idx, item in enumerate(data):
+        normalized = _normalize_line_item(item, idx)
+        if normalized:
+            items.append(normalized)
+    return items
+
+
+def _estimate_editor_initial_values(lead: Lead, overrides: dict) -> dict:
+    estimate: dict = {}
+    raw_est = getattr(lead, "estimate_json", None)
+    if isinstance(raw_est, str) and raw_est.strip():
+        try:
+            parsed = json.loads(raw_est)
+            if isinstance(parsed, dict):
+                estimate = parsed
+        except Exception:
+            estimate = {}
+
+    meta = estimate.get("meta") if isinstance(estimate.get("meta"), dict) else {}
+    customer = estimate.get("customer") if isinstance(estimate.get("customer"), dict) else {}
+    company = estimate.get("company") if isinstance(estimate.get("company"), dict) else {}
+    totals = estimate.get("totals") if isinstance(estimate.get("totals"), dict) else {}
+    subtotals = estimate.get("subtotals") if isinstance(estimate.get("subtotals"), dict) else {}
+
+    line_items = estimate.get("line_items") if isinstance(estimate.get("line_items"), list) else []
+    normalized_items: list[dict] = []
+    for idx, item in enumerate(line_items):
+        normalized = _normalize_line_item(item if isinstance(item, dict) else {}, idx)
+        if normalized:
+            normalized_items.append(normalized)
+
+    return {
+        "customer_name": (customer.get("name") or getattr(lead, "name", "") or "").strip(),
+        "customer_email": (customer.get("email") or getattr(lead, "email", "") or "").strip(),
+        "customer_phone": (customer.get("phone") or getattr(lead, "phone", "") or "").strip(),
+        "project_location": (estimate.get("location") or customer.get("location") or customer.get("address") or estimate.get("address") or meta.get("address") or "").strip(),
+        "company_name": (company.get("company_name") or company.get("name") or estimate.get("branding_company_name") or "Paintly").strip(),
+        "company_email": (company.get("email") or "").strip(),
+        "company_phone": (company.get("phone") or "").strip(),
+        "reference": (meta.get("reference") or meta.get("estimate_id") or "").strip(),
+        "quote_date": (meta.get("date") or "").strip(),
+        "valid_until": (meta.get("valid_until") or "").strip(),
+        "title": (meta.get("title") or "Offerte schilderwerk").strip(),
+        "subtitle": (meta.get("subtitle") or meta.get("intro") or "").strip(),
+        "discount_percent": overrides.get("discount_percent"),
+        "manual_total": overrides.get("manual_total"),
+        "subtotal_excl": _safe_float(totals.get("pre_tax")),
+        "vat_rate_percent": (_safe_float(estimate.get("vat_rate")) or _safe_float(estimate.get("tax_rate")) or 0.21) * 100.0,
+        "line_items": normalized_items,
+        "included_work": "\n".join(estimate.get("included_work") or meta.get("included_work") or []),
+        "excluded_notes": "\n".join(estimate.get("excluded_notes") or meta.get("excluded_notes") or []),
+        "public_notes": (estimate.get("public_notes") or overrides.get("public_notes") or "").strip(),
+        "labor_subtotal": _safe_float(subtotals.get("labor")) or 0.0,
+        "materials_subtotal": _safe_float(subtotals.get("materials")) or 0.0,
+    }
+
+
+def _apply_full_estimate_edit(
+    *,
+    lead: Lead,
+    estimate: dict,
+    editor_input: dict,
+    overrides: dict,
+) -> tuple[dict, dict, list[str]]:
+    changed_fields: list[str] = []
+    estimate = dict(estimate or {})
+    meta = estimate.get("meta") if isinstance(estimate.get("meta"), dict) else {}
+    customer = estimate.get("customer") if isinstance(estimate.get("customer"), dict) else {}
+    company = estimate.get("company") if isinstance(estimate.get("company"), dict) else {}
+
+    customer_name = str(editor_input.get("customer_name") or "").strip()
+    customer_email = str(editor_input.get("customer_email") or "").strip()
+    customer_phone = str(editor_input.get("customer_phone") or "").strip()
+    project_location = str(editor_input.get("project_location") or "").strip()
+
+    company_name = str(editor_input.get("company_name") or "").strip() or "Paintly"
+    company_email = str(editor_input.get("company_email") or "").strip()
+    company_phone = str(editor_input.get("company_phone") or "").strip()
+
+    reference = str(editor_input.get("reference") or "").strip()
+    quote_date = str(editor_input.get("quote_date") or "").strip()
+    valid_until = str(editor_input.get("valid_until") or "").strip()
+    title = str(editor_input.get("title") or "").strip() or "Offerte schilderwerk"
+    subtitle = str(editor_input.get("subtitle") or "").strip()
+
+    included_work = _parse_lines_to_list(editor_input.get("included_work"))
+    excluded_notes = _parse_lines_to_list(editor_input.get("excluded_notes"))
+    public_notes = str(editor_input.get("public_notes") or "").strip()
+    line_items = _parse_line_items_json(editor_input.get("line_items_json"))
+
+    discount_percent = _safe_float(editor_input.get("discount_percent"))
+    manual_total = _safe_float(editor_input.get("manual_total"))
+    subtotal_excl = _safe_float(editor_input.get("subtotal_excl"))
+    vat_rate_percent = _safe_float(editor_input.get("vat_rate_percent"))
+
+    if vat_rate_percent is None:
+        vat_rate_percent = 21.0
+    if vat_rate_percent < 0:
+        vat_rate_percent = 0.0
+    vat_rate = round(vat_rate_percent / 100.0, 4)
+
+    customer["name"] = customer_name
+    customer["email"] = customer_email
+    customer["phone"] = customer_phone
+    customer["address"] = project_location
+    customer["location"] = project_location
+    estimate["customer"] = customer
+    changed_fields.extend(["customer.name", "customer.email", "customer.phone", "customer.address"])
+
+    company["name"] = company_name
+    company["company_name"] = company_name
+    company["email"] = company_email
+    company["phone"] = company_phone
+    estimate["company"] = company
+    estimate["branding_company_name"] = company_name
+    changed_fields.extend(["company.name", "company.email", "company.phone"])
+
+    estimate["location"] = project_location
+    estimate["address"] = project_location
+    meta["address"] = project_location
+
+    if reference:
+        meta["reference"] = reference
+    if quote_date:
+        meta["date"] = quote_date
+    if valid_until:
+        meta["valid_until"] = valid_until
+    meta["title"] = title
+    meta["subtitle"] = subtitle
+    meta["intro"] = subtitle
+    changed_fields.extend(["meta.reference", "meta.date", "meta.valid_until", "meta.title", "meta.subtitle"])
+
+    estimate["line_items"] = line_items
+    changed_fields.append("line_items")
+
+    labor_subtotal = Decimal("0.00")
+    materials_subtotal = Decimal("0.00")
+    for item in line_items:
+        total_dec = Decimal(str(item.get("total") or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        cat = str(item.get("category") or "labor")
+        if cat == "materials":
+            materials_subtotal += total_dec
+        else:
+            labor_subtotal += total_dec
+
+    if subtotal_excl is None:
+        subtotal_excl_dec = (labor_subtotal + materials_subtotal).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    else:
+        subtotal_excl_dec = Decimal(str(subtotal_excl)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    totals = estimate.get("totals") if isinstance(estimate.get("totals"), dict) else {}
+    subtotals = estimate.get("subtotals") if isinstance(estimate.get("subtotals"), dict) else {}
+    totals["pre_tax"] = float(subtotal_excl_dec)
+    totals["grand_total"] = float(subtotal_excl_dec)
+    subtotals["labor"] = float(labor_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    subtotals["materials"] = float(materials_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    estimate["totals"] = totals
+    estimate["subtotals"] = subtotals
+    estimate["vat_rate"] = float(vat_rate)
+    estimate["tax_rate"] = float(vat_rate)
+    changed_fields.extend(["totals.pre_tax", "totals.grand_total", "subtotals.labor", "subtotals.materials", "vat_rate"])
+
+    estimate["included_work"] = included_work
+    estimate["excluded_notes"] = excluded_notes
+    estimate["public_notes"] = public_notes
+    meta["included_work"] = included_work
+    meta["excluded_notes"] = excluded_notes
+    meta["public_notes"] = public_notes
+    changed_fields.extend(["included_work", "excluded_notes", "public_notes"])
+
+    overrides["public_notes"] = public_notes
+    overrides["discount_percent"] = discount_percent if discount_percent is not None else None
+    overrides["manual_total"] = manual_total if manual_total is not None else None
+
+    estimate["meta"] = meta
+
+    return estimate, overrides, sorted(set(changed_fields))
+
+
 def _apply_overrides_to_estimate_dict(estimate: dict, overrides: dict) -> dict:
     """
     Build an override-aware copy of the pricing estimate dict.
@@ -502,7 +752,7 @@ def _apply_overrides_to_estimate_dict(estimate: dict, overrides: dict) -> dict:
     return pricing
 
 
-def render_quote_html_for_lead(lead: Lead, overrides: dict) -> tuple[str | None, bool]:
+def render_quote_html_for_lead(lead: Lead, estimate: dict, overrides: dict) -> tuple[str | None, bool]:
     """
     Helper used after saving manual overrides.
     Re-renders estimate HTML from lead.estimate_json + overrides,
@@ -510,22 +760,9 @@ def render_quote_html_for_lead(lead: Lead, overrides: dict) -> tuple[str | None,
     """
     from app.verticals.paintly.render_estimate import render_estimate_html
 
-    raw_est = getattr(lead, "estimate_json", None)
-    if not raw_est:
+    if not isinstance(estimate, dict) or not estimate:
         logger.warning(
-            "RENDER_QUOTE_HTML_FOR_LEAD_SKIPPED_NO_JSON lead_id=%s html_key=%r",
-            getattr(lead, "id", None),
-            getattr(lead, "estimate_html_key", None),
-        )
-        return None, False
-
-    try:
-        estimate_dict = json.loads(raw_est)
-        if not isinstance(estimate_dict, dict):
-            raise TypeError("estimate_json not a dict")
-    except Exception:
-        logger.exception(
-            "RENDER_QUOTE_HTML_FOR_LEAD_PARSE_FAILED lead_id=%s",
+            "RENDER_QUOTE_HTML_FOR_LEAD_SKIPPED_INVALID_ESTIMATE lead_id=%s",
             getattr(lead, "id", None),
         )
         return None, False
@@ -538,7 +775,7 @@ def render_quote_html_for_lead(lead: Lead, overrides: dict) -> tuple[str | None,
 
     # Apply overrides into pricing totals
     estimate_with_overrides = _apply_overrides_to_estimate_dict(
-        estimate_dict, overrides
+        estimate, overrides
     )
 
     logger.info(
@@ -1670,7 +1907,6 @@ def app_lead_detail(
 @router.get("/leads/{lead_id}/estimate")
 def app_lead_estimate(
     lead_id: str,
-    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
 ):
@@ -3017,11 +3253,16 @@ def edit_estimate_get(
         raise HTTPException(status_code=404, detail="Lead not found")
 
     overrides = get_estimate_overrides(lead)
+    editor = _estimate_editor_initial_values(lead, overrides)
     context = _dashboard_context(
         request,
         current_user,
         db,
-        {"lead": lead, "overrides": overrides},
+        {
+            "lead": lead,
+            "overrides": overrides,
+            "editor": editor,
+        },
     )
     return templates.TemplateResponse("app/estimate_edit.html", context)
 
@@ -3029,9 +3270,26 @@ def edit_estimate_get(
 @router.post("/leads/{lead_id}/edit-estimate")
 def edit_estimate_post(
     lead_id: str,
+    customer_name: str | None = Form(default=None),
+    customer_email: str | None = Form(default=None),
+    customer_phone: str | None = Form(default=None),
+    project_location: str | None = Form(default=None),
+    company_name: str | None = Form(default=None),
+    company_email: str | None = Form(default=None),
+    company_phone: str | None = Form(default=None),
+    reference: str | None = Form(default=None),
+    quote_date: str | None = Form(default=None),
+    valid_until: str | None = Form(default=None),
+    title: str | None = Form(default=None),
+    subtitle: str | None = Form(default=None),
+    line_items_json: str | None = Form(default=None),
+    included_work: str | None = Form(default=None),
+    excluded_notes: str | None = Form(default=None),
     public_notes: str | None = Form(default=None),
     discount_percent: float | None = Form(default=None),
     manual_total: float | None = Form(default=None),
+    subtotal_excl: float | None = Form(default=None),
+    vat_rate_percent: float | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
 ):
@@ -3044,9 +3302,18 @@ def edit_estimate_post(
         raise HTTPException(status_code=404, detail="Lead not found")
 
     overrides = get_estimate_overrides(lead)
+    estimate_dict: dict = {}
+    raw_est = getattr(lead, "estimate_json", None)
+    if isinstance(raw_est, str) and raw_est.strip():
+        try:
+            parsed = json.loads(raw_est)
+            if isinstance(parsed, dict):
+                estimate_dict = parsed
+        except Exception:
+            estimate_dict = {}
 
     old_html_key = getattr(lead, "estimate_html_key", None)
-    has_json = bool(getattr(lead, "estimate_json", None))
+    has_json = bool(estimate_dict)
     logger.info(
         "EDIT_ESTIMATE_POST_START lead_id=%s old_html_key=%r has_estimate_json=%s",
         getattr(lead, "id", None),
@@ -3054,14 +3321,42 @@ def edit_estimate_post(
         has_json,
     )
 
-    overrides["public_notes"] = (public_notes or "").strip()
-    overrides["discount_percent"] = (
-        float(discount_percent) if discount_percent is not None else None
-    )
-    overrides["manual_total"] = (
-        float(manual_total) if manual_total is not None else None
+    editor_input = {
+        "customer_name": customer_name,
+        "customer_email": customer_email,
+        "customer_phone": customer_phone,
+        "project_location": project_location,
+        "company_name": company_name,
+        "company_email": company_email,
+        "company_phone": company_phone,
+        "reference": reference,
+        "quote_date": quote_date,
+        "valid_until": valid_until,
+        "title": title,
+        "subtitle": subtitle,
+        "line_items_json": line_items_json,
+        "included_work": included_work,
+        "excluded_notes": excluded_notes,
+        "public_notes": public_notes,
+        "discount_percent": discount_percent,
+        "manual_total": manual_total,
+        "subtotal_excl": subtotal_excl,
+        "vat_rate_percent": vat_rate_percent,
+    }
+    estimate_dict, overrides, changed_fields = _apply_full_estimate_edit(
+        lead=lead,
+        estimate=estimate_dict,
+        editor_input=editor_input,
+        overrides=overrides,
     )
 
+    logger.info(
+        "[ESTIMATE_EDIT_DEBUG] estimate_id=%s fields_changed=%s",
+        getattr(lead, "id", None),
+        changed_fields,
+    )
+
+    lead.estimate_json = json.dumps(estimate_dict, ensure_ascii=False)
     lead.estimate_overrides_json = json.dumps(overrides, ensure_ascii=False)
     lead.updated_at = _utcnow()
 
@@ -3083,9 +3378,16 @@ def edit_estimate_post(
             pass
 
     # Re-render quote HTML with overrides applied, if possible
-    new_html_key, rendered = render_quote_html_for_lead(lead, overrides)
+    logger.info("[ESTIMATE_EDIT_DEBUG] estimate_id=%s rerender_started", getattr(lead, "id", None))
+    new_html_key, rendered = render_quote_html_for_lead(lead, estimate_dict, overrides)
     if rendered and new_html_key:
         lead.estimate_html_key = new_html_key
+    logger.info(
+        "[ESTIMATE_EDIT_DEBUG] estimate_id=%s rerender_completed rendered=%s new_html_key=%r",
+        getattr(lead, "id", None),
+        rendered,
+        new_html_key,
+    )
 
     db.add(lead)
     db.commit()
@@ -3099,4 +3401,4 @@ def edit_estimate_post(
         rendered,
     )
 
-    return RedirectResponse(url=f"/app/leads/{lead_id}", status_code=303)
+    return RedirectResponse(url=f"/app/leads/{lead_id}/edit-estimate", status_code=303)

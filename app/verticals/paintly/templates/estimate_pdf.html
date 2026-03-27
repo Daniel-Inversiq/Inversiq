@@ -444,7 +444,7 @@
             <div class="meta-card">
               <p class="meta-row">
                 <span class="meta-label">Referentie:</span>
-                <span class="meta-value">{% if ref_code %}Offerte #{{ ref_code }}{% else %}Offerte{% endif %}</span>
+                <span class="meta-value">{% if project and project.reference %}{{ project.reference }}{% elif ref_code %}Offerte #{{ ref_code }}{% else %}Offerte{% endif %}</span>
               </p>
               <p class="meta-row">
                 <span class="meta-label">Offertedatum:</span>
@@ -463,9 +463,9 @@
 
     <div class="title-block">
       <span class="label-badge">Offerte</span>
-      <h1>Offerte schilderwerk</h1>
+      <h1>{{ project.title if project and project.title else "Offerte schilderwerk" }}</h1>
       <p class="subtitle">
-        Heldere prijsopgave met duidelijke specificatie van werkzaamheden, materialen en voorwaarden.
+        {{ project.subtitle if project and project.subtitle else "Heldere prijsopgave met duidelijke specificatie van werkzaamheden, materialen en voorwaarden." }}
       </p>
     </div>
 
@@ -634,6 +634,13 @@
         <p style="margin-top: 8px;"><strong>Projectomschrijving:</strong> {{ project.description }}</p>
       {% endif %}
     </div>
+
+    {% if pricing and pricing.public_notes %}
+      <div class="card card-soft">
+        <h2 class="section-head">Publieke notities</h2>
+        <p>{{ pricing.public_notes }}</p>
+      </div>
+    {% endif %}
 
     <div class="footer">
       <p>

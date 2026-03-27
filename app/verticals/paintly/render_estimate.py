@@ -180,6 +180,8 @@ def render_estimate_html_v2(
     lead: Optional[Dict[str, Any]] = None,
     customer: Optional[Dict[str, Any]] = None,
     token: Optional[str] = None,
+    scope_bullets: Optional[List[str]] = None,
+    exclusions: Optional[List[str]] = None,
 ) -> str:
     pricing = pricing or {}
 
@@ -207,7 +209,8 @@ def render_estimate_html_v2(
     review_reasons = [str(x) for x in review_reasons if x is not None]
 
     # scope + exclusions blocks
-    scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
+    if scope_bullets is None:
+        scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
     if not scope_bullets:
         scope_bullets = [
             "Voorbereiding van oppervlakken waar nodig (licht schuren/bijwerken).",
@@ -215,7 +218,8 @@ def render_estimate_html_v2(
             "Standaard afplakken/beschermen en oplever-schoonmaak.",
         ]
 
-    exclusions = _as_list(getattr(PAINTLY_ESTIMATE_DISCLAIMER, "bullets", None))
+    if exclusions is None:
+        exclusions = _as_list(getattr(PAINTLY_ESTIMATE_DISCLAIMER, "bullets", None))
 
     # buckets shown in sidebar
     subtotals = (
@@ -392,6 +396,23 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
 
     meta = pricing.get("meta") if isinstance(pricing.get("meta"), dict) else {}
 
+    title = (
+        (meta.get("title") if isinstance(meta, dict) else None)
+        or estimate.get("title")
+        or "Offerte schilderwerk"
+    )
+    subtitle = (
+        (meta.get("subtitle") if isinstance(meta, dict) else None)
+        or (meta.get("intro") if isinstance(meta, dict) else None)
+        or estimate.get("subtitle")
+        or ""
+    )
+    reference = (
+        (meta.get("reference") if isinstance(meta, dict) else None)
+        or meta.get("estimate_id")
+        or estimate.get("estimate_id")
+        or ""
+    )
     project = {
         "lead_id": meta.get("estimate_id"),
         "estimate_id": meta.get("estimate_id"),
@@ -400,6 +421,10 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
         "valid_until": meta.get("valid_until"),
         "square_meters": meta.get("area_m2") or estimate.get("square_meters"),
         "description": estimate.get("description"),
+        "address": estimate.get("address") or meta.get("address"),
+        "title": title,
+        "subtitle": subtitle,
+        "reference": reference,
     }
 
     company = estimate.get("company") or estimate.get("tenant") or {}
@@ -419,6 +444,33 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
     customer = estimate.get("customer") or {}
     token = estimate.get("token")
 
+    included_override = estimate.get("included_work") or meta.get("included_work")
+    excluded_override = estimate.get("excluded_notes") or meta.get("excluded_notes")
+    public_notes = estimate.get("public_notes") or meta.get("public_notes")
+    if isinstance(public_notes, str) and public_notes.strip():
+        estimate = dict(estimate)
+        estimate["public_notes"] = public_notes.strip()
+
+    if included_override is not None:
+        if isinstance(included_override, str):
+            scope_override = [p.strip() for p in included_override.splitlines() if p.strip()]
+        elif isinstance(included_override, list):
+            scope_override = [str(p) for p in included_override if str(p).strip()]
+        else:
+            scope_override = [str(included_override)]
+    else:
+        scope_override = None
+
+    if excluded_override is not None:
+        if isinstance(excluded_override, str):
+            exclusions_override = [p.strip() for p in excluded_override.splitlines() if p.strip()]
+        elif isinstance(excluded_override, list):
+            exclusions_override = [str(p) for p in excluded_override if str(p).strip()]
+        else:
+            exclusions_override = [str(excluded_override)]
+    else:
+        exclusions_override = None
+
     return render_estimate_html_v2(
         pricing=pricing,
         project=project,
@@ -428,6 +480,8 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
         lead=lead,
         customer=customer,
         token=token,
+        scope_bullets=scope_override,
+        exclusions=exclusions_override,
     )
 
 
@@ -445,6 +499,23 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
     pricing = estimate
     meta = pricing.get("meta") if isinstance(pricing.get("meta"), dict) else {}
 
+    title = (
+        (meta.get("title") if isinstance(meta, dict) else None)
+        or estimate.get("title")
+        or "Offerte schilderwerk"
+    )
+    subtitle = (
+        (meta.get("subtitle") if isinstance(meta, dict) else None)
+        or (meta.get("intro") if isinstance(meta, dict) else None)
+        or estimate.get("subtitle")
+        or ""
+    )
+    reference = (
+        (meta.get("reference") if isinstance(meta, dict) else None)
+        or meta.get("estimate_id")
+        or estimate.get("estimate_id")
+        or ""
+    )
     project = {
         "lead_id": meta.get("estimate_id"),
         "estimate_id": meta.get("estimate_id"),
@@ -454,6 +525,9 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
         "square_meters": meta.get("area_m2") or estimate.get("square_meters"),
         "description": estimate.get("description"),
         "address": estimate.get("address") or meta.get("address"),
+        "title": title,
+        "subtitle": subtitle,
+        "reference": reference,
     }
 
     company = estimate.get("company") or estimate.get("tenant") or {}
@@ -497,7 +571,11 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
     review_reasons = [str(x) for x in review_reasons if x is not None]
     pricing_ready = not needs_review_flag
 
-    scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
+    included_override = estimate.get("included_work") or meta.get("included_work")
+    if included_override is not None:
+        scope_bullets = _as_list(included_override)
+    else:
+        scope_bullets = _as_list(getattr(PAINTLY_SCOPE_ASSUMPTIONS, "included", None))
     if not scope_bullets:
         scope_bullets = [
             "Voorbereiding van oppervlakken waar nodig (licht schuren/bijwerken).",
@@ -505,7 +583,11 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
             "Standaard afplakken/beschermen en oplever-schoonmaak.",
         ]
 
-    exclusions = _as_list(getattr(PAINTLY_ESTIMATE_DISCLAIMER, "bullets", None))
+    excluded_override = estimate.get("excluded_notes") or meta.get("excluded_notes")
+    if excluded_override is not None:
+        exclusions = _as_list(excluded_override)
+    else:
+        exclusions = _as_list(getattr(PAINTLY_ESTIMATE_DISCLAIMER, "bullets", None))
 
     subtotals = (
         pdf_pricing.get("subtotals")

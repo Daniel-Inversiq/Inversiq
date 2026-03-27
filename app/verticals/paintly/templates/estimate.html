@@ -212,14 +212,16 @@
           <div>
             <div class="flex flex-wrap items-center gap-1.5">
               <h1 class="text-[30px] font-semibold tracking-tight text-slate-900">
-                Offerte schilderwerk
+                {{ project.title if project and project.title else "Offerte schilderwerk" }}
               </h1>
               <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                 {{ "Concept" if review_flag else "Offerte" }}
               </span>
             </div>
             <p class="mt-1.5 text-sm text-slate-500">
-              {% if show_prices %}
+              {% if project and project.subtitle %}
+                {{ project.subtitle }}
+              {% elif show_prices %}
                 Vaste prijs op basis van de aangeleverde projectgegevens
               {% else %}
                 Wordt nog gecontroleerd voor definitieve prijs
@@ -238,8 +240,8 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-            <span class="inline-flex items-center text-[11px] font-medium text-slate-400">
-              Offerte #{{ ((project.estimate_id if project and project.estimate_id else project.lead_id)|string)[-6:]|upper }}
+              <span class="inline-flex items-center text-[11px] font-medium text-slate-400">
+              Offerte #{{ ((project.reference if project and project.reference else (project.estimate_id if project and project.estimate_id else project.lead_id))|string)[-6:]|upper }}
             </span>
             {% if project.date %}
               <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
@@ -506,6 +508,13 @@
             </div>
           </div>
         </div>
+
+        {% if pricing and pricing.public_notes %}
+          <div class="rounded-[26px] border border-slate-200/70 bg-white p-5 shadow-sm print-card">
+            <h3 class="text-sm font-semibold text-slate-900">Publieke notities</h3>
+            <p class="mt-2 whitespace-pre-line text-sm text-slate-700">{{ pricing.public_notes }}</p>
+          </div>
+        {% endif %}
 
       </div>
 

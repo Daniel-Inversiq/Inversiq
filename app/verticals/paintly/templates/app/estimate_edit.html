@@ -2,8 +2,6 @@
 {% block content %}
 
 <div class="space-y-6">
-
-  <!-- Header -->
   <div class="rounded-[28px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
       <div>
@@ -13,86 +11,203 @@
           </svg>
           Terug naar lead
         </a>
-
         <div class="mt-3 text-sm text-slate-400">Offerte</div>
         <h1 class="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Offerte bewerken</h1>
-        <p class="mt-2 text-sm text-slate-500">Handmatige aanpassingen voor notities, korting en totaal.</p>
+        <p class="mt-2 text-sm text-slate-500">Pas hier de volledige offerte aan zoals de klant die ziet.</p>
       </div>
     </div>
   </div>
 
-  <!-- Form card -->
   <div class="rounded-[26px] border border-slate-200/70 bg-white p-6 shadow-sm">
-    <form method="post" action="/app/leads/{{ lead.id }}/edit-estimate" class="space-y-6">
+    <form id="estimate-editor-form" method="post" action="/app/leads/{{ lead.id }}/edit-estimate" class="space-y-8">
+      <input type="hidden" id="line_items_json" name="line_items_json" />
 
-      <!-- Public notes -->
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-          Publieke notities
-        </label>
-        <textarea
-          name="public_notes"
-          rows="6"
-          class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
-          placeholder="Voeg hier extra toelichting of opmerkingen toe voor de klant..."
-        >{{ overrides.get('public_notes') or '' }}</textarea>
-      </div>
-
-      <!-- Inputs -->
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Korting (%)
-          </label>
-          <input
-            name="discount_percent"
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            value="{{ overrides.get('discount_percent') if overrides.get('discount_percent') is not none else '' }}"
-            class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
-            placeholder="Bijv. 10"
-          />
+      <section class="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-5">
+        <h2 class="text-sm font-semibold text-slate-900">1. Klantgegevens</h2>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <input name="customer_name" value="{{ editor.customer_name or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. Jan de Vries" />
+          <input name="customer_email" value="{{ editor.customer_email or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. jan@voorbeeld.nl" />
+          <input name="customer_phone" value="{{ editor.customer_phone or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. 06 12345678" />
+          <input name="project_location" value="{{ editor.project_location or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. Kerkstraat 12, Utrecht" />
         </div>
+      </section>
 
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Handmatig totaal
-          </label>
-          <input
-            name="manual_total"
-            type="number"
-            min="0"
-            step="0.01"
-            value="{{ overrides.get('manual_total') if overrides.get('manual_total') is not none else '' }}"
-            class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
-            placeholder="Optioneel"
-          />
-          <p class="mt-2 text-xs text-slate-400">
-            Indien ingevuld, overschrijft dit het getoonde totaal.
-          </p>
+      <section class="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-5">
+        <h2 class="text-sm font-semibold text-slate-900">2. Bedrijf</h2>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <input name="company_name" value="{{ editor.company_name or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. Schildersbedrijf De Vries" />
+          <input name="company_email" value="{{ editor.company_email or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. info@devriesschilders.nl" />
+          <input name="company_phone" value="{{ editor.company_phone or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. 030 123 45 67" />
         </div>
-      </div>
+      </section>
 
-      <!-- Actions -->
-      <div class="flex flex-wrap items-center gap-3 pt-2">
-        <button
-          type="submit"
-          class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
-        >
+      <section class="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-5">
+        <h2 class="text-sm font-semibold text-slate-900">3. Offerte</h2>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <input name="reference" value="{{ editor.reference or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. OFF-2026-014" />
+          <input name="quote_date" type="date" value="{{ editor.quote_date or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+          <input name="valid_until" type="date" value="{{ editor.valid_until or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+          <input name="title" value="{{ editor.title or '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. Offerte binnenschilderwerk" />
+        </div>
+        <textarea name="subtitle" rows="2" class="mt-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. Net schilderwerk voor woonkamer, hal en trapopgang">{{ editor.subtitle or '' }}</textarea>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-900">4. Regels / specificatie</h2>
+          <button type="button" id="add-line-item" class="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">Regel toevoegen</button>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-slate-400">
+                <th class="px-2 py-2">Omschrijving</th>
+                <th class="px-2 py-2">Aantal</th>
+                <th class="px-2 py-2">Eenheid</th>
+                <th class="px-2 py-2">Prijs</th>
+                <th class="px-2 py-2">Soort werk</th>
+                <th class="px-2 py-2 text-right">Totaal</th>
+                <th class="px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-5">
+        <h2 class="text-sm font-semibold text-slate-900">5. Prijs & aanpassingen</h2>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <input name="discount_percent" type="number" min="0" max="100" step="0.1" value="{{ editor.discount_percent if editor.discount_percent is not none else '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. 5 voor 5% korting" />
+          <input name="manual_total" type="number" min="0" step="0.01" value="{{ editor.manual_total if editor.manual_total is not none else '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. 2450,00 totaalprijs" />
+          <input name="subtotal_excl" id="subtotal_excl" type="number" min="0" step="0.01" value="{{ editor.subtotal_excl if editor.subtotal_excl is not none else '' }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. 2025,00 zonder btw" />
+          <input name="vat_rate_percent" id="vat_rate_percent" type="number" min="0" max="100" step="0.01" value="{{ editor.vat_rate_percent if editor.vat_rate_percent is not none else 21 }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" placeholder="Bijv. 21" />
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-5">
+        <h2 class="text-sm font-semibold text-slate-900">6. Tekstblokken / notities</h2>
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Inbegrepen werkzaamheden</label>
+            <textarea name="included_work" rows="7" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">{{ editor.included_work or '' }}</textarea>
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Niet inbegrepen / opmerkingen</label>
+            <textarea name="excluded_notes" rows="7" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">{{ editor.excluded_notes or '' }}</textarea>
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Opmerking voor klant</label>
+            <textarea name="public_notes" rows="7" class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">{{ editor.public_notes or '' }}</textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="flex flex-wrap items-center gap-3 pt-1">
+        <button type="submit" class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600">
           Wijzigingen opslaan
         </button>
-
-        <a
-          href="/app/leads/{{ lead.id }}"
-          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-        >
+        <a href="/app/leads/{{ lead.id }}" class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
           Annuleren
+        </a>
+        <a href="/app/leads/{{ lead.id }}/estimate" class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          Offerte bekijken
+        </a>
+        <a href="/app/leads/{{ lead.id }}/export-pdf" class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+          PDF openen
         </a>
       </div>
     </form>
   </div>
 </div>
+
+<script>
+  (function () {
+    const form = document.getElementById("estimate-editor-form");
+    const body = document.getElementById("line-items-body");
+    const hidden = document.getElementById("line_items_json");
+    const addBtn = document.getElementById("add-line-item");
+    const subtotalInput = document.getElementById("subtotal_excl");
+    const initialItems = {{ editor.line_items | tojson }};
+
+    function money(v) {
+      const n = Number(v || 0);
+      return Number.isFinite(n) ? n.toFixed(2) : "0.00";
+    }
+
+    function rowTemplate(item) {
+      const tr = document.createElement("tr");
+      tr.className = "border-t border-slate-100";
+      tr.innerHTML = `
+        <td class="px-2 py-2">
+          <input data-field="label" class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm" value="${item.label || ""}" />
+          <input data-field="description" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-600" placeholder="Bijv. Woonkamer wanden witten" value="${item.description || ""}" />
+        </td>
+        <td class="px-2 py-2"><input data-field="quantity" type="number" min="0" step="0.01" class="w-24 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm" value="${item.quantity ?? 1}" /></td>
+        <td class="px-2 py-2"><input data-field="unit" class="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm" value="${item.unit || "job"}" /></td>
+        <td class="px-2 py-2"><input data-field="unit_price" type="number" min="0" step="0.01" class="w-28 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm" value="${item.unit_price ?? 0}" /></td>
+        <td class="px-2 py-2">
+          <select data-field="category" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm">
+            <option value="labor">Arbeid</option>
+            <option value="materials">Materialen</option>
+            <option value="other">Overig</option>
+          </select>
+        </td>
+        <td class="px-2 py-2 text-right"><span data-total class="font-medium text-slate-800">${money(item.total)}</span></td>
+        <td class="px-2 py-2 text-right"><button type="button" data-remove class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600">Verwijder</button></td>
+      `;
+      tr.querySelector('[data-field="category"]').value = item.category || "labor";
+      return tr;
+    }
+
+    function recalc() {
+      let subtotal = 0;
+      [...body.querySelectorAll("tr")].forEach((row) => {
+        const q = Number(row.querySelector('[data-field="quantity"]').value || 0);
+        const p = Number(row.querySelector('[data-field="unit_price"]').value || 0);
+        const total = (Number.isFinite(q) ? q : 0) * (Number.isFinite(p) ? p : 0);
+        row.querySelector("[data-total]").textContent = money(total);
+        subtotal += total;
+      });
+      if (!subtotalInput.value) {
+        subtotalInput.value = money(subtotal);
+      }
+    }
+
+    function bindRow(row) {
+      row.addEventListener("input", recalc);
+      row.querySelector("[data-remove]").addEventListener("click", () => {
+        row.remove();
+        recalc();
+      });
+    }
+
+    function addRow(item) {
+      const row = rowTemplate(item);
+      body.appendChild(row);
+      bindRow(row);
+    }
+
+    const seed = (initialItems && initialItems.length) ? initialItems : [{ label: "", description: "", quantity: 1, unit: "job", unit_price: 0, category: "labor" }];
+    seed.forEach(addRow);
+
+    addBtn.addEventListener("click", () => addRow({ label: "", description: "", quantity: 1, unit: "job", unit_price: 0, category: "labor" }));
+
+    form.addEventListener("submit", () => {
+      const items = [...body.querySelectorAll("tr")].map((row, idx) => ({
+        code: `item_${idx + 1}`,
+        label: row.querySelector('[data-field="label"]').value,
+        description: row.querySelector('[data-field="description"]').value,
+        quantity: Number(row.querySelector('[data-field="quantity"]').value || 0),
+        unit: row.querySelector('[data-field="unit"]').value,
+        unit_price: Number(row.querySelector('[data-field="unit_price"]').value || 0),
+        category: row.querySelector('[data-field="category"]').value,
+      }));
+      hidden.value = JSON.stringify(items);
+    });
+
+    recalc();
+  })();
+</script>
 
 {% endblock %}
