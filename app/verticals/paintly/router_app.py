@@ -54,6 +54,7 @@ from app.verticals.paintly.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
 from app.verticals.paintly.render_estimate import render_estimate_pdf_html
+from app.verticals.paintly.review_labels import review_label_nl
 from app.utils.slugs import slugify
 from app.billing.features import Feature, tenant_has_feature
 from app.billing.ui import tenant_entitlements, tenant_feature_flags, tenant_feature_ui
@@ -67,6 +68,7 @@ router = APIRouter(
     dependencies=[Depends(require_user_html)],
 )
 templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+templates.env.globals["review_label_nl"] = review_label_nl
 
 ALLOWED_JOB_STATUSES = {"NEW", "SCHEDULED", "IN_PROGRESS", "DONE", "CANCELLED"}
 

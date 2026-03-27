@@ -2,13 +2,6 @@
 {% block content %}
 
 <div class="space-y-6">
-  {% set reason_labels = {
-    'photo_validation_low_confidence': 'Foto onduidelijk',
-    'no_images': "Geen foto's",
-    'low_overall_confidence': 'AI onzeker',
-    'low_vision_signal_confidence': 'Weinig visuele info'
-  } %}
-
   <!-- Header -->
   <div class="rounded-[28px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -126,7 +119,7 @@
                 <div class="mt-2 flex flex-wrap gap-1.5">
                   {% for reason in row_reasons[:2] %}
                     <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-                      {{ reason_labels.get(reason, reason|replace('_', ' ')|capitalize) }}
+                      {{ review_label_nl(reason) }}
                     </span>
                   {% endfor %}
                 </div>

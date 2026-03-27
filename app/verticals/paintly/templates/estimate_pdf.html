@@ -498,7 +498,7 @@
         {% if review_reasons and (review_reasons | length) > 0 %}
           <ul>
             {% for r in review_reasons %}
-              <li>{{ r }}</li>
+              <li>{{ review_label_nl(r) }}</li>
             {% endfor %}
           </ul>
         {% endif %}

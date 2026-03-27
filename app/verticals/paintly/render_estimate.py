@@ -18,6 +18,7 @@ from app.verticals.paintly.copy import PAINTLY_ESTIMATE_COPY, fmt_qty
 from app.verticals.paintly.disclaimer import PAINTLY_ESTIMATE_DISCLAIMER
 from app.verticals.paintly.locale_eu import fmt_eur
 from app.verticals.paintly.needs_review import PAINTLY_NEEDS_REVIEW_COPY
+from app.verticals.paintly.review_labels import review_label_nl
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 DEFAULT_VAT_RATE = 0.21
@@ -129,6 +130,7 @@ def _jinja_env() -> Environment:
     # template uses fmt_eur + fmt_qty
     env.globals["fmt_eur"] = fmt_eur
     env.globals["fmt_qty"] = fmt_qty
+    env.globals["review_label_nl"] = review_label_nl
     return env
 
 
@@ -207,6 +209,7 @@ def render_estimate_html_v2(
 
     # ensure list[str]
     review_reasons = [str(x) for x in review_reasons if x is not None]
+    review_reasons_display = [review_label_nl(x) for x in review_reasons]
 
     # scope + exclusions blocks
     if scope_bullets is None:
@@ -238,7 +241,7 @@ def render_estimate_html_v2(
         "prep_level": (decision_vars or {}).get("prep_level"),
         "complexity_level": (decision_vars or {}).get("complexity_level"),
         "access_risk": (decision_vars or {}).get("access_risk"),
-        "review_reasons": review_reasons,
+        "review_reasons": review_reasons_display,
         "needs_review": needs_review_flag,
     }
 
@@ -364,7 +367,7 @@ def render_estimate_html_v2(
         customer=customer or {},
         token=token,
         needs_review_flag=needs_review_flag,
-        review_reasons=review_reasons,
+        review_reasons=review_reasons_display,
         lead_status=lead_status,
         price_mode=price_mode,
         total_price=total_price,
@@ -569,6 +572,7 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
     elif not isinstance(review_reasons, list):
         review_reasons = [str(review_reasons)]
     review_reasons = [str(x) for x in review_reasons if x is not None]
+    review_reasons_display = [review_label_nl(x) for x in review_reasons]
     pricing_ready = not needs_review_flag
 
     included_override = estimate.get("included_work") or meta.get("included_work")
@@ -605,7 +609,7 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
         "prep_level": (decision_vars or {}).get("prep_level"),
         "complexity_level": (decision_vars or {}).get("complexity_level"),
         "access_risk": (decision_vars or {}).get("access_risk"),
-        "review_reasons": review_reasons,
+        "review_reasons": review_reasons_display,
         "needs_review": needs_review_flag,
     }
 
@@ -658,7 +662,7 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
         customer=customer or {},
         token=token,
         needs_review_flag=needs_review_flag,
-        review_reasons=review_reasons,
+        review_reasons=review_reasons_display,
         decision_vars=decision_vars or {},
         assumptions_ctx=assumptions_ctx,
         show_prices=show_prices,
