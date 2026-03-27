@@ -205,6 +205,8 @@
 
   <script>
     const leadId = String({{ lead_id | tojson }});
+    const statusEndpoint = String({{ (status_endpoint or ('/leads/' ~ lead_id ~ '/status')) | tojson }});
+    const retryEndpoint = String({{ (retry_endpoint or ('/quotes/publish/' ~ lead_id)) | tojson }});
     const initKey = `processing_init_${leadId}`;
 
     const errorBox = document.getElementById("errorBox");
@@ -238,7 +240,7 @@
 
     async function fetchStatusOnce() {
       try {
-        const res = await fetch(`/leads/${encodeURIComponent(leadId)}/status`, {
+        const res = await fetch(statusEndpoint, {
           method: "GET",
           headers: { "accept": "application/json" },
           cache: "no-store"
@@ -285,7 +287,7 @@
       isStopping = false;
 
       try {
-        await fetch(`/quotes/publish/${encodeURIComponent(leadId)}`, {
+        await fetch(retryEndpoint, {
           method: "POST",
           cache: "no-store"
         });

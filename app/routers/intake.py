@@ -83,6 +83,25 @@ def _status_url(lead_id: str) -> str:
     return f"/processing/{lead_id}"
 
 
+def _ensure_public_flow_token(db: Session, lead_id: str) -> str:
+    lead = db.query(LeadModel).filter(LeadModel.id == str(lead_id)).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    token = (getattr(lead, "public_token", None) or "").strip()
+    if not token:
+        token = secrets.token_hex(16)
+        lead.public_token = token
+        db.add(lead)
+        db.commit()
+        db.refresh(lead)
+    return token
+
+
+def _public_status_url_for_lead(db: Session, lead_id: str) -> str:
+    token = _ensure_public_flow_token(db, lead_id)
+    return f"/public/processing/{token}"
+
+
 def _get_vertical_or_404(vertical: str):
     vertical_id = _normalize_vertical_id(vertical)
     try:
@@ -155,7 +174,7 @@ async def _create_lead_impl(
     # - Na intake altijd eerst naar de AI-gestuurde statuspagina,
     #   zodat de klant de analyse/progress ziet voordat de uiteindelijke
     #   offerte of NEEDS_REVIEW-status zichtbaar wordt.
-    status_url = _status_url(result.lead_id)
+    status_url = _public_status_url_for_lead(db, result.lead_id)
 
     if _wants_json(request):
         return JSONResponse(
@@ -300,24 +319,7 @@ async def create_lead_by_tenant_slug(
         if files_count > 0:
             background.add_task(_start_processing_for_lead_sync, result.lead_id)
 
-        # Publieke tenant-intake: stuur klant naar publieke conceptofferte (Paintly-specifiek)
-        status_url = _status_url(result.lead_id)
-        try:
-            lead_id_int = int(result.lead_id)
-            lead = db.query(LeadModel).filter(LeadModel.id == lead_id_int).first()
-        except Exception:
-            lead = None
-
-        if lead is not None and (getattr(lead, "vertical", "") or "").lower() == "paintly":
-            # Zorg dat er een public_token is voor publieke offerte-url
-            if not getattr(lead, "public_token", None):
-                lead.public_token = secrets.token_hex(16)
-                db.add(lead)
-                db.commit()
-                db.refresh(lead)
-
-            public_token = getattr(lead, "public_token", None)
-            # redirect moet altijd naar /processing, public /e/{token} komt pas later via /offerte/{lead_id}
+        status_url = _public_status_url_for_lead(db, result.lead_id)
 
         if _wants_json(request):
             return JSONResponse(

@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Lead
+from app.models.user import User
+from app.auth.deps import require_user_html
 from app.services.metrics import inc, snapshot  # ✅ only once
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -19,8 +21,12 @@ templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 
-def _load_lead(db: Session, lead_id: str) -> Lead:
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+def _load_lead(db: Session, lead_id: str, tenant_id: str) -> Lead:
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == tenant_id)
+        .first()
+    )
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
@@ -30,7 +36,8 @@ def _load_lead(db: Session, lead_id: str) -> Lead:
 # Metrics (FASE 6)
 # -------------------------
 @router.get("/metrics")
-def internal_metrics():
+def internal_metrics(current_user: User = Depends(require_user_html)):
+    logger.info("[SECURITY_FIX] internal_metrics auth user_id=%s", current_user.id)
     return snapshot()
 
 
@@ -43,13 +50,15 @@ def internal_leads(
     status: str = "NEEDS_REVIEW",
     q: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
 ):
     """
     MVP internal list:
     /internal/leads?status=NEEDS_REVIEW
     Optional: q= search by email/name
     """
-    qs = db.query(Lead)
+    tenant_id = str(current_user.tenant_id)
+    qs = db.query(Lead).filter(Lead.tenant_id == tenant_id)
 
     if status:
         qs = qs.filter(Lead.status == status)
@@ -69,8 +78,13 @@ def internal_leads(
 
 
 @router.get("/leads/{lead_id}", response_class=HTMLResponse)
-def internal_lead_detail(request: Request, lead_id: str, db: Session = Depends(get_db)):
-    lead = _load_lead(db, lead_id)
+def internal_lead_detail(
+    request: Request,
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    lead = _load_lead(db, lead_id, str(current_user.tenant_id))
     return templates.TemplateResponse(
         "internal_lead_detail.html",
         {"request": request, "lead": lead},
@@ -81,8 +95,12 @@ def internal_lead_detail(request: Request, lead_id: str, db: Session = Depends(g
 # Admin actions (FASE 6)
 # -------------------------
 @router.post("/leads/{lead_id}/approve")
-def internal_approve(lead_id: str, db: Session = Depends(get_db)):
-    lead = _load_lead(db, lead_id)
+def internal_approve(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    lead = _load_lead(db, lead_id, str(current_user.tenant_id))
 
     # MVP: only allow approve from NEEDS_REVIEW
     if lead.status != "NEEDS_REVIEW":
@@ -106,8 +124,9 @@ def internal_fail(
     lead_id: str,
     reason: str = "Manual review required",
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
 ):
-    lead = _load_lead(db, lead_id)
+    lead = _load_lead(db, lead_id, str(current_user.tenant_id))
 
     lead.status = "FAILED"
     lead.error_message = reason
@@ -121,12 +140,16 @@ def internal_fail(
 
 
 @router.post("/leads/{lead_id}/recompute")
-def internal_recompute(lead_id: str, db: Session = Depends(get_db)):
+def internal_recompute(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
     """
     Reset lead to NEW and clear artifacts so publish can recompute cleanly.
     Redirect to customer status page with autostart=1.
     """
-    lead = _load_lead(db, lead_id)
+    lead = _load_lead(db, lead_id, str(current_user.tenant_id))
 
     # Reset state
     lead.status = "NEW"

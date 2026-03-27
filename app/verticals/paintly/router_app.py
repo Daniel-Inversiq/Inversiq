@@ -214,6 +214,7 @@ def _dashboard_context(
         "request": request,
         "tenant": tenant_obj,
         "company_name": company_name,
+        "is_public": False,
     }
     if extra:
         ctx.update(extra)
@@ -810,6 +811,43 @@ def render_quote_html_for_lead(lead: Lead, estimate: dict, overrides: dict) -> t
     )
 
     return new_key, True
+
+
+def rerender_stored_estimate_html_from_json(db: Session, lead: Lead) -> tuple[bool, str | None]:
+    """
+    Re-run estimate.html (Jinja) from persisted lead.estimate_json + estimate_overrides.
+
+    Does not recompute vision/pricing (no pipeline). Use after template/CSS changes so the
+    blob at estimate_html_key matches current render_estimate_html output.
+    """
+    raw_est = getattr(lead, "estimate_json", None)
+    if not isinstance(raw_est, str) or not raw_est.strip():
+        return False, "missing_estimate_json"
+    try:
+        estimate_dict = json.loads(raw_est)
+    except Exception:
+        return False, "estimate_json_parse_error"
+    if not isinstance(estimate_dict, dict) or not estimate_dict:
+        return False, "empty_estimate_json"
+
+    overrides = get_estimate_overrides(lead)
+    before_key = (getattr(lead, "estimate_html_key", None) or "").strip() or None
+    new_key, rendered = render_quote_html_for_lead(lead, estimate_dict, overrides)
+    if not rendered or not new_key:
+        return False, "render_failed"
+
+    lead.estimate_html_key = new_key
+    lead.updated_at = _utcnow()
+    db.add(lead)
+    db.commit()
+    logger.info(
+        "ESTIMATE_HTML_RERENDER_FROM_JSON lead_id=%s tenant_id=%s html_key_before=%r html_key_after=%r",
+        getattr(lead, "id", None),
+        str(getattr(lead, "tenant_id", "")),
+        before_key,
+        new_key,
+    )
+    return True, None
 
 
 def get_estimate_overrides(lead: Lead) -> dict:
@@ -1832,7 +1870,14 @@ def app_lead_detail(
         "pricing_ready": pricing_ready,
         "is_provisional": is_provisional,
         "show_prices": show_prices,
+        "is_public": False,
     }
+    logger.info(
+        "[UI_MODE] estimate_id=%s is_public=%s route=%s",
+        str(getattr(lead, "id", "")),
+        False,
+        f"GET {request.url.path}",
+    )
     logger.info(
         "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
         getattr(lead, "id", None),
@@ -1908,6 +1953,7 @@ def app_lead_detail(
 
 @router.get("/leads/{lead_id}/estimate")
 def app_lead_estimate(
+    request: Request,
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
@@ -1928,6 +1974,12 @@ def app_lead_estimate(
         "APP_LEAD_ESTIMATE_ROUTE lead_id=%s html_key=%r",
         getattr(lead, "id", None),
         html_key,
+    )
+    logger.info(
+        "[UI_MODE] estimate_id=%s is_public=%s route=%s",
+        str(getattr(lead, "id", "")),
+        False,
+        f"GET {request.url.path}",
     )
 
     storage = get_storage()
@@ -1956,6 +2008,7 @@ def app_lead_refresh_estimate(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
 ):
+    # Full pipeline recompute + new HTML. For template-only refreshes use POST .../rerender-estimate-html.
     lead = (
         db.query(Lead)
         .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
@@ -2002,6 +2055,33 @@ def app_lead_refresh_estimate(
     )
 
     return RedirectResponse(url=f"/app/leads/{lead_id}/estimate", status_code=303)
+
+
+@router.post("/leads/{lead_id}/rerender-estimate-html")
+def app_lead_rerender_estimate_html(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    """
+    Re-materialize stored estimate HTML from estimate_json + overrides only (no AI/pipeline).
+    Use after Jinja/template changes; updates estimate_html_key to a new storage object.
+    """
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
+        .first()
+    )
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    ok, err = rerender_stored_estimate_html_from_json(db, lead)
+    if not ok:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Could not rerender estimate HTML: {err}",
+        )
+    return RedirectResponse(url=f"/app/leads/{lead_id}", status_code=303)
 
 
 @router.get("/leads/{lead_id}/export-pdf")

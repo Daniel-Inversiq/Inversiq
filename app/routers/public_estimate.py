@@ -42,6 +42,13 @@ paintly_templates = Jinja2Templates(directory="app/verticals/paintly/templates")
 logger = logging.getLogger(__name__)
 
 
+def _mask_token(token: str) -> str:
+    t = (token or "").strip()
+    if len(t) <= 8:
+        return "***"
+    return f"{t[:4]}...{t[-4:]}"
+
+
 async def send_painter_accept_email(
     *,
     painter_email: str,
@@ -144,6 +151,42 @@ def _extract_quote_summary(lead: Lead) -> tuple[str, str, str, str]:
 
     square_meters_display = f"{square_meters} m2" if square_meters else "—"
     return notes or "—", square_meters_display, job_type or "—", price_display
+
+
+def _derive_ui_status(*, lead_status: str, mode: str) -> str:
+    """
+    Canonical UI status for quote page shell (labels/banners, not accept/reject).
+    - draft: concept / pre-send on public link
+    - published: sent or viewed by customer (post-send)
+    - accepted: terminal customer accepted state
+    """
+    status = (lead_status or "").upper()
+    ui_mode = (mode or "").strip().lower() or "internal"
+
+    if status == "ACCEPTED":
+        return "accepted"
+
+    if ui_mode == "public":
+        # Public /e/{token}: same link exists before send; shell stays "draft" until SENT/VIEWED.
+        if status in {"SENT", "VIEWED"}:
+            return "published"
+        return "draft"
+
+    if status in {"SENT", "VIEWED"}:
+        return "published"
+
+    return "draft"
+
+
+def _can_customer_act(lead_status: str) -> bool:
+    """Accept/reject only after painter explicitly sent (dashboard send → SENT; first view may→ VIEWED)."""
+    return (lead_status or "").upper() in {"SENT", "VIEWED"}
+
+
+def _is_pre_send_public_status(lead_status: str) -> bool:
+    """Quote may exist (e.g. SUCCEEDED) but customer actions are not open yet."""
+    st = (lead_status or "").upper()
+    return st in {"SUCCEEDED", "NEEDS_REVIEW", "NEW", "RUNNING", "FAILED"}
 
 
 @router.get("/{token}", response_class=HTMLResponse)
@@ -307,7 +350,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
     logger.info(
         "PUBLIC_ESTIMATE_ROUTE lead_id=%s token=%s html_key_raw=%r key_norm=%r",
         getattr(lead, "id", None),
-        token,
+        _mask_token(token),
         html_key,
         key,
     )
@@ -384,24 +427,41 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
                 status_code=200,
             )
 
+    logger.info(
+        "ESTIMATE_HTML_SNAPSHOT_LOAD lead_id=%s html_key_raw=%r key_norm=%r delivery=%s bytes=%s",
+        getattr(lead, "id", None),
+        html_key,
+        key,
+        "iframe_url" if iframe_url else "inline_body",
+        len((html or "").encode("utf-8")) if isinstance(html, str) and html and not iframe_url else None,
+    )
+
     lead_status = (lead.status or "").upper()
-    # Concept vs verstuurd:
-    # - concept: offerte mag bekeken worden, maar nog niet geaccepteerd
-    # - verstuurd: offerte is naar klant verstuurd → accept-knop toegestaan
-    is_sent = lead_status in {"SENT", "VIEWED"} or bool(getattr(lead, "sent_at", None))
-    show_accept = is_sent and lead_status not in {
-        "ACCEPTED",
-        "REJECTED",
-        "DECLINED",
-        "COMPLETED",
-        "CANCELLED",
-        "DONE",
-    }
+    ui_mode = "public"
+    ui_status = _derive_ui_status(lead_status=lead_status, mode=ui_mode)
+    can_customer_act = _can_customer_act(lead_status)
+    is_pre_send = _is_pre_send_public_status(lead_status)
+    logger.info(
+        "[QUOTE_STATE] estimate_id=%s token=%s status=%s is_public=%s can_customer_act=%s ui_status=%s is_pre_send=%s",
+        str(getattr(lead, "id", "")),
+        _mask_token(token),
+        lead_status,
+        True,
+        can_customer_act,
+        ui_status,
+        is_pre_send,
+    )
+    logger.info(
+        "[UI_MODE] estimate_id=%s is_public=%s route=%s",
+        str(getattr(lead, "id", "")),
+        True,
+        f"GET /e/{token}",
+    )
 
     # Bodycontent: inline HTML (S3) of iframe (LocalStorage)
     if iframe_url:
         body_html = f"""
-<iframe src="{iframe_url}" style="width:100%;min-height:100vh;border:0;display:block;" loading="lazy"></iframe>
+<iframe src="{iframe_url}" style="width:100%;border:0;display:block;" loading="lazy"></iframe>
 """
     else:
         body_html = html
@@ -442,6 +502,14 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
         branding_logo_url = None
         branding_source = "default"
         fallback_reason = "tier_not_allowed" if not branding_allowed else "company_name_missing"
+
+    header_phone = ""
+    header_email = ""
+    if tenant_row is not None:
+        header_phone = (getattr(tenant_row, "phone", None) or "").strip()
+        header_email = (getattr(tenant_row, "email", None) or "").strip()
+    if not header_email and tenant_user is not None:
+        header_email = (getattr(tenant_user, "email", None) or "").strip()
 
     log_branding_state(
         logger,
@@ -505,20 +573,26 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
             "public_html_loaded",
             {
                 "lead_id": str(getattr(lead, "id", "")),
-                "token": token,
+                "token": _mask_token(token),
                 "estimate_html_key": html_key,
                 **branding_html_debug_summary(body_html, branding_name=branding_company_name),
             },
         )
 
-    page_html = paintly_templates.env.get_template("public/quote_page.html").render(
+    page_html = paintly_templates.env.get_template("public/customer_quote_page.html").render(
         token=lead.public_token,
-        show_accept=show_accept,
+        can_customer_act=bool(can_customer_act),
+        is_pre_send=bool(is_pre_send),
         lead_status=lead_status,
+        ui_status=ui_status,
+        ui_mode=ui_mode,
+        is_public=True,
         iframe_url=iframe_url,
         body_html=body_html or "",
         branding_company_name=branding_company_name,
         branding_logo_url=branding_logo_url,
+        header_phone=header_phone or None,
+        header_email=header_email or None,
     )
     logger.info(
         "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",
@@ -528,7 +602,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
         "public_quote_page",
         None,
         "unknown",
-        "public/quote_page.html",
+        "public/customer_quote_page.html",
         False,
         None,
         None,
@@ -558,6 +632,20 @@ def public_accept(
     lead = db.query(Lead).filter(Lead.public_token == token).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Not found")
+
+    st = (lead.status or "").upper()
+    if st != "ACCEPTED" and not _can_customer_act(st):
+        logger.info(
+            "[QUOTE_STATE] estimate_id=%s token=%s status=%s is_public=%s can_customer_act=False action=accept_blocked",
+            str(getattr(lead, "id", "")),
+            _mask_token(token),
+            st,
+            True,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="Deze offerte kan nog niet worden geaccepteerd. Wacht tot uw schilder de offerte heeft verzonden.",
+        )
 
     if (lead.status or "").upper() != "ACCEPTED":
         mark_lead_accepted(db, lead)
@@ -687,6 +775,20 @@ def public_reject(
         if "application/json" in accept:
             return JSONResponse({"ok": True, "redirect": redirect_url})
         return RedirectResponse(url=redirect_url, status_code=303)
+
+    st = (lead.status or "").upper()
+    if not _can_customer_act(st):
+        logger.info(
+            "[QUOTE_STATE] estimate_id=%s token=%s status=%s is_public=%s can_customer_act=False action=reject_blocked",
+            str(getattr(lead, "id", "")),
+            _mask_token(token),
+            st,
+            True,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="Deze offerte kan nog niet worden afgewezen. Wacht tot uw schilder de offerte heeft verzonden.",
+        )
 
     lead.status = "REJECTED"
     reason = (reject_reason or "").strip()

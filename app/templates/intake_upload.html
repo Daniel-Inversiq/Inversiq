@@ -87,7 +87,7 @@
   async function presign(file) {
     const id = await ensureLeadId();
 
-    const resp = await fetch('/uploads/presign', {
+    const resp = await fetch('/public/uploads/presign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

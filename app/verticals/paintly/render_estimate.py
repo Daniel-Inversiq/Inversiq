@@ -410,6 +410,7 @@ def render_estimate_html_v2(
 
     tmpl = _jinja_env().get_template("estimate.html")
     html = tmpl.render(
+        is_public=False,
         pricing_ready=pricing_ready,
         pricing=pricing,  # template uses pricing.line_items, pricing.meta, pricing.subtotals, pricing.totals
         vat=vat,
@@ -499,7 +500,9 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
     branding_logo_url = (branding_logo_url or "").strip() or None
     lead = estimate.get("lead") or {}
     customer = estimate.get("customer") or {}
-    token = estimate.get("token")
+    # Stored estimate HTML is shown in dashboard preview and inside the public /e iframe.
+    # Customer accept/reject lives on public/customer_quote_page only — never embed public CTAs here.
+    token = None
 
     included_override = estimate.get("included_work") or meta.get("included_work")
     excluded_override = estimate.get("excluded_notes") or meta.get("excluded_notes")

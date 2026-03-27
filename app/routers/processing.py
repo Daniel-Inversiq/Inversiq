@@ -9,8 +9,10 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from app.auth.deps import get_current_user, require_user_html
 from app.db import get_db
 from app.models import Lead
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +71,40 @@ def _map_lead_status_for_ui(*, lead_status: str, lead_id: str) -> tuple[str, str
     return "running", None, None
 
 
+def _load_lead_by_public_token(db: Session, flow_token: str) -> Lead | None:
+    token = (flow_token or "").strip()
+    if not token:
+        return None
+    return db.query(Lead).filter(Lead.public_token == token).first()
+
+
+def _public_redirect_for_lead(lead: Lead) -> str | None:
+    token = str(getattr(lead, "public_token", "") or "").strip()
+    if not token:
+        return None
+    return f"/e/{token}"
+
+
 @router.get("/leads/{lead_id}/status")
-def lead_status_json(lead_id: str, db: Session = Depends(get_db)) -> dict:
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+def lead_status_json(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    tenant_id = str(current_user.tenant_id)
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == tenant_id)
+        .first()
+    )
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    logger.info(
+        "[SECURITY_FIX] processing_status tenant-scoped user_id=%s tenant_id=%s lead_id=%s",
+        current_user.id,
+        tenant_id,
+        lead_id,
+    )
 
     # Autostart: als de lead nog nooit is gestart (NEW), start dan de quote
     # zodat /processing/{lead_id} ook werkt als een oude redirect ooit nog
@@ -86,8 +117,13 @@ def lead_status_json(lead_id: str, db: Session = Depends(get_db)) -> dict:
                 lead_id=lead.id,
                 background=BackgroundTasks(),
                 db=db,
+                tenant_id=tenant_id,
             )
-            lead = db.query(Lead).filter(Lead.id == lead_id).first()
+            lead = (
+                db.query(Lead)
+                .filter(Lead.id == lead_id, Lead.tenant_id == tenant_id)
+                .first()
+            )
         except Exception as e:
             lead.status = "FAILED"
             lead.error_message = str(e)
@@ -203,8 +239,17 @@ def lead_status_json(lead_id: str, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/processing/{lead_id}", response_class=HTMLResponse)
-def processing_page(request: Request, lead_id: str, db: Session = Depends(get_db)) -> HTMLResponse:
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+def processing_page(
+    request: Request,
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+) -> HTMLResponse:
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
+        .first()
+    )
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
@@ -238,17 +283,148 @@ def processing_page(request: Request, lead_id: str, db: Session = Depends(get_db
         {
             "request": request,
             "lead_id": str(lead.id),
+            "status_endpoint": f"/leads/{lead.id}/status",
+            "retry_endpoint": f"/quotes/publish/{lead.id}",
         },
     )
 
 
+@router.get("/public/processing/{flow_token}", response_class=HTMLResponse)
+def public_processing_page(
+    request: Request,
+    flow_token: str,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    logger.info("[SECURITY_FIX] public_processing_requested")
+    lead = _load_lead_by_public_token(db, flow_token)
+    if not lead:
+        logger.warning("[SECURITY_FIX] public_flow_token_invalid")
+        raise HTTPException(status_code=404, detail="Not found")
+    logger.info("[SECURITY_FIX] public_flow_token_valid")
+
+    lead_status = (getattr(lead, "status", "") or "").upper()
+    has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
+    public_redirect = _public_redirect_for_lead(lead)
+    is_done_available = (
+        (lead_status == "SUCCEEDED" and has_estimate_html)
+        or (lead_status == "NEEDS_REVIEW")
+    )
+    if is_done_available and public_redirect:
+        return RedirectResponse(url=public_redirect, status_code=303)
+
+    return request.app.state.templates.TemplateResponse(
+        "processing.html",
+        {
+            "request": request,
+            "lead_id": str(lead.id),
+            "status_endpoint": f"/public/leads/{flow_token}/status",
+            "retry_endpoint": f"/public/processing/{flow_token}/retry",
+        },
+    )
+
+
+@router.get("/public/leads/{flow_token}/status")
+def public_processing_status(flow_token: str, db: Session = Depends(get_db)) -> dict:
+    logger.info("[SECURITY_FIX] public_processing_status_requested")
+    lead = _load_lead_by_public_token(db, flow_token)
+    if not lead:
+        logger.warning("[SECURITY_FIX] public_flow_token_invalid")
+        raise HTTPException(status_code=404, detail="Not found")
+    logger.info("[SECURITY_FIX] public_flow_token_valid")
+
+    lead_status = (getattr(lead, "status", "") or "").upper()
+    if lead_status == "NEW":
+        try:
+            from app.routers.quotes import publish_quote
+
+            publish_quote(
+                lead_id=str(lead.id),
+                background=BackgroundTasks(),
+                db=db,
+                tenant_id=str(lead.tenant_id),
+            )
+            db.refresh(lead)
+            lead_status = (getattr(lead, "status", "") or "").upper()
+        except Exception as e:
+            lead.status = "FAILED"
+            lead.error_message = str(e)
+            lead.updated_at = datetime.now(timezone.utc)
+            db.add(lead)
+            db.commit()
+            db.refresh(lead)
+            lead_status = "FAILED"
+
+    error_message = (getattr(lead, "error_message", None) or None)
+    if lead_status == "FAILED" or error_message:
+        return {
+            "status": "failed",
+            "redirect_url": None,
+            "error": None,
+            "user_message": _friendly_processing_error(error_message),
+            "can_retry": True,
+            "back_url": "/",
+        }
+
+    has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
+    public_redirect = _public_redirect_for_lead(lead)
+    is_done_available = (
+        (lead_status == "SUCCEEDED" and has_estimate_html)
+        or (lead_status == "NEEDS_REVIEW")
+    )
+    if is_done_available and public_redirect:
+        return {
+            "status": "done",
+            "redirect_url": public_redirect,
+            "error": None,
+        }
+
+    return {
+        "status": "running",
+        "redirect_url": None,
+        "error": None,
+        "user_message": None,
+        "can_retry": False,
+        "back_url": "/",
+    }
+
+
+@router.post("/public/processing/{flow_token}/retry")
+def public_processing_retry(flow_token: str, db: Session = Depends(get_db)) -> dict:
+    logger.info("[SECURITY_FIX] public_processing_requested")
+    lead = _load_lead_by_public_token(db, flow_token)
+    if not lead:
+        logger.warning("[SECURITY_FIX] public_flow_token_invalid")
+        raise HTTPException(status_code=404, detail="Not found")
+    logger.info("[SECURITY_FIX] public_flow_token_valid")
+    try:
+        from app.routers.quotes import publish_quote
+
+        publish_quote(
+            lead_id=str(lead.id),
+            background=BackgroundTasks(),
+            db=db,
+            tenant_id=str(lead.tenant_id),
+        )
+    except Exception:
+        pass
+    return {"ok": True}
+
+
 @router.get("/offerte/{lead_id}")
-def offerte_redirect(lead_id: str, db: Session = Depends(get_db)):
+def offerte_redirect(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
     """
-    Customer-friendly offerte URL.
-    Verwijst naar de bestaande publieke /e/{public_token} pagina.
+    Interne offerte-URL voor ingelogde gebruikers.
+    Verwijst naar de preview-route (ruwe offerte-HTML), niet naar de klantpagina /e/{token}.
     """
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
+        .first()
+    )
     if not lead:
         logger.info(
             "OFFERTE_REDIRECT_REJECT lead_id=%s reason=%s",
@@ -276,15 +452,16 @@ def offerte_redirect(lead_id: str, db: Session = Depends(get_db)):
         )
         raise HTTPException(status_code=404, detail="Offerte nog niet beschikbaar")
 
+    target = f"/app/leads/{lead_id}/estimate"
     logger.info(
         "OFFERTE_REDIRECT_OK lead_id=%s status=%s public_token=%r estimate_html_key=%r redirect=%s",
         str(getattr(lead, "id", lead_id)),
         str(getattr(lead, "status", None)),
         getattr(lead, "public_token", None),
         getattr(lead, "estimate_html_key", None),
-        f"/e/{lead.public_token}",
+        target,
     )
-    return RedirectResponse(url=f"/e/{lead.public_token}", status_code=303)
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.get("/thank-you", response_class=HTMLResponse)
@@ -293,11 +470,16 @@ def thank_you_page(
     lead_id: str | None = None,
     review: str | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
 ) -> HTMLResponse:
     is_review_mode = (review or "").strip().lower() in {"1", "true", "yes"}
     lead = None
     if lead_id:
-        lead = db.query(Lead).filter(Lead.id == lead_id).first()
+        lead = (
+            db.query(Lead)
+            .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
+            .first()
+        )
     short_reference = _short_customer_reference(lead, lead_id)
 
     return request.app.state.templates.TemplateResponse(

@@ -160,6 +160,7 @@ async def logging_middleware(request: Request, call_next):
 # Routers (Paintly MVP core)
 # ----------------------------------------------------
 app.include_router(uploads.router)
+app.include_router(uploads.public_router)
 app.include_router(quotes.router)
 app.include_router(files.router)
 app.include_router(intake.router)

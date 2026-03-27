@@ -64,8 +64,11 @@ async def _send_ready_email_task(
     )
 
 
-def _load_lead(db: Session, lead_id: str) -> Lead:
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+def _load_lead(db: Session, lead_id: str, tenant_id: str | None = None) -> Lead:
+    q = db.query(Lead).filter(Lead.id == lead_id)
+    if tenant_id is not None:
+        q = q.filter(Lead.tenant_id == tenant_id)
+    lead = q.first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
@@ -289,17 +292,34 @@ def _publish_redirect_target(lead_id: str, status: str, is_public_flow: bool) ->
 # FASE 2 — UX endpoints
 # =========================
 @router.get("/{lead_id}/status", response_class=HTMLResponse)
-def quote_status_page(request: Request, lead_id: str, db: Session = Depends(get_db)):
+def quote_status_page(
+    request: Request,
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
     # UX: de "tweede statuspagina" (quote_status.html) vervangen door één
     # tussenpagina: /processing/{lead_id}. Hierdoor wordt quote_status.html
     # nooit meer gerenderd in de customer flow.
-    _ = _load_lead(db, lead_id)
+    _ = _load_lead(db, lead_id, str(current_user.tenant_id))
     return RedirectResponse(url=f"/processing/{lead_id}", status_code=303)
 
 
 @router.get("/{lead_id}/status.json")
-def quote_status_json(request: Request, lead_id: str, db: Session = Depends(get_db)):
-    lead = _load_lead(db, lead_id)
+def quote_status_json(
+    request: Request,
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tenant_id = str(current_user.tenant_id)
+    lead = _load_lead(db, lead_id, tenant_id)
+    logger.info(
+        "[SECURITY_FIX] quote_status_json tenant-scoped user_id=%s tenant_id=%s lead_id=%s",
+        current_user.id,
+        tenant_id,
+        lead_id,
+    )
 
     # ✅ server-side autostart: als NEW, start publish
     if lead.status == "NEW":
@@ -310,16 +330,17 @@ def quote_status_json(request: Request, lead_id: str, db: Session = Depends(get_
                 background=BackgroundTasks(),
                 db=db,
                 request=request,
+                tenant_id=tenant_id,
             )
             # publish_quote commits; reload fresh state for response
-            lead = _load_lead(db, lead_id)
+            lead = _load_lead(db, lead_id, tenant_id)
         except Exception as e:
             logger.exception("STATUS_JSON publish failed lead=%s", lead.id)
             lead.status = "FAILED"
             lead.error_message = str(e)
             lead.updated_at = datetime.utcnow()
     db.commit()
-    lead = _load_lead(db, lead_id)
+    lead = _load_lead(db, lead_id, tenant_id)
 
     return {
         "lead_id": lead.id,
@@ -343,12 +364,21 @@ def publish_quote_route(
     lead_id: str,
     background: BackgroundTasks,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    tenant_id = str(current_user.tenant_id)
+    logger.info(
+        "[SECURITY_FIX] publish_quote_route tenant-scoped user_id=%s tenant_id=%s lead_id=%s",
+        current_user.id,
+        tenant_id,
+        lead_id,
+    )
     return publish_quote(
         lead_id=lead_id,
         background=background,
         db=db,
         request=request,
+        tenant_id=tenant_id,
     )
 
 
@@ -357,8 +387,9 @@ def publish_quote(
     background: BackgroundTasks,
     db: Session = Depends(get_db),
     request: Request | None = None,
+    tenant_id: str | None = None,
 ):
-    lead = _load_lead(db, lead_id)
+    lead = _load_lead(db, lead_id, tenant_id)
     is_public_flow = _is_public_publish_flow(request)
     logger.info("PUBLISH_FLOW_START lead=%s", lead.id)
 
@@ -587,16 +618,24 @@ def publish_quote(
 # ARTIFACTS
 # =========================
 @router.get("/{lead_id}/json")
-def quote_json(lead_id: str, db: Session = Depends(get_db)):
-    lead = _load_lead(db, lead_id)
+def quote_json(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lead = _load_lead(db, lead_id, str(current_user.tenant_id))
     if not getattr(lead, "estimate_json", None):
         raise HTTPException(status_code=404, detail="No estimate yet")
     return json.loads(lead.estimate_json)
 
 
 @router.get("/{lead_id}/html")
-def quote_html(lead_id: str, db: Session = Depends(get_db)):
-    lead = _load_lead(db, lead_id)
+def quote_html(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lead = _load_lead(db, lead_id, str(current_user.tenant_id))
 
     if lead.status not in ("SUCCEEDED", "NEEDS_REVIEW"):
         raise HTTPException(

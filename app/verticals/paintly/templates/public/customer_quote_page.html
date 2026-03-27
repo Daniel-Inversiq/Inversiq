@@ -1,0 +1,143 @@
+{# Alleen server-side renderen vanaf app.routers.public_estimate.public_estimate (GET /e/{token}). #}
+{# is_public moet exact True zijn (Jinja sameas); anders geen klant-header/CTA. #}
+{# Full-width document: geen max-width outer card rond de offerte; iframe edge-to-edge. #}
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    {% if is_pre_send %}
+      Offerte — {{ branding_company_name }}
+    {% elif is_public is sameas true %}
+      Uw offerte — {{ branding_company_name }}
+    {% else %}
+      Offerte — {{ branding_company_name }}
+    {% endif %}
+  </title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .htmx-indicator { opacity: 0; }
+    .htmx-request .htmx-indicator,
+    .htmx-indicator.htmx-request { opacity: 1; }
+  </style>
+</head>
+<body class="min-h-screen w-full bg-white text-slate-900 antialiased">
+
+    {% if is_public is sameas true %}
+
+    {% if can_customer_act is sameas true and not is_pre_send %}
+    <header class="w-full border-b border-slate-200 bg-white px-4 py-6 sm:px-8">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div class="flex items-start gap-3 sm:gap-4">
+            {% if branding_logo_url %}
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 sm:h-16 sm:w-16 md:h-20 md:w-20">
+              <img
+                src="{{ branding_logo_url }}"
+                alt="{{ branding_company_name }}"
+                class="h-full w-full max-h-full max-w-full object-contain object-center"
+              />
+            </div>
+            {% endif %}
+            <div class="min-w-0">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ branding_company_name }}</p>
+              <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Uw offerte</h1>
+              <p class="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+                {% if can_customer_act %}
+                  Bekijk uw offerte en geef eenvoudig uw keuze door.
+                {% elif lead_status == "ACCEPTED" %}
+                  Bedankt — uw akkoord is ontvangen.
+                {% elif lead_status in ["REJECTED", "DECLINED"] %}
+                  Uw reactie is ontvangen. De offerte vindt u hieronder nog terug.
+                {% else %}
+                  Bekijk hieronder uw offerte. Neem bij vragen contact op met uw schilder.
+                {% endif %}
+              </p>
+              {% if header_phone or header_email %}
+              <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                {% if header_phone %}
+                <span class="tabular-nums">{{ header_phone }}</span>
+                {% endif %}
+                {% if header_phone and header_email %}<span class="text-slate-300">•</span>{% endif %}
+                {% if header_email %}
+                <a href="mailto:{{ header_email }}" class="break-all text-sky-700 underline decoration-sky-700/30 underline-offset-2 hover:text-sky-800">{{ header_email }}</a>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% if header_phone %}
+              <div class="mt-3">
+                <a
+                  href="tel:{{ header_phone }}"
+                  class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <svg class="mr-2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                  </svg>
+                  Bellen
+                </a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="shrink-0 border-t border-slate-100 pt-4 text-sm text-slate-600 sm:border-0 sm:pt-0">
+            {% if can_customer_act %}
+              <p class="font-semibold text-slate-800">Offerte klaar om te bevestigen</p>
+              <p class="mt-0.5 text-xs text-slate-500">Bekijk en bevestig uw offerte</p>
+            {% elif lead_status == "ACCEPTED" %}
+              <p class="font-semibold text-emerald-800">Offerte bevestigd</p>
+              <p class="mt-0.5 text-xs text-emerald-700">We nemen contact met u op</p>
+            {% elif lead_status in ["REJECTED", "DECLINED"] %}
+              <p class="font-semibold text-slate-800">Reactie ontvangen</p>
+              <p class="mt-0.5 text-xs text-slate-500">Geen verdere actie nodig van u</p>
+            {% else %}
+              <p class="font-semibold text-slate-800">Offerte</p>
+              <p class="mt-0.5 text-xs text-slate-500">Informatief overzicht</p>
+            {% endif %}
+          </div>
+        </div>
+    </header>
+    {% endif %}
+
+    {% if not is_pre_send %}
+    {% if lead_status == "ACCEPTED" %}
+    <section class="w-full border-b border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-8">
+      <p class="text-sm font-semibold text-emerald-900">Offerte bevestigd</p>
+      <p class="mt-1 text-sm text-emerald-800">Uw akkoord is ontvangen. We nemen binnenkort contact met u op.</p>
+    </section>
+    {% elif lead_status in ["REJECTED", "DECLINED"] %}
+    <section class="w-full border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-8">
+      <p class="text-sm font-semibold text-slate-900">Offerte niet geaccepteerd</p>
+      <p class="mt-1 text-sm text-slate-600">Bedankt voor uw reactie. U kunt de offerte hieronder altijd opnieuw bekijken.</p>
+    </section>
+    {% endif %}
+    {% endif %}
+
+    {% if can_customer_act is sameas true %}
+      {% include "public/quote_action_bar.html" %}
+    {% endif %}
+
+    {% endif %}
+
+    {% if iframe_url %}
+    <iframe
+      src="{{ iframe_url }}"
+      class="block w-full max-w-none border-0"
+      loading="lazy"
+      title="Offerte"
+      onload="try{var d=this.contentWindow.document.documentElement,b=this.contentWindow.document.body;this.style.height=Math.max(d.scrollHeight,d.offsetHeight,b.scrollHeight,b.offsetHeight)+'px'}catch(e){}"
+    ></iframe>
+    {% else %}
+    <iframe
+      srcdoc="{{ body_html|e }}"
+      class="block w-full max-w-none border-0"
+      loading="lazy"
+      title="Offerte"
+      onload="try{var d=this.contentWindow.document.documentElement,b=this.contentWindow.document.body;this.style.height=Math.max(d.scrollHeight,d.offsetHeight,b.scrollHeight,b.offsetHeight)+'px'}catch(e){}"
+    ></iframe>
+    {% endif %}
+</body>
+</html>

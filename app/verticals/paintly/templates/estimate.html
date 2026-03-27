@@ -106,20 +106,10 @@
 </head>
 
 <body class="bg-[#eef4fb] text-slate-900 antialiased">
-
    {# ---------- pricing flags ---------- #}
   {% set review_flag = (needs_review_flag if needs_review_flag is defined else false) %}
   {% set show_prices = (show_prices if show_prices is defined else (not review_flag)) %}
   {% set is_provisional = (is_provisional if is_provisional is defined else review_flag) %}
-
-  {# Tijdelijke debugcomment voor View Source #}
-  <!-- DEBUG:
-    needs_review={{ needs_review }}
-    show_prices={{ show_prices }}
-    lead_status={{ lead_status if lead_status is defined else '' }}
-    price_mode={{ price_mode if price_mode is defined else '' }}
-    total_price={{ total_price if total_price is defined else '' }}
-  -->
 
   {% set month_names = {
     '01': 'januari',

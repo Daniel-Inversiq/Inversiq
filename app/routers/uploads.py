@@ -10,14 +10,16 @@ from uuid import uuid4
 from app.models import LeadFile
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.settings import settings
 from app.db import get_db
+from app.auth.deps import get_current_user
 
 from app.models import Lead
+from app.models.user import User
 from app.models.upload_record import UploadRecord, UploadStatus
 
 from app.services.s3_keys import _safe_filename
@@ -34,9 +36,10 @@ from app.services.storage import (
 import logging
 
 # -----------------------------------------------------------------------------
-# Router
+# Routers
 # -----------------------------------------------------------------------------
 router = APIRouter(prefix="/uploads", tags=["uploads"])
+public_router = APIRouter(prefix="/public/uploads", tags=["public-uploads"])
 logger = logging.getLogger(__name__)
 
 S3_BUCKET = settings.S3_BUCKET
@@ -49,19 +52,6 @@ PRESIGN_ALLOWED_CONTENT_TYPES = {
     "image/webp",
     "application/pdf",
 }
-
-
-# -----------------------------------------------------------------------------
-# Auth (test-compatible, minimal)
-# -----------------------------------------------------------------------------
-def require_auth(authorization: str | None = Header(default=None)) -> Dict[str, str]:
-    """
-    Tests verwachten dat /uploads/presign niet zonder Authorization header werkt.
-    MVP: accepteer iedere Bearer token, return test-user.
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="not_authenticated")
-    return {"user_id": "u1"}
 
 
 # -----------------------------------------------------------------------------
@@ -108,15 +98,33 @@ def _validate_content_type(ctype: str) -> None:
         raise HTTPException(status_code=415, detail=f"unsupported_content_type:{ctype}")
 
 
-def _lead_and_tenant(db: Session, lead_id: str) -> tuple[Lead, str]:
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+def _lead_and_tenant(db: Session, lead_id: str, current_user: User) -> tuple[Lead, str]:
+    tenant_id = str(getattr(current_user, "tenant_id", "") or "")
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == tenant_id)
+        .first()
+    )
     if not lead:
         raise HTTPException(status_code=404, detail="lead_not_found")
-
-    tenant_id = str(getattr(lead, "tenant_id", "") or "")
     if not tenant_id:
         raise HTTPException(status_code=500, detail="lead_missing_tenant_id")
 
+    return lead, tenant_id
+
+
+def _lead_and_tenant_public(db: Session, lead_id: str) -> tuple[Lead, str]:
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        logger.warning("[SECURITY_FIX] public_upload_reject reason=lead_not_found lead_id=%s", lead_id)
+        raise HTTPException(status_code=404, detail="lead_not_found")
+    tenant_id = str(getattr(lead, "tenant_id", "") or "")
+    if not tenant_id:
+        logger.warning(
+            "[SECURITY_FIX] public_upload_reject reason=lead_missing_tenant_id lead_id=%s",
+            lead_id,
+        )
+        raise HTTPException(status_code=500, detail="lead_missing_tenant_id")
     return lead, tenant_id
 
 
@@ -143,6 +151,7 @@ def _local_path_if_available(
 async def presign_upload(
     req: PresignRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Dict:
     """
     Presign for intake:
@@ -155,7 +164,13 @@ async def presign_upload(
     if not req.lead_id:
         raise HTTPException(status_code=400, detail="lead_id_required")
 
-    _, tenant_id = _lead_and_tenant(db, req.lead_id)
+    _, tenant_id = _lead_and_tenant(db, req.lead_id, current_user)
+    logger.info(
+        "[SECURITY_FIX] uploads_presign tenant-scoped user_id=%s tenant_id=%s lead_id=%s",
+        current_user.id,
+        tenant_id,
+        req.lead_id,
+    )
 
     ctype = req.content_type or _guess_content_type(req.filename)
 
@@ -243,6 +258,117 @@ async def presign_upload(
     raise HTTPException(status_code=500, detail="unsupported_storage_backend")
 
 
+@public_router.post("/presign")
+async def public_presign_upload(
+    req: PresignRequest,
+    db: Session = Depends(get_db),
+) -> Dict:
+    if not req.filename:
+        logger.warning("[SECURITY_FIX] public_upload_presign reject reason=filename_required")
+        raise HTTPException(status_code=400, detail="filename_required")
+    if not req.lead_id:
+        logger.warning("[SECURITY_FIX] public_upload_presign reject reason=lead_id_required")
+        raise HTTPException(status_code=400, detail="lead_id_required")
+
+    _, tenant_id = _lead_and_tenant_public(db, req.lead_id)
+    logger.info(
+        "[SECURITY_FIX] public_upload_presign lead_id=%s tenant resolved from lead=%s",
+        req.lead_id,
+        tenant_id,
+    )
+
+    ctype = req.content_type or _guess_content_type(req.filename)
+    if ctype not in PRESIGN_ALLOWED_CONTENT_TYPES:
+        logger.warning(
+            "[SECURITY_FIX] public_upload_presign reject reason=unsupported_content_type lead_id=%s ctype=%s",
+            req.lead_id,
+            ctype,
+        )
+        raise HTTPException(status_code=400, detail=f"unsupported_content_type:{ctype}")
+
+    try:
+        _validate_content_type(ctype)
+    except HTTPException as e:
+        if e.status_code == 415:
+            logger.warning(
+                "[SECURITY_FIX] public_upload_presign reject reason=unsupported_content_type_global lead_id=%s ctype=%s",
+                req.lead_id,
+                ctype,
+            )
+            raise HTTPException(status_code=400, detail=e.detail)
+        raise
+
+    if req.size is None or req.size <= 0 or req.size > MAX_BYTES:
+        logger.warning(
+            "[SECURITY_FIX] public_upload_presign reject reason=invalid_size lead_id=%s size=%s",
+            req.lead_id,
+            req.size,
+        )
+        raise HTTPException(status_code=400, detail="invalid_size")
+
+    key_without_tenant = _make_temp_key(req.filename)
+    key_with_tenant = f"{tenant_id}/{key_without_tenant}"
+    expires_in = req.expires_in or 60 * 5
+    st = get_storage()
+
+    if isinstance(st, S3Storage):
+        if not S3_BUCKET:
+            raise HTTPException(status_code=500, detail="s3_bucket_not_configured")
+        try:
+            import boto3
+
+            s3 = boto3.client(
+                "s3",
+                region_name=S3_REGION,
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            )
+            fields = {"key": key_with_tenant, "Content-Type": ctype}
+            conditions = [
+                {"Content-Type": ctype},
+                ["content-length-range", 1, MAX_BYTES],
+                ["starts-with", "$key", f"{tenant_id}/{TEMP_PREFIX}"],
+            ]
+            post = s3.generate_presigned_post(
+                Bucket=S3_BUCKET,
+                Key=key_with_tenant,
+                Fields=fields,
+                Conditions=conditions,
+                ExpiresIn=expires_in,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"presign_failed:{e}")
+        return {
+            "key": key_without_tenant,
+            "object_key": key_with_tenant,
+            "url": post["url"],
+            "fields": post["fields"],
+            "post": post,
+            "tenant_id": tenant_id,
+        }
+
+    if isinstance(st, LocalStorage):
+        post = {
+            "url": "/public/uploads/local",
+            "fields": {
+                "key": key_with_tenant,
+                "tenant_id": tenant_id,
+                "Content-Type": ctype,
+                "lead_id": str(req.lead_id),
+            },
+        }
+        return {
+            "key": key_without_tenant,
+            "object_key": key_with_tenant,
+            "url": post["url"],
+            "fields": post["fields"],
+            "post": post,
+            "tenant_id": tenant_id,
+        }
+
+    raise HTTPException(status_code=500, detail="unsupported_storage_backend")
+
+
 # -----------------------------------------------------------------------------
 # COMPLETE: frontend calls after successful upload
 # -----------------------------------------------------------------------------
@@ -250,6 +376,7 @@ async def presign_upload(
 async def complete_upload(
     req: UploadCompleteRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Dict:
     """
     Called by frontend AFTER upload succeeds.
@@ -257,7 +384,13 @@ async def complete_upload(
     Paintly-specific: triggert auto-generation van conceptofferte
     zodra er minimaal één upload is én er nog geen estimate_html_key is.
     """
-    lead, tenant_id = _lead_and_tenant(db, req.lead_id)
+    lead, tenant_id = _lead_and_tenant(db, req.lead_id, current_user)
+    logger.info(
+        "[SECURITY_FIX] uploads_complete tenant-scoped user_id=%s tenant_id=%s lead_id=%s",
+        current_user.id,
+        tenant_id,
+        req.lead_id,
+    )
     lead_id_value = str(getattr(lead, "id", req.lead_id) or req.lead_id)
 
     if not req.object_key or "/" not in req.object_key:
@@ -416,6 +549,155 @@ async def complete_upload(
     # (return hierboven al gedaan)
 
 
+@public_router.post("/complete")
+async def public_complete_upload(
+    req: UploadCompleteRequest,
+    db: Session = Depends(get_db),
+) -> Dict:
+    lead, tenant_id = _lead_and_tenant_public(db, req.lead_id)
+    logger.info(
+        "[SECURITY_FIX] public_upload_complete lead_id=%s tenant resolved from lead=%s",
+        req.lead_id,
+        tenant_id,
+    )
+
+    if not req.object_key or "/" not in req.object_key:
+        logger.warning(
+            "[SECURITY_FIX] public_upload_complete reject reason=bad_object_key lead_id=%s",
+            req.lead_id,
+        )
+        raise HTTPException(status_code=400, detail="bad_object_key")
+
+    prefix = f"{tenant_id}/"
+    if not req.object_key.startswith(prefix):
+        logger.warning(
+            "[SECURITY_FIX] public_upload_complete reject reason=tenant_mismatch lead_id=%s object_key=%r",
+            req.lead_id,
+            req.object_key,
+        )
+        raise HTTPException(status_code=403, detail="tenant_mismatch")
+
+    key_without_tenant = req.object_key[len(prefix) :]
+    while key_without_tenant.startswith(prefix):
+        key_without_tenant = key_without_tenant[len(prefix) :]
+    key_without_tenant = key_without_tenant.lstrip("/")
+
+    st = get_storage()
+    ok, meta, err = head_ok(st, tenant_id, key_without_tenant)
+    if not ok:
+        logger.warning(
+            "UPLOAD_COMPLETE_NOT_VERIFIED lead_id=%s tenant=%s key=%s err=%s backend=%s",
+            req.lead_id,
+            tenant_id,
+            key_without_tenant,
+            err,
+            type(st).__name__,
+        )
+        if not isinstance(st, LocalStorage):
+            raise HTTPException(status_code=400, detail=f"upload_not_verified:{err}")
+        meta = meta or {}
+
+    meta = meta or {}
+    size_bytes = int(meta.get("ContentLength") or meta.get("size_bytes") or 0)
+    content_type = (
+        str(meta.get("ContentType") or meta.get("content_type") or "")
+        or "application/octet-stream"
+    )
+
+    from app.models import LeadFile  # local import avoids circulars
+
+    lf = (
+        db.query(LeadFile)
+        .filter(LeadFile.lead_id == req.lead_id)
+        .filter(LeadFile.s3_key == key_without_tenant)
+        .first()
+    )
+    if lf:
+        lf.size_bytes = size_bytes or lf.size_bytes
+        lf.content_type = content_type or lf.content_type
+        db.add(lf)
+    else:
+        db.add(
+            LeadFile(
+                lead_id=req.lead_id,
+                s3_key=key_without_tenant,
+                size_bytes=size_bytes,
+                content_type=content_type,
+            )
+        )
+
+    existing = (
+        db.query(UploadRecord).filter(UploadRecord.object_key == req.object_key).first()
+    )
+    if existing:
+        existing.size = size_bytes
+        existing.mime = content_type or existing.mime
+        existing.status = UploadStatus.uploaded
+        existing.s3_metadata = meta
+        db.add(existing)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+    else:
+        rec = UploadRecord(
+            tenant_id=tenant_id,
+            lead_id=req.lead_id,
+            object_key=req.object_key,
+            size=size_bytes,
+            mime=content_type,
+            status=UploadStatus.uploaded,
+            s3_metadata=meta,
+        )
+        db.add(rec)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+
+    lead_id_value = str(getattr(lead, "id", req.lead_id) or req.lead_id)
+    try:
+        vertical = (getattr(lead, "vertical", "") or "").strip().lower()
+        if vertical == "paintly":
+            from app.verticals.paintly.adapter import PaintlyAdapter
+
+            db.refresh(lead)
+            has_estimate = bool(getattr(lead, "estimate_html_key", None))
+            if not has_estimate:
+                files_count = (
+                    db.query(LeadFile).filter(LeadFile.lead_id == req.lead_id).count()
+                )
+                if files_count > 0:
+                    logger.info(
+                        "AUTO_COMPUTE_UPLOAD_TRIGGER_START lead=%s tenant=%s files=%s",
+                        lead_id_value,
+                        tenant_id,
+                        files_count,
+                    )
+                    adapter = PaintlyAdapter()
+                    adapter.compute_quote(db, req.lead_id)
+                    db.refresh(lead)
+                    logger.info(
+                        "AUTO_COMPUTE_UPLOAD_TRIGGER_DONE lead=%s status=%s",
+                        lead_id_value,
+                        getattr(lead, "status", None),
+                    )
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.exception(
+            "AUTO_COMPUTE_UPLOAD_TRIGGER_FAILED lead=%s error=%s",
+            lead_id_value,
+            f"{type(e).__name__}:{e}",
+        )
+
+    return {"status": "ok", "object_key": req.object_key}
+
+
 # -----------------------------------------------------------------------------
 # LOCAL upload endpoint (emuleert S3-presigned POST)
 # -----------------------------------------------------------------------------
@@ -427,6 +709,7 @@ async def local_upload(
     content_type: Optional[str] = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Dict:
     """
     Client post hiernaartoe met de 'fields' uit presign + file.
@@ -435,8 +718,24 @@ async def local_upload(
       - content-type whitelisted
       - size <= MAX_BYTES
     """
-    if not key or not tenant_id:
+    if not key:
         raise HTTPException(status_code=400, detail="missing_key_or_tenant")
+
+    if not lead_id:
+        raise HTTPException(status_code=400, detail="lead_id_required")
+
+    lead_id_value = lead_id.strip()
+    lead, expected_tenant_id = _lead_and_tenant(db, lead_id_value, current_user)
+    if str(tenant_id) != expected_tenant_id:
+        raise HTTPException(status_code=403, detail="tenant_mismatch")
+
+    tenant_id = expected_tenant_id
+    logger.info(
+        "[SECURITY_FIX] uploads_local tenant-scoped user_id=%s tenant_id=%s lead_id=%s",
+        current_user.id,
+        tenant_id,
+        lead.id,
+    )
 
     expected_prefix = f"{tenant_id}/{TEMP_PREFIX}"
     if not key.startswith(expected_prefix):
@@ -457,13 +756,7 @@ async def local_upload(
     tenant_prefix = f"{tenant_id}/"
     key_without_tenant = key[len(tenant_prefix) :]
 
-    lead_id_value = (lead_id or "").strip() or None
-
-    # ✅ als lead_id meegegeven is: check dat lead bestaat + tenant matcht
-    if lead_id_value is not None:
-        lead, t = _lead_and_tenant(db, lead_id_value)
-        if str(t) != str(tenant_id):
-            raise HTTPException(status_code=403, detail="tenant_mismatch")
+    lead_id_value = lead.id
 
     st = get_storage()
     if not isinstance(st, LocalStorage):
@@ -494,6 +787,90 @@ async def local_upload(
         db.query(UploadRecord).filter(UploadRecord.object_key == object_key).first()
     )
     if not existing and lead_id_value is not None:
+        rec = UploadRecord(
+            tenant_id=tenant_id,
+            lead_id=lead_id_value,
+            object_key=object_key,
+            size=len(data),
+            mime=ctype,
+            status=UploadStatus.uploaded,
+            s3_metadata={"ContentLength": len(data), "ContentType": ctype},
+        )
+        db.add(rec)
+    db.commit()
+
+    return {
+        "status": "ok",
+        "key": key_without_tenant,
+        "object_key": object_key,
+        "size": len(data),
+        "content_type": ctype,
+    }
+
+
+@public_router.post("/local")
+async def public_local_upload(
+    key: str = Form(...),
+    tenant_id: str = Form(...),
+    lead_id: Optional[str] = Form(None),
+    content_type: Optional[str] = Form(None),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> Dict:
+    if not key:
+        logger.warning("[SECURITY_FIX] public_upload_local reject reason=missing_key")
+        raise HTTPException(status_code=400, detail="missing_key_or_tenant")
+    if not lead_id:
+        logger.warning("[SECURITY_FIX] public_upload_local reject reason=lead_id_required")
+        raise HTTPException(status_code=400, detail="lead_id_required")
+
+    lead_id_value = lead_id.strip()
+    _, expected_tenant_id = _lead_and_tenant_public(db, lead_id_value)
+    if str(tenant_id) != expected_tenant_id:
+        logger.warning(
+            "[SECURITY_FIX] public_upload_local reject reason=tenant_mismatch lead_id=%s",
+            lead_id_value,
+        )
+        raise HTTPException(status_code=403, detail="tenant_mismatch")
+    tenant_id = expected_tenant_id
+    logger.info(
+        "[SECURITY_FIX] public_upload_local lead_id=%s tenant resolved from lead=%s",
+        lead_id_value,
+        tenant_id,
+    )
+
+    expected_prefix = f"{tenant_id}/{TEMP_PREFIX}"
+    if not key.startswith(expected_prefix):
+        raise HTTPException(status_code=400, detail="wrong_prefix")
+
+    ctype = content_type or file.content_type or "application/octet-stream"
+    try:
+        _validate_content_type(ctype)
+    except HTTPException as e:
+        if e.status_code == 415:
+            raise HTTPException(status_code=400, detail=e.detail)
+        raise
+
+    data = await file.read()
+    if not data or len(data) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail="size_exceeded")
+
+    tenant_prefix = f"{tenant_id}/"
+    key_without_tenant = key[len(tenant_prefix) :]
+    st = get_storage()
+    if not isinstance(st, LocalStorage):
+        raise HTTPException(status_code=400, detail="not_local_storage")
+
+    try:
+        st.save_bytes(tenant_id, key_without_tenant, data, content_type=ctype)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"local_upload_failed:{e}")
+
+    object_key = f"{tenant_id}/{key_without_tenant}"
+    existing = (
+        db.query(UploadRecord).filter(UploadRecord.object_key == object_key).first()
+    )
+    if not existing:
         rec = UploadRecord(
             tenant_id=tenant_id,
             lead_id=lead_id_value,

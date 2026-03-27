@@ -459,9 +459,9 @@
       if (!ALLOWED_TYPES.has(ctype)) throw new Error("unsupported_type");
       const id = await ensureLeadId();
 
-      const res = await fetch("/uploads/presign", {
+      const res = await fetch("/public/uploads/presign", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer demo" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: file.name, content_type: ctype, size: file.size, lead_id: String(id) }),
       });
       if (!res.ok) throw new Error("presign_failed");
@@ -477,7 +477,7 @@
       const objectKey = data.object_key || data.key || data.objectKey;
       if (!objectKey) throw new Error("presign_failed");
 
-      const cRes = await fetch("/uploads/complete", {
+      const cRes = await fetch("/public/uploads/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lead_id: String(id), object_key: objectKey }),
@@ -611,6 +611,7 @@
         const data = ct.includes("application/json") ? await res.json() : null;
         if (!res.ok) { showErrorBox(data?.detail ? JSON.stringify(data.detail) : "Versturen mislukt."); return; }
 
+        if (data?.next?.status) { window.location.href = String(data.next.status); return; }
         if (data?.lead_id) { window.location.href = `/processing/${data.lead_id}`; return; }
         if (leadId) { window.location.href = `/processing/${leadId}`; return; }
         showErrorBox("Onverwachte reactie van de server.");

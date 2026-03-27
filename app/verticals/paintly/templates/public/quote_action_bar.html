@@ -1,5 +1,5 @@
-<section class="mb-6 sm:mb-8" x-data="{ rejectOpen: false }">
-  <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+{% if is_public is sameas true and can_customer_act is sameas true %}
+<section class="w-full border-b border-slate-200 bg-white px-4 py-5 sm:px-8 sm:py-6" x-data="{ rejectOpen: false }">
     <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h2 class="text-lg font-semibold text-slate-900">Maak uw keuze</h2>
@@ -39,7 +39,6 @@
         </button>
       </div>
     </div>
-  </div>
 
   <div
     x-show="rejectOpen"
@@ -106,3 +105,4 @@
     </div>
   </div>
 </section>
+{% endif %}

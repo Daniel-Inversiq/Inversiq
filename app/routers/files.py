@@ -129,14 +129,14 @@ def serve_local_file(tenant_id: str, file_path: str):
         alt_key = alt_key[len(self_prefix) :].lstrip("/")
     alt1 = None if alt_key == key else _try_resolve(tenant_id, alt_key, "strip_self_prefix_loop")
 
-    # 3) legacy/malformed: file_path begins with some other tenant id: e.g. key="default/uploads/.."
-    alt2 = None
-    if "/" in key:
-        first, rest = key.split("/", 1)
-        if first != tenant_id and _tenant_id_sane(first) and rest:
-            alt2 = _try_resolve(first, rest, "key_includes_other_tenant_prefix")
-
-    resolved = direct or alt1 or alt2
+    # SECURITY: never resolve across tenant boundaries.
+    resolved = direct or alt1
+    if not resolved:
+        logger.info(
+            "[SECURITY_FIX] files_route_no_cross_tenant_fallback tenant_id=%r requested_key=%r",
+            tenant_id,
+            key,
+        )
     logger.info(
         "FILES_ROUTE_LOCAL_RESOLVE tenant_id=%r requested_key=%r resolved=%r attempts_count=%s",
         tenant_id,
