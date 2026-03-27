@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import logging
 import mimetypes
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from decimal import Decimal, ROUND_HALF_UP
@@ -51,6 +52,64 @@ def _as_list(val: Any) -> List[str]:
         parts = [p.strip() for p in val.splitlines()]
         return [p for p in parts if p]
     return [str(val)]
+
+
+def _compact_alnum(value: Any) -> str:
+    txt = str(value or "").strip()
+    if not txt:
+        return ""
+    return re.sub(r"[^A-Za-z0-9]", "", txt)
+
+
+def get_public_estimate_reference(estimate: Dict[str, Any]) -> str:
+    """
+    Build a short, customer-facing estimate reference.
+
+    Priority:
+    1) Existing short public code (e.g. F3F585).
+    2) Any configured reference field if it is already compact.
+    3) Fallback: last 6 alphanumeric chars from estimate/lead identifiers.
+    """
+    estimate = estimate or {}
+    meta = estimate.get("meta") if isinstance(estimate.get("meta"), dict) else {}
+    lead_obj = estimate.get("lead") if isinstance(estimate.get("lead"), dict) else {}
+
+    short_candidates = [
+        meta.get("public_reference"),
+        meta.get("quote_reference"),
+        meta.get("estimate_reference"),
+        meta.get("reference"),
+        estimate.get("public_reference"),
+        estimate.get("quote_reference"),
+        estimate.get("estimate_reference"),
+        estimate.get("reference"),
+    ]
+    for c in short_candidates:
+        compact = _compact_alnum(c).upper()
+        if 4 <= len(compact) <= 10 and len(compact) <= 8:
+            return compact
+
+    id_candidates = [
+        meta.get("estimate_id"),
+        estimate.get("estimate_id"),
+        meta.get("lead_id"),
+        estimate.get("lead_id"),
+        lead_obj.get("id"),
+        estimate.get("id"),
+    ]
+    for raw in id_candidates:
+        txt = str(raw or "").strip()
+        if not txt:
+            continue
+        if txt.lower().startswith("lead_"):
+            txt = txt[5:]
+        compact = _compact_alnum(txt).upper()
+        if len(compact) >= 6:
+            return compact[-6:]
+        if compact:
+            return compact
+
+    return "OFF000"
 
 
 def _build_pdf_logo_data_url(raw_url: Optional[str]) -> Optional[str]:
@@ -410,15 +469,10 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
         or estimate.get("subtitle")
         or ""
     )
-    reference = (
-        (meta.get("reference") if isinstance(meta, dict) else None)
-        or meta.get("estimate_id")
-        or estimate.get("estimate_id")
-        or ""
-    )
+    reference = get_public_estimate_reference(estimate)
     project = {
-        "lead_id": meta.get("estimate_id"),
-        "estimate_id": meta.get("estimate_id"),
+        "lead_id": meta.get("lead_id") or estimate.get("lead_id"),
+        "estimate_id": meta.get("estimate_id") or estimate.get("estimate_id"),
         "location": estimate.get("location") or "—",
         "date": meta.get("date"),
         "valid_until": meta.get("valid_until"),
@@ -513,15 +567,10 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
         or estimate.get("subtitle")
         or ""
     )
-    reference = (
-        (meta.get("reference") if isinstance(meta, dict) else None)
-        or meta.get("estimate_id")
-        or estimate.get("estimate_id")
-        or ""
-    )
+    reference = get_public_estimate_reference(estimate)
     project = {
-        "lead_id": meta.get("estimate_id"),
-        "estimate_id": meta.get("estimate_id"),
+        "lead_id": meta.get("lead_id") or estimate.get("lead_id"),
+        "estimate_id": meta.get("estimate_id") or estimate.get("estimate_id"),
         "location": estimate.get("location") or "—",
         "date": meta.get("date"),
         "valid_until": meta.get("valid_until"),

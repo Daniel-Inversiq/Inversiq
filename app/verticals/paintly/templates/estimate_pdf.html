@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <title>{{ copy.doc_title if copy and copy.doc_title else "Offerte schilderwerk" }}</title>
   <style>
+    *,
+    *:before,
+    *:after {
+      box-sizing: border-box;
+    }
+
     :root {
       --accent-500: #0f766e;
       --accent-100: #ecfdf5;
@@ -28,33 +34,69 @@
       width: 100%;
     }
 
+    .content-wrap {
+      width: 100%;
+      max-width: 186mm;
+      margin: 0 auto;
+      padding-top: 2mm;
+    }
+
     .header {
       border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 28px;
+      padding: 20px 24px 18px;
+      margin: 0 0 30px;
       page-break-inside: avoid;
       background: #ffffff;
     }
 
-    .header-table,
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      width: 100%;
+    }
+
     .two-col {
       width: 100%;
       border-collapse: collapse;
     }
 
-    .header-table td,
     .two-col td {
       vertical-align: top;
     }
 
     .brand-col {
-      width: 66%;
-      padding-right: 24px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .brand-media {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-logo-col {
+      width: 114px;
+      flex: 0 0 114px;
+    }
+
+    .brand-text-col {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-right: 8px;
     }
 
     .meta-col {
+      flex: 0 0 auto;
       width: 34%;
+      max-width: 63mm;
+      min-width: 48mm;
+      margin-left: 8px;
     }
 
     .logo-wrap {
@@ -111,6 +153,8 @@
       border-radius: 10px;
       padding: 16px;
       background: #f8fafc;
+      width: 100%;
+      max-width: 100%;
     }
 
     .meta-row {
@@ -135,7 +179,7 @@
 
     .divider {
       border-top: 1px solid #e2e8f0;
-      margin-top: 16px;
+      margin-top: 18px;
       padding-top: 0;
     }
 
@@ -397,7 +441,9 @@
 <body>
   {% set company_display_name = (branding_company_name if branding_company_name else (company.name if company and company.name else "Paintly")) %}
   {% set ref_code = "" %}
-  {% if project and project.estimate_id %}
+  {% if project and project.reference %}
+    {% set ref_code = (project.reference|string)|upper %}
+  {% elif project and project.estimate_id %}
     {% set ref_code = (project.estimate_id|string)[-6:]|upper %}
   {% elif project and project.lead_id %}
     {% set ref_code = (project.lead_id|string)[-6:]|upper %}
@@ -408,39 +454,35 @@
   {% set lead_address = (project.address if project and project.address else (project.location if project and project.location else "Nog te bevestigen")) %}
 
   <div class="page">
-    <div class="header">
-      <table class="header-table">
-        <tr>
-          <td class="brand-col">
-            <table style="border-collapse: collapse; width: 100%;">
-              <tr>
-                {% set logo_src = (branding_logo_data_url if branding_logo_data_url else branding_logo_url) %}
+    <div class="content-wrap">
+      <div class="header">
+        <div class="header-inner">
+          <div class="brand-col">
+            <div class="brand-media">
+              {% set logo_src = (branding_logo_data_url if branding_logo_data_url else branding_logo_url) %}
+              <div class="brand-logo-col">
                 {% if logo_src %}
-                  <td style="width: 114px; vertical-align: top; padding: 0 14px 0 0; border: 0;">
-                    <div class="logo-wrap">
-                      <img src="{{ logo_src }}" alt="{{ company_display_name }}">
-                    </div>
-                  </td>
+                  <div class="logo-wrap">
+                    <img src="{{ logo_src }}" alt="{{ company_display_name }}">
+                  </div>
                 {% else %}
-                  <td style="width: 114px; vertical-align: top; padding: 0 14px 0 0; border: 0;">
-                    <div class="logo-fallback">{{ company_display_name }}</div>
-                  </td>
+                  <div class="logo-fallback">{{ company_display_name }}</div>
                 {% endif %}
-                <td style="vertical-align: middle; border: 0; padding: 0;">
-                  <p class="brand-name">{{ company_display_name }}</p>
-                  <p class="brand-sub">Professionele offerte voor schilderwerk</p>
-                  {% if company.phone or company.email %}
-                    <p class="brand-sub">
-                      {% if company.phone %}{{ company.phone }}{% endif %}
-                      {% if company.phone and company.email %} | {% endif %}
-                      {% if company.email %}{{ company.email }}{% endif %}
-                    </p>
-                  {% endif %}
-                </td>
-              </tr>
-            </table>
-          </td>
-          <td class="meta-col">
+              </div>
+              <div class="brand-text-col">
+                <p class="brand-name">{{ company_display_name }}</p>
+                <p class="brand-sub">Professionele offerte voor schilderwerk</p>
+                {% if company.phone or company.email %}
+                  <p class="brand-sub">
+                    {% if company.phone %}{{ company.phone }}{% endif %}
+                    {% if company.phone and company.email %} | {% endif %}
+                    {% if company.email %}{{ company.email }}{% endif %}
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="meta-col">
             <div class="meta-card">
               <p class="meta-row">
                 <span class="meta-label">Referentie:</span>
@@ -455,11 +497,10 @@
                 <span class="meta-value">{{ project.valid_until if project and project.valid_until else "In overleg" }}</span>
               </p>
             </div>
-          </td>
-        </tr>
-      </table>
-      <div class="divider"></div>
-    </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+      </div>
 
     <div class="title-block">
       <span class="label-badge">Offerte</span>
@@ -651,6 +692,7 @@
       <p>
         Automatisch gegenereerde offerte op basis van aangeleverde projectinformatie, onder voorbehoud van eindcontrole op locatie.
       </p>
+    </div>
     </div>
   </div>
 </body>
