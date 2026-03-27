@@ -24,6 +24,27 @@
             background: linear-gradient(135deg, #4f46e5, #6366f1);
             color: #fff;
         }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .brand img {
+            max-height: 60px;
+            width: auto;
+            max-width: 220px;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 6px 8px;
+        }
+        .brand-name {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            line-height: 1.1;
+        }
         .header h1 {
             margin: 0 0 6px 0;
             font-size: 24px;
@@ -119,6 +140,25 @@
 <body>
 <div class="wrap">
     <div class="header">
+        {% set brand_company_name = (
+            (user.company_name if user and user.company_name else None)
+            or (tenant.company_name if tenant and tenant.company_name else None)
+            or "Paintly"
+        ) %}
+        {% set brand_logo_url = (
+            (user.logo_url if user and user.logo_url else None)
+            or (tenant.logo_url if tenant and tenant.logo_url else None)
+        ) %}
+        {% if brand_logo_url or brand_company_name %}
+        <div class="brand">
+            {% if brand_logo_url %}
+            <img src="{{ brand_logo_url }}" alt="{{ brand_company_name or 'Bedrijfslogo' }}">
+            {% endif %}
+            {% if brand_company_name %}
+            <div class="brand-name">{{ brand_company_name }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
         <h1>Offerte voor {{ lead.name }}</h1>
         <p>Lead #{{ lead.id }}{% if tenant_id %} · Tenant: {{ tenant_id }}{% endif %}</p>
     </div>

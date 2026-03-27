@@ -16,7 +16,14 @@ from aether.engine.context import PipelineState, StepResult
 from decimal import Decimal, InvalidOperation
 
 from app.models import Lead, LeadFile, Tenant
+from app.models.user import User
 from app.models.upload_record import UploadRecord, UploadStatus
+from app.services.branding import (
+    branding_html_debug_summary,
+    is_custom_branding_allowed,
+    log_branding_state,
+    normalize_plan,
+)
 from app.services.photo_quality.inference import predict_photo_quality
 from app.services.tenant_pricing import apply_paintly_tenant_pricing_overrides
 from app.services.storage import get_storage
@@ -494,6 +501,7 @@ def step_pricing_v1(state: PipelineState, step: StepConfig, assets: dict) -> Ste
 # -------------------------
 def step_output_v1(state: PipelineState, step: StepConfig, assets: dict) -> StepResult:
     lead: Lead = assets["lead"]
+    db: Session = assets["db"]
 
     vision = (state.data.get("steps") or {}).get("aggregate", {}).get("vision")
     pricing = (state.data.get("steps") or {}).get("pricing", {}).get("pricing")
@@ -511,6 +519,215 @@ def step_output_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
 
     estimate = build_pricing_output(lead, vision, pricing)
     estimate = _ensure_obj(estimate)
+    if not isinstance(estimate, dict):
+        estimate = {}
+
+    try:
+        tenant_row = (
+            db.query(Tenant).filter(Tenant.id == getattr(lead, "tenant_id", None)).first()
+        )
+        tenant_user = (
+            db.query(User)
+            .filter(
+                User.tenant_id == str(getattr(lead, "tenant_id", "")),
+                User.is_active == True,  # noqa: E712
+            )
+            .order_by(User.created_at.desc(), User.id.desc())
+            .first()
+        )
+
+        plan_raw = getattr(tenant_row, "plan_code", None) if tenant_row is not None else None
+        plan_normalized = normalize_plan(plan_raw)
+        branding_allowed = is_custom_branding_allowed(plan_raw)
+
+        user_company_name = (
+            (getattr(tenant_user, "company_name", None) or "").strip()
+            if tenant_user is not None
+            else ""
+        )
+        tenant_company_name = (
+            (getattr(tenant_row, "company_name", None) or "").strip()
+            if tenant_row is not None
+            else ""
+        )
+        user_logo_url = (
+            (getattr(tenant_user, "logo_url", None) or "").strip()
+            if tenant_user is not None
+            else ""
+        )
+        tenant_logo_url = (
+            (getattr(tenant_row, "logo_url", None) or "").strip()
+            if tenant_row is not None
+            else ""
+        )
+
+        chosen_custom_name = user_company_name or tenant_company_name
+        chosen_custom_logo = user_logo_url or tenant_logo_url
+        branding_source = "default"
+        fallback_reason = None
+        if branding_allowed and chosen_custom_name:
+            branding_company_name = chosen_custom_name
+            branding_logo_url = chosen_custom_logo or None
+            branding_source = "user" if user_company_name else "tenant"
+            if not branding_logo_url:
+                fallback_reason = "logo_missing"
+        else:
+            branding_company_name = "Paintly"
+            branding_logo_url = None
+            fallback_reason = "tier_not_allowed" if not branding_allowed else "company_name_missing"
+    except Exception as exc:
+        tenant_row = None
+        tenant_user = None
+        plan_raw = None
+        plan_normalized = "unknown"
+        branding_allowed = False
+        user_company_name = ""
+        tenant_company_name = ""
+        user_logo_url = ""
+        tenant_logo_url = ""
+        branding_company_name = "Paintly"
+        branding_logo_url = None
+        branding_source = "default"
+        fallback_reason = "branding_resolve_exception"
+        log_branding_state(
+            logger,
+            "branding_resolve_failed",
+            {
+                "lead_id": str(getattr(lead, "id", "")),
+                "tenant_id": str(getattr(lead, "tenant_id", "")),
+                "error": repr(exc),
+                "branding_allowed": False,
+                "branding_company_name": "Paintly",
+                "branding_logo_url": None,
+            },
+        )
+
+    intake_payload = {}
+    try:
+        raw_payload = getattr(lead, "intake_payload", None)
+        if isinstance(raw_payload, str) and raw_payload.strip():
+            parsed_payload = json.loads(raw_payload)
+            if isinstance(parsed_payload, dict):
+                intake_payload = parsed_payload
+    except Exception:
+        intake_payload = {}
+
+    customer_name = (getattr(lead, "name", None) or "").strip()
+    customer_email = (getattr(lead, "email", None) or "").strip()
+    customer_phone = (getattr(lead, "phone", None) or "").strip()
+    customer_location = (
+        (intake_payload.get("address") if isinstance(intake_payload, dict) else None)
+        or (intake_payload.get("street") if isinstance(intake_payload, dict) else None)
+        or ""
+    )
+
+    contractor_email = (
+        (getattr(tenant_user, "email", None) or "").strip()
+        if tenant_user is not None
+        else ""
+    ) or (
+        (getattr(tenant_row, "email", None) or "").strip()
+        if tenant_row is not None
+        else ""
+    )
+    contractor_phone = (
+        (getattr(tenant_row, "phone", None) or "").strip()
+        if tenant_row is not None
+        else ""
+    )
+    contractor_company_name = (branding_company_name or "").strip()
+
+    logger.info(
+        "[DATA_DEBUG] snapshot input lead_id=%s lead_name=%r lead_email=%r lead_phone=%r tenant_company_name=%r user_company_name=%r tenant_email=%r user_email=%r tenant_phone=%r",
+        str(getattr(lead, "id", "")),
+        getattr(lead, "name", None),
+        getattr(lead, "email", None),
+        getattr(lead, "phone", None),
+        getattr(tenant_row, "company_name", None) if tenant_row is not None else None,
+        getattr(tenant_user, "company_name", None) if tenant_user is not None else None,
+        getattr(tenant_row, "email", None) if tenant_row is not None else None,
+        getattr(tenant_user, "email", None) if tenant_user is not None else None,
+        getattr(tenant_row, "phone", None) if tenant_row is not None else None,
+    )
+
+    company = estimate.get("company") if isinstance(estimate.get("company"), dict) else {}
+    company = dict(company)
+    company["company_name"] = branding_company_name
+    company["name"] = branding_company_name
+    company["logo_url"] = branding_logo_url
+    company["email"] = contractor_email or company.get("email") or ""
+    company["phone"] = contractor_phone or company.get("phone") or ""
+    estimate["company"] = company
+    estimate["customer"] = {
+        "name": customer_name,
+        "email": customer_email,
+        "phone": customer_phone,
+        "location": customer_location,
+    }
+    estimate["contractor"] = {
+        "company_name": contractor_company_name,
+        "email": contractor_email,
+        "phone": contractor_phone,
+    }
+    estimate["lead"] = {
+        "name": customer_name,
+        "email": customer_email,
+        "phone": customer_phone,
+    }
+    estimate["branding_company_name"] = branding_company_name
+    estimate["branding_logo_url"] = branding_logo_url
+    estimate["branding_allowed"] = branding_allowed
+    estimate["branding_source"] = branding_source
+    logger.info(
+        "[DATA_DEBUG] snapshot output lead_id=%s customer_name=%r customer_email=%r customer_phone=%r contractor_company_name=%r contractor_email=%r contractor_phone=%r",
+        str(getattr(lead, "id", "")),
+        estimate.get("customer", {}).get("name"),
+        estimate.get("customer", {}).get("email"),
+        estimate.get("customer", {}).get("phone"),
+        estimate.get("contractor", {}).get("company_name"),
+        estimate.get("contractor", {}).get("email"),
+        estimate.get("contractor", {}).get("phone"),
+    )
+
+    log_branding_state(
+        logger,
+        "settings_loaded",
+        {
+            "lead_id": str(getattr(lead, "id", "")),
+            "user_id": str(getattr(tenant_user, "id", "")) if tenant_user is not None else None,
+            "tenant_id": str(getattr(lead, "tenant_id", "")),
+            "user_company_name": user_company_name or None,
+            "tenant_company_name": tenant_company_name or None,
+            "user_logo_url": user_logo_url or None,
+            "tenant_logo_url": tenant_logo_url or None,
+            "plan_raw": plan_raw,
+            "plan_normalized": plan_normalized,
+            "branding_allowed": branding_allowed,
+        },
+    )
+    log_branding_state(
+        logger,
+        "tier_gating",
+        {
+            "tier_source": "tenant.plan_code",
+            "plan_raw": plan_raw,
+            "plan_normalized": plan_normalized,
+            "branding_allowed": branding_allowed,
+        },
+    )
+    log_branding_state(
+        logger,
+        "estimate_snapshot",
+        {
+            "estimate_id": ((estimate.get("meta") or {}).get("estimate_id") if isinstance(estimate.get("meta"), dict) else None),
+            "lead_id": str(getattr(lead, "id", "")),
+            "branding_company_name": branding_company_name,
+            "branding_logo_url": branding_logo_url,
+            "branding_allowed": branding_allowed,
+            "branding_source": branding_source,
+            "fallback_reason": fallback_reason,
+        },
+    )
 
     try:
         for li in estimate.get("line_items") or []:
@@ -601,9 +818,7 @@ def step_render_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
         return s
 
     # --- pricing output (canonical) ---
-    pricing = (state.data.get("steps") or {}).get("output", {}).get(
-        "estimate_json"
-    ) or {}
+    pricing = (state.data.get("steps") or {}).get("output", {}).get("estimate_json") or {}
     pricing = _ensure_obj(pricing)
     if not isinstance(pricing, dict):
         pricing = {}
@@ -829,8 +1044,39 @@ def step_render_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
         "included": True,
     }
 
+    branding_company_name = (
+        pricing.get("branding_company_name") if isinstance(pricing.get("branding_company_name"), str) else "Paintly"
+    )
+    branding_logo_url = (
+        pricing.get("branding_logo_url") if isinstance(pricing.get("branding_logo_url"), str) else None
+    )
+    log_branding_state(
+        logger,
+        "pre_render",
+        {
+            "lead_id": str(getattr(lead, "id", "")),
+            "template": str(template_path),
+            "branding_company_name": branding_company_name,
+            "branding_logo_url": branding_logo_url,
+            "branding_is_paintly": branding_company_name == "Paintly",
+            "branding_logo_empty": not bool((branding_logo_url or "").strip()),
+        },
+    )
+
     if str(template_path).endswith("estimate.html"):
         html = render_estimate_html(pricing)
+        html_summary = branding_html_debug_summary(
+            html,
+            branding_name=branding_company_name,
+        )
+        log_branding_state(
+            logger,
+            "post_render",
+            {
+                "lead_id": str(getattr(lead, "id", "")),
+                **html_summary,
+            },
+        )
         logger.info(
             "RENDER_HTML_STEP_SOURCE lead_id=%s source=render_estimate_html canonical=True",
             getattr(lead, "id", None),
@@ -871,6 +1117,15 @@ def step_store_html_v1(
         "STORE_HTML_CONTEXT lead_id=%s html_length=%s",
         getattr(lead, "id", None),
         len(html),
+    )
+    log_branding_state(
+        logger,
+        "store_html",
+        {
+            "lead_id": str(getattr(lead, "id", "")),
+            "estimate_html_key": html_key,
+            **branding_html_debug_summary(html),
+        },
     )
 
     storage.save_bytes(
@@ -1064,15 +1319,15 @@ def _decide_paintly_needs_review(
     # - aggregate_needs_review OR any blocking reason now escalates to review
     # - except for the explicit allowlisted aggregate-only case above
     needs_review = bool(
-    (
-        pricing_blocked
-        or hard_reason_present
-        or aggregate_surface_prep_blocker
-        or aggregate_needs_review
-        or bool(blocking_review_reasons)
+        (
+            pricing_blocked
+            or hard_reason_present
+            or aggregate_surface_prep_blocker
+            or aggregate_needs_review
+            or bool(blocking_review_reasons)
+        )
+        and (not allowlisted_aggregate_only)
     )
-    and (not allowlisted_aggregate_only)
-)
 
     logger.info(
         "REVIEW_BLOCKING_FILTER lead_id=%s merged_reasons=%s "

@@ -250,11 +250,40 @@ def offerte_redirect(lead_id: str, db: Session = Depends(get_db)):
     """
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
+        logger.info(
+            "OFFERTE_REDIRECT_REJECT lead_id=%s reason=%s",
+            lead_id,
+            "lead_not_found",
+        )
         raise HTTPException(status_code=404, detail="Lead not found")
 
+    logger.info(
+        "OFFERTE_REDIRECT_CHECK lead_id=%s status=%s public_token=%r estimate_html_key=%r",
+        str(getattr(lead, "id", lead_id)),
+        str(getattr(lead, "status", None)),
+        getattr(lead, "public_token", None),
+        getattr(lead, "estimate_html_key", None),
+    )
+
     if not getattr(lead, "public_token", None):
+        logger.info(
+            "OFFERTE_REDIRECT_REJECT lead_id=%s status=%s public_token=%r estimate_html_key=%r reason=%s",
+            str(getattr(lead, "id", lead_id)),
+            str(getattr(lead, "status", None)),
+            getattr(lead, "public_token", None),
+            getattr(lead, "estimate_html_key", None),
+            "missing_public_token",
+        )
         raise HTTPException(status_code=404, detail="Offerte nog niet beschikbaar")
 
+    logger.info(
+        "OFFERTE_REDIRECT_OK lead_id=%s status=%s public_token=%r estimate_html_key=%r redirect=%s",
+        str(getattr(lead, "id", lead_id)),
+        str(getattr(lead, "status", None)),
+        getattr(lead, "public_token", None),
+        getattr(lead, "estimate_html_key", None),
+        f"/e/{lead.public_token}",
+    )
     return RedirectResponse(url=f"/e/{lead.public_token}", status_code=303)
 
 

@@ -482,6 +482,15 @@ class PaintlyAdapter(VerticalAdapter):
         db.add(lead)
         db.commit()
         db.refresh(lead)
+        logger.info(
+            "[DATA_DEBUG] lead fields lead_id=%s name=%r email=%r phone=%r address=%r location=%r",
+            str(getattr(lead, "id", "")),
+            getattr(lead, "name", None),
+            getattr(lead, "email", None),
+            getattr(lead, "phone", None),
+            payload_data.get("address"),
+            payload_data.get("address"),
+        )
 
         # Sync LeadFile rows to match object_keys (idempotent)
         existing = db.query(LeadFile).filter(LeadFile.lead_id == lead.id).all()
@@ -589,6 +598,15 @@ class PaintlyAdapter(VerticalAdapter):
         db.add(lead)
         db.commit()
         db.refresh(lead)
+        logger.info(
+            "[DATA_DEBUG] lead fields lead_id=%s name=%r email=%r phone=%r address=%r location=%r",
+            str(getattr(lead, "id", "")),
+            getattr(lead, "name", None),
+            getattr(lead, "email", None),
+            getattr(lead, "phone", None),
+            payload_data.get("address"),
+            payload_data.get("address"),
+        )
 
         # 2) Save uploads
         saved_keys: List[str] = []

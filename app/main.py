@@ -43,6 +43,7 @@ from fastapi.staticfiles import StaticFiles
 from app.routers.debug_aws import router as debug_aws_router
 from app.routers.vision_debug import router as vision_router
 from app.routers import uploads, intake, quotes, files
+from app.routers import settings_logo
 from app.routers import billing
 from app.routers import stripe_webhook
 from app.observability.metrics import router as metrics_router
@@ -169,6 +170,7 @@ app.include_router(auth_router)
 app.include_router(app_me_router)
 app.include_router(tenant_pricing.router)
 app.include_router(settings_pricing_page.router)
+app.include_router(settings_logo.router)
 app.include_router(public_intake.router)
 app.include_router(debug_email_router)
 # app.include_router(app_dashboard_router)

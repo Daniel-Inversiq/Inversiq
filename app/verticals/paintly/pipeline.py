@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import uuid
+import secrets
 import datetime as dt
+import logging
 from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models import Lead, Tenant
+from app.models.user import User
 from app.tasks.vision_task import run_vision_for_lead
 
 from app.verticals.paintly.vision_aggregate_us import (
@@ -20,6 +23,13 @@ from app.verticals.paintly.needs_review import needs_review_from_output
 from app.services.storage import get_storage
 from app.billing.entitlements import Action, check_entitlement
 from app.dependencies import tenant_service
+from app.services.branding import (
+    is_custom_branding_allowed,
+    log_branding_state,
+    normalize_plan,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_obj(x: Any) -> Any:
@@ -301,6 +311,94 @@ def compute_quote_for_lead(db: Session, lead: Lead, render_html: bool = True) ->
             estimate["company"] = company
 
     # --------------------------------------------------
+    # 5b) Company context for HTML template render
+    # --------------------------------------------------
+    if isinstance(estimate, dict):
+        tenant_user = (
+            db.query(User)
+            .filter(User.tenant_id == str(lead.tenant_id), User.is_active == True)  # noqa: E712
+            .order_by(User.created_at.desc(), User.id.desc())
+            .first()
+        )
+        tenant_fallback = (
+            db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+        )
+        company = estimate.get("company") or estimate.get("tenant") or {}
+        if not isinstance(company, dict):
+            company = {}
+        company = dict(company)
+
+        user_company_name = (
+            (getattr(tenant_user, "company_name", None) or "").strip()
+            if tenant_user is not None
+            else ""
+        )
+        tenant_company_name = (
+            (getattr(tenant_fallback, "company_name", None) or "").strip()
+            if tenant_fallback is not None
+            else ""
+        )
+        plan_raw = getattr(tenant_fallback, "plan_code", None) if tenant_fallback is not None else None
+        plan_normalized = normalize_plan(plan_raw)
+        branding_allowed = is_custom_branding_allowed(plan_raw)
+        chosen_custom_name = user_company_name or tenant_company_name
+        user_logo_url = (
+            (getattr(tenant_user, "logo_url", None) or "").strip()
+            if tenant_user is not None
+            else ""
+        )
+        tenant_logo_url = (
+            (getattr(tenant_fallback, "logo_url", None) or "").strip()
+            if tenant_fallback is not None
+            else ""
+        )
+        chosen_custom_logo = user_logo_url or tenant_logo_url
+        if branding_allowed and chosen_custom_name:
+            company_name = chosen_custom_name
+            branding_logo_url = chosen_custom_logo or None
+            branding_source = "user" if user_company_name else "tenant"
+            fallback_reason = None if branding_logo_url else "logo_missing"
+        else:
+            company_name = "Paintly"
+            branding_logo_url = None
+            branding_source = "default"
+            fallback_reason = "tier_not_allowed" if not branding_allowed else "company_name_missing"
+
+        company["company_name"] = company_name
+        company["name"] = company_name
+        company["logo_url"] = branding_logo_url
+        estimate["company"] = company
+        estimate["branding_company_name"] = company_name
+        estimate["branding_logo_url"] = branding_logo_url
+
+        logger.info(
+            "ESTIMATE_BRANDING_CONTEXT lead_id=%s tenant_id=%s user_id=%s user_company_name=%r user_logo_url=%r tenant_company_name=%r tenant_logo_url=%r branding_company_name=%r branding_logo_url=%r",
+            str(getattr(lead, "id", "")),
+            str(getattr(lead, "tenant_id", "")),
+            str(getattr(tenant_user, "id", "")) if tenant_user is not None else None,
+            user_company_name or None,
+            user_logo_url or None,
+            tenant_company_name or None,
+            tenant_logo_url or None,
+            company_name,
+            branding_logo_url,
+        )
+        log_branding_state(
+            logger,
+            "legacy_estimate_snapshot",
+            {
+                "lead_id": str(getattr(lead, "id", "")),
+                "plan_raw": plan_raw,
+                "plan_normalized": plan_normalized,
+                "branding_allowed": branding_allowed,
+                "branding_company_name": company_name,
+                "branding_logo_url": branding_logo_url,
+                "branding_source": branding_source,
+                "fallback_reason": fallback_reason,
+            },
+        )
+
+    # --------------------------------------------------
     # 6) Optional HTML render + store
     # --------------------------------------------------
     html_key = None
@@ -322,6 +420,15 @@ def compute_quote_for_lead(db: Session, lead: Lead, render_html: bool = True) ->
             data=html.encode("utf-8"),
             content_type="text/html; charset=utf-8",
         )
+
+        if not getattr(lead, "public_token", None):
+            lead.public_token = secrets.token_hex(16)
+            logger.info(
+                "GENERATED_MISSING_PUBLIC_TOKEN lead_id=%s tenant_id=%s public_token=%s",
+                str(getattr(lead, "id", "")),
+                str(getattr(lead, "tenant_id", "")),
+                lead.public_token,
+            )
 
     return {
         "estimate_json": estimate,

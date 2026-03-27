@@ -20,28 +20,4 @@
     </form>
   {% endif %}
 
-  <div class="border-t border-slate-100 pt-2.5">
-    <p class="mb-2 text-[11px] font-medium text-slate-500">Overige acties</p>
-  <div class="grid gap-2 sm:grid-cols-2">
-    {% if q.can_generate %}
-      <form method="post" action="/quotes/publish/{{ lead.id }}" class="m-0">
-        <button class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60" type="submit">
-          Offerte opstellen
-        </button>
-      </form>
-    {% endif %}
-    {% if q.can_view %}
-      <a class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900" href="/app/leads/{{ lead.id }}/estimate" target="_blank">
-        Bekijk offerte
-      </a>
-    {% endif %}
-    {% if q.can_regenerate %}
-      <form method="post" action="/app/reviews/{{ lead.id }}/generate-estimate" class="m-0 sm:col-span-2">
-        <button class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60" type="submit">
-          Offerte opnieuw berekenen
-        </button>
-      </form>
-    {% endif %}
-  </div>
-  </div>
 </div>

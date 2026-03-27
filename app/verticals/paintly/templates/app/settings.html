@@ -21,18 +21,38 @@
     </div>
   {% endif %}
 
-  <form method="post" action="/app/settings" class="rounded-[24px] border border-slate-200/70 bg-white p-6 shadow-sm">
+  <form method="post" action="/app/settings" enctype="multipart/form-data" class="rounded-[24px] border border-slate-200/70 bg-white p-6 shadow-sm">
     <input type="hidden" name="section" value="account" />
     <div class="space-y-8">
       <h2 class="text-base font-semibold text-slate-900">Account</h2>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Naam</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-700">Bedrijfsnaam</label>
         <input
           class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
-          name="account_name"
+          name="company_name"
           type="text"
-          value="{{ account_name }}"
+          value="{{ company_name or account_name }}"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-slate-700">Logo</label>
+        {% set existing_logo_url = (user.logo_url if user and user.logo_url else "") %}
+        <div class="mb-2 {% if not existing_logo_url %}hidden{% endif %}" id="logo-preview-wrap">
+          <img
+            id="logo-preview"
+            src="{{ existing_logo_url }}"
+            alt="Logo preview"
+            class="max-h-20 w-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm"
+          />
+        </div>
+        <input
+          class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          id="logo-file-input"
+          name="logo_file"
+          type="file"
+          accept="image/png,image/jpeg"
         />
       </div>
 
@@ -170,6 +190,40 @@
     }
     window.alert("Ontkoppelen mislukt. Probeer opnieuw.");
   }
+
+  (function setupLogoPreview() {
+    const fileInput = document.getElementById("logo-file-input");
+    const preview = document.getElementById("logo-preview");
+    const previewWrap = document.getElementById("logo-preview-wrap");
+    if (!fileInput || !preview || !previewWrap) return;
+
+    const existingLogoUrl = preview.getAttribute("src") || "";
+
+    fileInput.addEventListener("change", function onLogoChange(event) {
+      const target = event.target;
+      const file = target && target.files ? target.files[0] : null;
+
+      if (!file) {
+        if (existingLogoUrl) {
+          preview.src = existingLogoUrl;
+          previewWrap.classList.remove("hidden");
+        } else {
+          preview.removeAttribute("src");
+          previewWrap.classList.add("hidden");
+        }
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function handleLoad(e) {
+        const result = e.target && typeof e.target.result === "string" ? e.target.result : "";
+        if (!result) return;
+        preview.src = result;
+        previewWrap.classList.remove("hidden");
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
 </script>
 
 {% endblock %}

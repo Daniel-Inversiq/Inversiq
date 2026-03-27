@@ -13,7 +13,14 @@ from app.core.settings import settings
 from app.db import get_db
 from app.models.lead import Lead
 from app.models.user import User
+from app.models.tenant import Tenant
 from app.models.job import Job
+from app.services.branding import (
+    branding_html_debug_summary,
+    is_custom_branding_allowed,
+    log_branding_state,
+    normalize_plan,
+)
 from app.services.email_service import send_email, EmailSendError
 from app.services.storage import get_storage, get_text, LocalStorage
 from app.services.workflow import (
@@ -298,8 +305,9 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
         key = key[len(prefix) :]
 
     logger.info(
-        "PUBLIC_ESTIMATE_ROUTE lead_id=%s html_key_raw=%r key_norm=%r",
+        "PUBLIC_ESTIMATE_ROUTE lead_id=%s token=%s html_key_raw=%r key_norm=%r",
         getattr(lead, "id", None),
+        token,
         html_key,
         key,
     )
@@ -398,12 +406,119 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
     else:
         body_html = html
 
+    tenant_company_name = ""
+    tenant_logo_url = ""
+    tenant_user = (
+        db.query(User)
+        .filter(User.tenant_id == str(lead.tenant_id), User.is_active == True)  # noqa: E712
+        .order_by(User.created_at.desc(), User.id.desc())
+        .first()
+    )
+    tenant_row = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+    # Prefer tenant-level branding for public pages; fall back to user branding.
+    if tenant_row is not None:
+        tenant_company_name = (getattr(tenant_row, "company_name", None) or "").strip()
+        tenant_logo_url = (getattr(tenant_row, "logo_url", None) or "").strip()
+    if (not tenant_company_name or not tenant_logo_url) and tenant_user is not None:
+        user_company_name = (getattr(tenant_user, "company_name", None) or "").strip()
+        user_logo_url = (getattr(tenant_user, "logo_url", None) or "").strip()
+        if not tenant_company_name:
+            tenant_company_name = user_company_name
+        if not tenant_logo_url:
+            tenant_logo_url = user_logo_url
+
+    plan_raw = getattr(tenant_row, "plan_code", None) if tenant_row is not None else None
+    plan_normalized = normalize_plan(plan_raw)
+    branding_allowed = is_custom_branding_allowed(plan_raw)
+    chosen_custom_name = tenant_company_name or ((getattr(tenant_user, "company_name", None) or "").strip())
+    chosen_custom_logo = tenant_logo_url or ((getattr(tenant_user, "logo_url", None) or "").strip())
+    if branding_allowed and chosen_custom_name:
+        branding_company_name = chosen_custom_name
+        branding_logo_url = chosen_custom_logo or None
+        branding_source = "tenant" if tenant_company_name else "user"
+        fallback_reason = None if branding_logo_url else "logo_missing"
+    else:
+        branding_company_name = "Paintly"
+        branding_logo_url = None
+        branding_source = "default"
+        fallback_reason = "tier_not_allowed" if not branding_allowed else "company_name_missing"
+
+    log_branding_state(
+        logger,
+        "settings_loaded_public",
+        {
+            "lead_id": str(getattr(lead, "id", "")),
+            "user_id": str(getattr(tenant_user, "id", "")) if tenant_user is not None else None,
+            "tenant_id": str(getattr(lead, "tenant_id", "")),
+            "user_company_name": (getattr(tenant_user, "company_name", None) if tenant_user is not None else None),
+            "tenant_company_name": (getattr(tenant_row, "company_name", None) if tenant_row is not None else None),
+            "user_logo_url": (getattr(tenant_user, "logo_url", None) if tenant_user is not None else None),
+            "tenant_logo_url": (getattr(tenant_row, "logo_url", None) if tenant_row is not None else None),
+            "plan_raw": plan_raw,
+            "plan_normalized": plan_normalized,
+            "branding_allowed": branding_allowed,
+        },
+    )
+    log_branding_state(
+        logger,
+        "tier_gating_public",
+        {
+            "tier_source": "tenant.plan_code",
+            "plan_raw": plan_raw,
+            "plan_normalized": plan_normalized,
+            "branding_allowed": branding_allowed,
+        },
+    )
+    log_branding_state(
+        logger,
+        "public_render_input",
+        {
+            "lead_id": str(getattr(lead, "id", "")),
+            "branding_company_name": branding_company_name,
+            "branding_logo_url": branding_logo_url,
+            "branding_allowed": branding_allowed,
+            "branding_source": branding_source,
+            "fallback_reason": fallback_reason,
+        },
+    )
+    logger.info(
+        "PUBLIC_BRANDING_RESOLVE lead_id=%s tenant_id=%s selected_user_id=%s selected_user_email=%r selected_user_company_name=%r selected_user_logo_url=%r tenant_company_name=%r tenant_logo_url=%r plan_raw=%r plan_normalized=%r branding_allowed=%s final_branding_company_name=%r final_branding_logo_url=%r fallback_reason=%r",
+        str(getattr(lead, "id", "")),
+        str(getattr(lead, "tenant_id", "")),
+        str(getattr(tenant_user, "id", "")) if tenant_user is not None else None,
+        (getattr(tenant_user, "email", None) if tenant_user is not None else None),
+        (getattr(tenant_user, "company_name", None) if tenant_user is not None else None),
+        (getattr(tenant_user, "logo_url", None) if tenant_user is not None else None),
+        (getattr(tenant_row, "company_name", None) if tenant_row is not None else None),
+        (getattr(tenant_row, "logo_url", None) if tenant_row is not None else None),
+        plan_raw,
+        plan_normalized,
+        branding_allowed,
+        branding_company_name,
+        branding_logo_url,
+        fallback_reason,
+    )
+
+    if isinstance(body_html, str):
+        log_branding_state(
+            logger,
+            "public_html_loaded",
+            {
+                "lead_id": str(getattr(lead, "id", "")),
+                "token": token,
+                "estimate_html_key": html_key,
+                **branding_html_debug_summary(body_html, branding_name=branding_company_name),
+            },
+        )
+
     page_html = paintly_templates.env.get_template("public/quote_page.html").render(
         token=lead.public_token,
         show_accept=show_accept,
         lead_status=lead_status,
         iframe_url=iframe_url,
         body_html=body_html or "",
+        branding_company_name=branding_company_name,
+        branding_logo_url=branding_logo_url,
     )
     logger.info(
         "QUOTE_OUTPUT_DECISION lead_id=%s needs_review=%s lead_status=%s pricing_status=%s total_price=%r price_mode=%s template=%s review_page=%s show_prices=%s pricing_ready=%s is_provisional=%s review_reasons=%r",

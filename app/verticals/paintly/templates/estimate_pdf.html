@@ -4,44 +4,266 @@
   <meta charset="UTF-8" />
   <title>{{ copy.doc_title if copy and copy.doc_title else "Offerte schilderwerk" }}</title>
   <style>
+    :root {
+      --accent-500: #0f766e;
+      --accent-100: #ecfdf5;
+      --accent-200: #d1fae5;
+    }
+
     @page {
       size: A4;
-      margin: 14mm 12mm;
+      margin: 14mm 12mm 16mm 12mm;
     }
 
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .page {
+      width: 100%;
+    }
+
+    .header {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+      page-break-inside: avoid;
+      background: #ffffff;
+    }
+
+    .header-table,
+    .two-col {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .header-table td,
+    .two-col td {
+      vertical-align: top;
+    }
+
+    .brand-col {
+      width: 66%;
+      padding-right: 24px;
+    }
+
+    .meta-col {
+      width: 34%;
+    }
+
+    .logo-wrap {
+      width: 104px;
+      height: 104px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 4px;
+      background: #ffffff;
+    }
+
+    .logo-wrap img {
+      max-width: 96px;
+      max-height: 96px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .logo-fallback {
+      width: 104px;
+      height: 104px;
+      border: 1px solid #dbe3ee;
+      border-radius: 12px;
+      background: #f8fafc;
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center;
       font-size: 11pt;
-      line-height: 1.4;
+      font-weight: 700;
+      color: #334155;
+      letter-spacing: 0.02em;
+      padding: 0 8px;
+      box-sizing: border-box;
+    }
+
+    .brand-name {
+      margin: 0 0 8px;
+      font-size: 19pt;
+      font-weight: 600;
+      letter-spacing: 0.1px;
       color: #0f172a;
     }
 
-    h1, h2, h3 {
-      margin: 0 0 6px;
+    .brand-sub {
+      margin: 0;
+      font-size: 8.2pt;
+      color: #8aa;
+    }
+
+    .meta-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      background: #f8fafc;
+    }
+
+    .meta-row {
+      margin: 0 0 8px;
+      font-size: 8.3pt;
+      line-height: 1.45;
+    }
+
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-label {
+      color: #8aa;
       font-weight: 600;
+    }
+
+    .meta-value {
+      color: #1f3448;
+      font-weight: 600;
+    }
+
+    .divider {
+      border-top: 1px solid #e2e8f0;
+      margin-top: 16px;
+      padding-top: 0;
+    }
+
+    .title-block {
+      margin-bottom: 28px;
+      page-break-inside: avoid;
+      padding-left: 2px;
+    }
+
+    .label-badge {
+      display: inline-block;
+      border: 1px solid var(--accent-200);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 8.6pt;
+      font-weight: 700;
+      color: var(--accent-500);
+      background: var(--accent-100);
+      margin-bottom: 7px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
       color: #0f172a;
     }
 
     h1 {
-      font-size: 18pt;
+      font-size: 28pt;
+      line-height: 1.15;
+      font-weight: 700;
+      margin-bottom: 12px;
     }
 
     h2 {
-      font-size: 13pt;
-      margin-top: 12px;
+      font-size: 13.5pt;
+      line-height: 1.25;
+      font-weight: 700;
+      margin-bottom: 8px;
     }
 
     h3 {
-      font-size: 11pt;
-      margin-top: 8px;
+      font-size: 10.8pt;
+      line-height: 1.25;
+      font-weight: 700;
+      margin-bottom: 8px;
     }
 
     p {
-      margin: 0 0 6px;
+      margin: 0 0 8px;
     }
 
-    .section {
-      margin-bottom: 10px;
+    .subtitle {
+      font-size: 9pt;
+      color: #8aa;
+      max-width: 520px;
+    }
+
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+      background: #ffffff;
+    }
+
+    .card-soft {
+      background: #fcfdff;
+      border-color: #e7edf5;
+    }
+
+    .price-card {
+      border: 1px solid #25384a;
+      border-left: 4px solid var(--accent-500);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+      background: #f8fcfa;
+      page-break-inside: avoid;
+    }
+
+    .kicker {
+      margin: 0 0 8px;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      font-weight: 700;
+      color: #8aa;
+    }
+
+    .total-main {
+      margin: 0;
+      font-size: 30pt;
+      line-height: 1.05;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .total-suffix {
+      font-size: 8.7pt;
+      font-weight: 500;
+      color: #8aa;
+    }
+
+    .price-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .price-grid td {
+      font-size: 8.8pt;
+      padding: 8px 0;
+      border: 0;
+      color: #7a8ea4;
+    }
+
+    .price-grid td:last-child {
+      text-align: right;
+      font-size: 9.6pt;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .price-note {
+      margin-top: 16px;
+      font-size: 8.6pt;
+      color: #7d90a5;
     }
 
     .muted {
@@ -49,27 +271,26 @@
       font-size: 9pt;
     }
 
-    .small {
-      font-size: 9pt;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 4px;
-    }
-
     th, td {
-      padding: 5px 6px;
+      padding: 10px 12px;
       border-bottom: 1px solid #e5e7eb;
       vertical-align: top;
-      font-size: 10pt;
+      font-size: 9.3pt;
     }
 
     thead th {
-      background: #f3f4f6;
+      background: #f8fafc;
       font-weight: 600;
       text-align: left;
+      color: #7a8ea4;
+      border-top: 1px solid #e5e7eb;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 8.1pt;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fbfdff;
     }
 
     tr {
@@ -78,23 +299,38 @@
     }
 
     ul {
-      margin: 0 0 4px 18px;
+      margin: 0;
       padding: 0;
+      list-style: none;
     }
 
     li {
-      margin-bottom: 2px;
+      margin-bottom: 6px;
+      padding-left: 13px;
+      position: relative;
+      color: #1e293b;
     }
 
-    .totals-table td {
-      border: 0;
-      padding: 2px 0;
+    li:before {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent-500);
+      position: absolute;
+      left: 0;
+      top: 8px;
     }
 
-    .totals-table tr.total-row td {
-      padding-top: 4px;
-      border-top: 1px solid #e5e7eb;
-      font-weight: 600;
+    .checklist li:before {
+      width: 6px;
+      height: 6px;
+      background: #16a34a;
+      top: 7px;
+    }
+
+    .small {
+      font-size: 8.5pt;
     }
 
     .text-right {
@@ -104,207 +340,311 @@
     .text-soft {
       color: #6b7280;
     }
+
+    .footer {
+      margin-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      font-size: 7.6pt;
+      color: #8aa;
+      page-break-inside: avoid;
+      line-height: 1.35;
+    }
+
+    .footer strong {
+      color: #334155;
+    }
+
+    .section-head {
+      margin: 0 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #edf2f7;
+      color: #1f3448;
+    }
+
+    .footnote {
+      margin-top: 8px;
+      font-size: 8.6pt;
+      color: #6b7f96;
+    }
+
+    .kv {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .kv td {
+      border: 0;
+      padding: 4px 0 8px;
+      font-size: 8.9pt;
+    }
+
+    .kv td:first-child {
+      width: 42%;
+      color: #8aa;
+      font-size: 8.4pt;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .kv td:last-child {
+      color: #1f3448;
+      font-weight: 600;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <div class="section">
-    <h1>Offerte schilderwerk</h1>
-    <p class="small text-soft">
-      Referentie:
-      {% if project and project.estimate_id %}
-        Offerte #{{ (project.estimate_id|string)[-6:]|upper }}
-      {% elif project and project.lead_id %}
-        Offerte #{{ (project.lead_id|string)[-6:]|upper }}
-      {% endif %}
-    </p>
-    {% if project and project.date %}
-      <p class="small text-soft">Datum: {{ project.date }}</p>
-    {% endif %}
-    {% if project and project.valid_until %}
-      <p class="small text-soft">Geldig t/m: {{ project.valid_until }}</p>
-    {% endif %}
-  </div>
+  {% set company_display_name = (branding_company_name if branding_company_name else (company.name if company and company.name else "Paintly")) %}
+  {% set ref_code = "" %}
+  {% if project and project.estimate_id %}
+    {% set ref_code = (project.estimate_id|string)[-6:]|upper %}
+  {% elif project and project.lead_id %}
+    {% set ref_code = (project.lead_id|string)[-6:]|upper %}
+  {% endif %}
+  {% set lead_name = (customer.name if customer and customer.name else (lead.name if lead and lead.name else "Niet opgegeven")) %}
+  {% set lead_email = (customer.email if customer and customer.email else (lead.email if lead and lead.email else "Niet opgegeven")) %}
+  {% set lead_phone = (customer.phone if customer and customer.phone else (lead.phone if lead and lead.phone else "Niet opgegeven")) %}
+  {% set lead_address = (project.address if project and project.address else (project.location if project and project.location else "Nog te bevestigen")) %}
 
-  <!-- Bedrijfsinfo -->
-  <div class="section">
-    <h2>Uitvoerder</h2>
-    <p>
-      {{ company.name if company and company.name else "Schilderbedrijf" }}<br/>
-      {% if company.phone %}Tel: {{ company.phone }}<br/>{% endif %}
-      {% if company.email %}E-mail: {{ company.email }}{% endif %}
-    </p>
-  </div>
-
-  <!-- Klant & project -->
-  <div class="section">
-    <h2>Klant & project</h2>
-    <p>
-      <strong>Klant:</strong>
-      {{ (customer.name if customer and customer.name else (lead.name if lead and lead.name else "—")) }}<br/>
-      <strong>E-mail:</strong>
-      {{ (customer.email if customer and customer.email else (lead.email if lead and lead.email else "—")) }}<br/>
-      <strong>Telefoon:</strong>
-      {{ (customer.phone if customer and customer.phone else (lead.phone if lead and lead.phone else "—")) }}
-    </p>
-    <p>
-      {% if project and project.address %}
-        <strong>Locatie:</strong> {{ project.address }}<br/>
-      {% endif %}
-      {% if project and project.square_meters %}
-        <strong>Oppervlakte:</strong> {{ fmt_qty(project.square_meters) }} m²
-      {% endif %}
-    </p>
-  </div>
-
-  <!-- Samenvatting / totaal -->
-  <div class="section">
-    <h2>Samenvatting</h2>
-    {% if pricing_ready %}
-      <p>
-        <strong>Totaal (incl. btw):</strong>
-        {{ fmt_eur(vat.total_incl_vat if vat and vat.total_incl_vat is not none else 0) }}
-      </p>
-      <table class="totals-table">
+  <div class="page">
+    <div class="header">
+      <table class="header-table">
         <tr>
-          <td>Subtotaal (excl. btw)</td>
-          <td class="text-right">
-            {{ fmt_eur(vat.subtotal_excl_vat if vat and vat.subtotal_excl_vat is not none else 0) }}
+          <td class="brand-col">
+            <table style="border-collapse: collapse; width: 100%;">
+              <tr>
+                {% set logo_src = (branding_logo_data_url if branding_logo_data_url else branding_logo_url) %}
+                {% if logo_src %}
+                  <td style="width: 114px; vertical-align: top; padding: 0 14px 0 0; border: 0;">
+                    <div class="logo-wrap">
+                      <img src="{{ logo_src }}" alt="{{ company_display_name }}">
+                    </div>
+                  </td>
+                {% else %}
+                  <td style="width: 114px; vertical-align: top; padding: 0 14px 0 0; border: 0;">
+                    <div class="logo-fallback">{{ company_display_name }}</div>
+                  </td>
+                {% endif %}
+                <td style="vertical-align: middle; border: 0; padding: 0;">
+                  <p class="brand-name">{{ company_display_name }}</p>
+                  <p class="brand-sub">Professionele offerte voor schilderwerk</p>
+                  {% if company.phone or company.email %}
+                    <p class="brand-sub">
+                      {% if company.phone %}{{ company.phone }}{% endif %}
+                      {% if company.phone and company.email %} | {% endif %}
+                      {% if company.email %}{{ company.email }}{% endif %}
+                    </p>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
           </td>
-        </tr>
-        <tr>
-          <td>Arbeid</td>
-          <td class="text-right">
-            {{ fmt_eur(pricing_labor) }}
-          </td>
-        </tr>
-        <tr>
-          <td>Materialen</td>
-          <td class="text-right">
-            {{ fmt_eur(pricing_materials) }}
-          </td>
-        </tr>
-        <tr>
-          <td>BTW ({{ ((vat.vat_rate if vat and vat.vat_rate is not none else 0) * 100) | round(0) }}%)</td>
-          <td class="text-right">
-            {{ fmt_eur(vat.vat_amount if vat and vat.vat_amount is not none else 0) }}
-          </td>
-        </tr>
-        <tr class="total-row">
-          <td>Totaal (incl. btw)</td>
-          <td class="text-right">
-            {{ fmt_eur(vat.total_incl_vat if vat and vat.total_incl_vat is not none else 0) }}
+          <td class="meta-col">
+            <div class="meta-card">
+              <p class="meta-row">
+                <span class="meta-label">Referentie:</span>
+                <span class="meta-value">{% if ref_code %}Offerte #{{ ref_code }}{% else %}Offerte{% endif %}</span>
+              </p>
+              <p class="meta-row">
+                <span class="meta-label">Offertedatum:</span>
+                <span class="meta-value">{{ project.date if project and project.date else "Niet opgegeven" }}</span>
+              </p>
+              <p class="meta-row">
+                <span class="meta-label">Geldig tot:</span>
+                <span class="meta-value">{{ project.valid_until if project and project.valid_until else "In overleg" }}</span>
+              </p>
+            </div>
           </td>
         </tr>
       </table>
-    {% else %}
-      <p class="muted">
-        De prijs wordt definitief na een korte review van oppervlakken, voorbereiding en bereikbaarheid.
+      <div class="divider"></div>
+    </div>
+
+    <div class="title-block">
+      <span class="label-badge">Offerte</span>
+      <h1>Offerte schilderwerk</h1>
+      <p class="subtitle">
+        Heldere prijsopgave met duidelijke specificatie van werkzaamheden, materialen en voorwaarden.
       </p>
-      {% if review_reasons and (review_reasons | length) > 0 %}
-        <ul>
-          {% for r in review_reasons %}
-            <li>{{ r }}</li>
+    </div>
+
+    <div class="price-card">
+      {% if pricing_ready %}
+        <p class="kicker">Totaalbedrag</p>
+        <p class="total-main">
+          {{ fmt_eur(vat.total_incl_vat if vat and vat.total_incl_vat is not none else 0) }}
+          <span class="total-suffix">incl. btw</span>
+        </p>
+        <table class="price-grid">
+          <tr>
+            <td>Subtotaal (excl. btw)</td>
+            <td>{{ fmt_eur(vat.subtotal_excl_vat if vat and vat.subtotal_excl_vat is not none else 0) }}</td>
+          </tr>
+          <tr>
+            <td>BTW ({{ ((vat.vat_rate if vat and vat.vat_rate is not none else 0) * 100) | round(0) }}%)</td>
+            <td>{{ fmt_eur(vat.vat_amount if vat and vat.vat_amount is not none else 0) }}</td>
+          </tr>
+          <tr>
+            <td>Geldig tot</td>
+            <td>{{ project.valid_until if project and project.valid_until else "In overleg" }}</td>
+          </tr>
+        </table>
+        <p class="price-note">Inclusief voorbereiding, materialen en nette oplevering volgens afspraak.</p>
+      {% else %}
+        <p class="kicker">Prijsstatus</p>
+        <p class="total-main" style="font-size: 19pt;">Prijs wordt definitief na korte review</p>
+        <p class="price-note">Na controle van oppervlakken, voorbereiding en bereikbaarheid ontvangt u de definitieve prijs.</p>
+        {% if review_reasons and (review_reasons | length) > 0 %}
+          <ul>
+            {% for r in review_reasons %}
+              <li>{{ r }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2 class="section-head">Uitvoerder en klant/project</h2>
+      <table class="two-col">
+        <tr>
+          <td style="width: 48%; padding-right: 16px; border: 0;">
+            <h3>Uitvoerder</h3>
+            <table class="kv">
+              <tr>
+                <td>Bedrijf</td>
+                <td>{{ company_display_name }}</td>
+              </tr>
+              <tr>
+                <td>E-mail</td>
+                <td>{{ company.email if company and company.email else "Niet opgegeven" }}</td>
+              </tr>
+              <tr>
+                <td>Telefoon</td>
+                <td>{{ company.phone if company and company.phone else "Niet opgegeven" }}</td>
+              </tr>
+            </table>
+          </td>
+          <td style="width: 52%; padding-left: 16px; border: 0;">
+            <h3>Klant / project</h3>
+            <table class="kv">
+              <tr>
+                <td>Naam</td>
+                <td>{{ lead_name }}</td>
+              </tr>
+              <tr>
+                <td>E-mail</td>
+                <td>{{ lead_email }}</td>
+              </tr>
+              <tr>
+                <td>Telefoon</td>
+                <td>{{ lead_phone }}</td>
+              </tr>
+              <tr>
+                <td>Locatie</td>
+                <td>{{ lead_address }}</td>
+              </tr>
+              {% if project and project.square_meters %}
+                <tr>
+                  <td>Oppervlakte</td>
+                  <td>{{ fmt_qty(project.square_meters) }} m²</td>
+                </tr>
+              {% endif %}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 class="section-head">Gedetailleerde specificatie</h2>
+      {% if pricing and pricing.line_items and (pricing.line_items | length) > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th>Onderdeel / ruimte</th>
+              <th>Hoeveelheid</th>
+              <th class="text-right">Prijs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in pricing.line_items %}
+              {% set unit = (item.unit if item and item.unit else '') %}
+              {% set qty = (item.quantity if item and item.quantity is defined else None) %}
+              {% set is_row_provisional = needs_review_flag %}
+              {% set is_meaningless_job_qty = (unit == 'job' and (qty == 1 or qty == 1.0 or qty == '1' or qty == '1.0')) %}
+              <tr>
+                <td>
+                  <strong>{{ item.label }}</strong>
+                  {% if item.description %}
+                    <div class="small text-soft">{{ item.description }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if is_row_provisional or is_meaningless_job_qty %}
+                    —
+                  {% else %}
+                    {% set display_unit = 'm²' if item.unit == 'sqm' else item.unit %}
+                    {{ fmt_qty(item.quantity, item.unit) }} {{ display_unit }}
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  {% if pricing_ready and item.total %}
+                    {{ fmt_eur(item.total) }}
+                  {% else %}
+                    <span class="text-soft small">Nader te bepalen</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">Nog geen regels beschikbaar.</p>
+      {% endif %}
+      <p class="footnote">Alle bedragen zijn in euro en inclusief de hierboven vermelde btw.</p>
+    </div>
+
+    <div class="card card-soft">
+      <h2 class="section-head">Inbegrepen werkzaamheden</h2>
+      {% if scope_bullets %}
+        <ul class="checklist">
+          {% for b in scope_bullets %}
+            <li>{{ b }}</li>
           {% endfor %}
         </ul>
+      {% else %}
+        <p class="muted">Volgens afspraak.</p>
       {% endif %}
-    {% endif %}
-  </div>
-
-  <!-- Specificatie -->
-  <div class="section">
-    <h2>Gedetailleerde specificatie</h2>
-    {% if pricing and pricing.line_items and (pricing.line_items | length) > 0 %}
-      <table>
-        <thead>
-          <tr>
-            <th>Ruimte / onderdeel</th>
-            <th>Hoeveelheid</th>
-            <th class="text-right">Prijs</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in pricing.line_items %}
-            {% set unit = (item.unit if item and item.unit else '') %}
-            {% set qty = (item.quantity if item and item.quantity is defined else None) %}
-            {% set is_row_provisional = needs_review_flag %}
-            {% set is_meaningless_job_qty = (unit == 'job' and (qty == 1 or qty == 1.0 or qty == '1' or qty == '1.0')) %}
-            <tr>
-              <td>
-                <strong>{{ item.label }}</strong>
-                {% if item.description %}
-                  <div class="small text-soft">{{ item.description }}</div>
-                {% endif %}
-              </td>
-              <td>
-                {% if is_row_provisional or is_meaningless_job_qty %}
-                  —
-                {% else %}
-                  {% set display_unit = 'm²' if item.unit == 'sqm' else item.unit %}
-                  {{ fmt_qty(item.quantity, item.unit) }} {{ display_unit }}
-                {% endif %}
-              </td>
-              <td class="text-right">
-                {% if pricing_ready and item.total %}
-                  {{ fmt_eur(item.total) }}
-                {% else %}
-                  <span class="text-soft small">nader te bepalen</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <p class="muted">Nog geen regels beschikbaar.</p>
-    {% endif %}
-  </div>
-
-  <!-- Inbegrepen werkzaamheden -->
-  <div class="section">
-    <h2>Inbegrepen werkzaamheden</h2>
-    {% if scope_bullets %}
-      <ul>
-        {% for b in scope_bullets %}
-          <li>{{ b }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="muted">Volgens afspraak.</p>
-    {% endif %}
-  </div>
-
-  <!-- Niet inbegrepen -->
-  <div class="section">
-    <h2>Niet inbegrepen</h2>
-    {% if exclusions %}
-      <ul>
-        {% for x in exclusions %}
-          <li>{{ x }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="muted">Geen aanvullende uitsluitingen.</p>
-    {% endif %}
-  </div>
-
-  <!-- Omschrijving / toelichting -->
-  {% if project and project.description %}
-    <div class="section">
-      <h2>Projectomschrijving</h2>
-      <p>{{ project.description }}</p>
     </div>
-  {% endif %}
 
-  <!-- Slot -->
-  <div class="section small text-soft">
-    <p>
-      Deze offerte is automatisch opgesteld op basis van ingestuurde foto's en projectgegevens.
-      De definitieve prijs kan na verificatie nog worden aangepast.
-    </p>
-    {% if project and project.lead_id %}
-      <p>Referentie: Offerte #{{ (project.lead_id|string)[-6:]|upper }}</p>
-    {% endif %}
+    <div class="card card-soft">
+      <h2 class="section-head">Niet inbegrepen / opmerkingen</h2>
+      {% if exclusions %}
+        <ul>
+          {% for x in exclusions %}
+            <li>{{ x }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Geen aanvullende uitsluitingen.</p>
+      {% endif %}
+      {% if project and project.description %}
+        <p style="margin-top: 8px;"><strong>Projectomschrijving:</strong> {{ project.description }}</p>
+      {% endif %}
+    </div>
+
+    <div class="footer">
+      <p>
+        <strong>Referentie:</strong>
+        {% if ref_code %}Offerte #{{ ref_code }}{% else %}Offerte{% endif %}
+        {% if company_display_name %} | <strong>{{ company_display_name }}</strong>{% endif %}
+      </p>
+      <p>
+        Automatisch gegenereerde offerte op basis van aangeleverde projectinformatie, onder voorbehoud van eindcontrole op locatie.
+      </p>
+    </div>
   </div>
 </body>
 </html>

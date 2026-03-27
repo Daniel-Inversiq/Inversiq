@@ -1,12 +1,18 @@
 # app/verticals/paintly/render_estimate.py
 from __future__ import annotations
 
+import base64
+import logging
+import mimetypes
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from decimal import Decimal, ROUND_HALF_UP
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from app.services.storage import get_storage
 from app.verticals.paintly.assumptions import PAINTLY_SCOPE_ASSUMPTIONS
 from app.verticals.paintly.copy import PAINTLY_ESTIMATE_COPY, fmt_qty
 from app.verticals.paintly.disclaimer import PAINTLY_ESTIMATE_DISCLAIMER
@@ -17,6 +23,7 @@ TEMPLATE_DIR = Path(__file__).parent / "templates"
 DEFAULT_VAT_RATE = 0.21
 PROVISIONAL_MINIMUM_EXCL_VAT = Decimal("500.00")
 MONEY_Q = Decimal("0.01")
+logger = logging.getLogger(__name__)
 
 
 def _d(x: Any) -> Decimal:
@@ -43,6 +50,75 @@ def _as_list(val: Any) -> List[str]:
         parts = [p.strip() for p in val.splitlines()]
         return [p for p in parts if p]
     return [str(val)]
+
+
+def _build_pdf_logo_data_url(raw_url: Optional[str]) -> Optional[str]:
+    if not raw_url:
+        return None
+    url = str(raw_url).strip()
+    if not url:
+        return None
+    if url.lower().startswith("data:"):
+        return url
+
+    try:
+        parsed = urlparse(url)
+        path_candidate = parsed.path or url
+        storage = None
+
+        # 1) Local/internal file endpoint: /files/{tenant_id}/{key...}
+        #    Resolve through storage so this works for both local and S3 backends.
+        files_marker = "/files/"
+        marker_idx = path_candidate.find(files_marker)
+        if marker_idx >= 0:
+            files_part = path_candidate[marker_idx + len(files_marker) :].lstrip("/")
+            parts = [p for p in files_part.split("/") if p]
+            if len(parts) >= 2:
+                tenant_id = parts[0]
+                key = "/".join(parts[1:])
+                try:
+                    storage = storage or get_storage()
+                    tmp_path = storage.download_to_temp_path(tenant_id=tenant_id, key=key)
+                    tmp = Path(tmp_path)
+                    image_bytes = tmp.read_bytes()
+                    try:
+                        tmp.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                    if image_bytes:
+                        content_type, _ = mimetypes.guess_type(key)
+                        content_type = content_type or "image/png"
+                        encoded = base64.b64encode(image_bytes).decode("ascii")
+                        return f"data:{content_type};base64,{encoded}"
+                except Exception:
+                    pass
+
+        # 2) Absolute/relative file path fallback.
+        #    Useful for local dev or when logo_url is stored as filesystem path.
+        direct_path = Path(url)
+        if direct_path.exists() and direct_path.is_file():
+            image_bytes = direct_path.read_bytes()
+            if image_bytes:
+                content_type, _ = mimetypes.guess_type(str(direct_path))
+                content_type = content_type or "image/png"
+                encoded = base64.b64encode(image_bytes).decode("ascii")
+                return f"data:{content_type};base64,{encoded}"
+
+        # 3) Remote URL fallback (http/https).
+        if url.lower().startswith("http://") or url.lower().startswith("https://"):
+            req = Request(url, headers={"User-Agent": "Paintly-PDF-Renderer/1.0"})
+            with urlopen(req, timeout=8) as resp:
+                content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
+                image_bytes = resp.read()
+            if image_bytes:
+                if not content_type.startswith("image/"):
+                    guessed_type, _ = mimetypes.guess_type(url)
+                    content_type = guessed_type or "image/png"
+                encoded = base64.b64encode(image_bytes).decode("ascii")
+                return f"data:{content_type};base64,{encoded}"
+    except Exception:
+        return None
+    return None
 
 
 def _jinja_env() -> Environment:
@@ -99,6 +175,8 @@ def render_estimate_html_v2(
     pricing: Dict[str, Any],
     project: Dict[str, Any],
     company: Dict[str, Any],
+    branding_company_name: Optional[str] = None,
+    branding_logo_url: Optional[str] = None,
     lead: Optional[Dict[str, Any]] = None,
     customer: Optional[Dict[str, Any]] = None,
     token: Optional[str] = None,
@@ -276,6 +354,8 @@ def render_estimate_html_v2(
         exclusions=exclusions,
         project=project,
         company=company,
+        branding_company_name=branding_company_name,
+        branding_logo_url=branding_logo_url,
         lead=lead or {},
         customer=customer or {},
         token=token,
@@ -323,6 +403,18 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
     }
 
     company = estimate.get("company") or estimate.get("tenant") or {}
+    branding_company_name = (
+        estimate.get("branding_company_name")
+        if isinstance(estimate.get("branding_company_name"), str)
+        else None
+    )
+    branding_company_name = (branding_company_name or "").strip() or "Paintly"
+    branding_logo_url = (
+        estimate.get("branding_logo_url")
+        if isinstance(estimate.get("branding_logo_url"), str)
+        else None
+    )
+    branding_logo_url = (branding_logo_url or "").strip() or None
     lead = estimate.get("lead") or {}
     customer = estimate.get("customer") or {}
     token = estimate.get("token")
@@ -331,6 +423,8 @@ def render_estimate_html(estimate: Dict[str, Any]) -> str:
         pricing=pricing,
         project=project,
         company=company,
+        branding_company_name=branding_company_name,
+        branding_logo_url=branding_logo_url,
         lead=lead,
         customer=customer,
         token=token,
@@ -366,6 +460,24 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
     lead = estimate.get("lead") or {}
     customer = estimate.get("customer") or {}
     token = estimate.get("token")
+    branding_company_name = (
+        estimate.get("branding_company_name")
+        if isinstance(estimate.get("branding_company_name"), str)
+        else None
+    )
+    branding_company_name = (branding_company_name or "").strip() or None
+    branding_logo_url = (
+        estimate.get("branding_logo_url")
+        if isinstance(estimate.get("branding_logo_url"), str)
+        else None
+    )
+    branding_logo_url = (branding_logo_url or "").strip() or None
+    branding_logo_data_url = _build_pdf_logo_data_url(branding_logo_url)
+    logger.info(
+        "[PDF_LOGO_DEBUG] raw_url=%r data_url_created=%s",
+        branding_logo_url,
+        bool(branding_logo_data_url),
+    )
 
     pricing = pricing or {}
     pdf_pricing = pricing  # reuse existing helpers
@@ -457,6 +569,9 @@ def render_estimate_pdf_html(estimate: Dict[str, Any]) -> str:
         exclusions=exclusions,
         project=project,
         company=company,
+        branding_company_name=branding_company_name,
+        branding_logo_data_url=branding_logo_data_url,
+        branding_logo_url=branding_logo_url,
         lead=lead or {},
         customer=customer or {},
         token=token,

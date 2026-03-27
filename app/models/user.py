@@ -20,6 +20,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(320), unique=True, index=True, nullable=False
     )
+    company_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="1")

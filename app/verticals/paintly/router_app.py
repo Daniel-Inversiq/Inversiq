@@ -11,9 +11,10 @@ import logging
 import json
 import stripe
 import os
+import re
 
 from fastapi import BackgroundTasks
-from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query, File, UploadFile
 from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import desc, func, or_
@@ -53,6 +54,7 @@ from app.verticals.paintly.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
 from app.verticals.paintly.render_estimate import render_estimate_pdf_html
+from app.utils.slugs import slugify
 from app.billing.features import Feature, tenant_has_feature
 from app.billing.ui import tenant_entitlements, tenant_feature_flags, tenant_feature_ui
 from app.billing.entitlements import Action, check_entitlement
@@ -69,6 +71,72 @@ templates = Jinja2Templates(directory="app/verticals/paintly/templates")
 ALLOWED_JOB_STATUSES = {"NEW", "SCHEDULED", "IN_PROGRESS", "DONE", "CANCELLED"}
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_date_slug(raw_date: str | None) -> str | None:
+    if not raw_date:
+        return None
+    value = str(raw_date).strip()
+    if len(value) >= 10:
+        value = value[:10]
+    return value if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) else None
+
+
+def _build_pdf_download_filename(
+    *,
+    lead_id: str,
+    estimate: dict | None,
+    tenant: Tenant,
+    db: Session,
+) -> str:
+    estimate = estimate or {}
+    meta = estimate.get("meta") if isinstance(estimate.get("meta"), dict) else {}
+
+    raw_ref = (
+        meta.get("estimate_id")
+        or estimate.get("estimate_id")
+        or meta.get("lead_id")
+        or lead_id
+    )
+    ref_slug = ""
+    if raw_ref is not None:
+        raw_ref_str = str(raw_ref).strip()
+        if raw_ref_str:
+            ref_slug = slugify(raw_ref_str[-6:])
+
+    company_name = None
+    for candidate in (
+        estimate.get("branding_company_name"),
+        (estimate.get("company") or {}).get("name")
+        if isinstance(estimate.get("company"), dict)
+        else None,
+        getattr(tenant, "company_name", None),
+        getattr(tenant, "name", None),
+    ):
+        if isinstance(candidate, str) and candidate.strip():
+            company_name = candidate.strip()
+            break
+    if not company_name:
+        resolved_name, _ = _resolve_company_name_and_tenant(str(tenant.id), db)
+        company_name = resolved_name
+
+    company_slug = slugify(company_name or "")
+    date_slug = _safe_date_slug(meta.get("date"))
+
+    parts: list[str] = ["offerte"]
+    if ref_slug:
+        parts.append(ref_slug)
+    if company_slug:
+        parts.append(company_slug)
+    elif date_slug:
+        parts.append(date_slug)
+    elif not ref_slug and date_slug:
+        parts.append(date_slug)
+
+    filename_base = "-".join([p for p in parts if p]).strip("-")
+    if not filename_base:
+        filename_base = "offerte"
+    return f"{filename_base}.pdf"
 
 
 # -------------------------
@@ -843,6 +911,7 @@ def app_settings(
         current_user,
         db,
         {
+            "user": current_user,
             "tenant": tenant,
             "account_name": (getattr(tenant, "company_name", None) or ""),
             "account_email": (getattr(current_user, "email", None) or ""),
@@ -860,11 +929,13 @@ def app_settings(
 
 
 @router.post("/settings")
-def app_settings_save(
+async def app_settings_save(
     request: Request,
     section: str = Form(...),
+    company_name: str | None = Form(None),
     account_name: str | None = Form(None),
     account_email: str | None = Form(None),
+    logo_file: UploadFile | None = File(None),
     price_per_m2: str | None = Form(None),
     minimum_price: str | None = Form(None),
     travel_cost: str | None = Form(None),
@@ -894,10 +965,133 @@ def app_settings_save(
         raise HTTPException(status_code=404, detail="Tenant not found")
 
     if section == "account":
-        if account_name is not None:
-            tenant.company_name = account_name.strip()
+        logger.info(
+            "SETTINGS_ACCOUNT_SAVE_START tenant_id=%s user_id=%s company_name_present=%s logo_filename=%s logo_content_type=%s",
+            str(current_user.tenant_id),
+            str(getattr(current_user, "id", "")),
+            bool((company_name or account_name or "").strip()),
+            (logo_file.filename if logo_file is not None else None),
+            (logo_file.content_type if logo_file is not None else None),
+        )
+        resolved_company_name = company_name
+        if resolved_company_name is None:
+            # Backward compatibility with older template field name.
+            resolved_company_name = account_name
+
+        if resolved_company_name is not None:
+            cleaned_company_name = resolved_company_name.strip()
+            current_user.company_name = cleaned_company_name
+            tenant.company_name = cleaned_company_name
+
         if account_email is not None and account_email.strip():
             current_user.email = account_email.strip()
+
+        if logo_file is not None and (logo_file.filename or "").strip():
+            content_type = (logo_file.content_type or "").strip().lower()
+            if content_type in {"image/png", "image/jpeg"}:
+                payload = await logo_file.read()
+                if payload:
+                    ext = ".png" if content_type == "image/png" else ".jpg"
+                    safe_name = os.path.basename(logo_file.filename or f"logo{ext}")
+                    day = datetime.now(timezone.utc).date().isoformat()
+                    key = f"settings/logos/{day}/{uuid.uuid4().hex}_{safe_name}"
+                    storage = get_storage()
+                    storage.save_bytes(
+                        tenant_id=str(current_user.tenant_id),
+                        key=key,
+                        data=payload,
+                        content_type=content_type,
+                    )
+                    current_user.logo_url = storage.public_url(
+                        tenant_id=str(current_user.tenant_id),
+                        key=key,
+                    )
+                    logger.info(
+                        "SETTINGS_ACCOUNT_LOGO_SAVED tenant_id=%s user_id=%s logo_url=%s",
+                        str(current_user.tenant_id),
+                        str(getattr(current_user, "id", "")),
+                        current_user.logo_url,
+                    )
+            else:
+                logger.warning(
+                    "SETTINGS_ACCOUNT_LOGO_SKIPPED_UNSUPPORTED_TYPE tenant_id=%s user_id=%s content_type=%s",
+                    str(current_user.tenant_id),
+                    str(getattr(current_user, "id", "")),
+                    content_type,
+                )
+
+        # Refresh stored quote HTML for recent tenant leads so public pages show
+        # updated branding (company name/logo) without manual intervention.
+        refreshed_count = 0
+        refreshed_failed = 0
+        leads_to_refresh = (
+            db.query(Lead)
+            .filter(
+                Lead.tenant_id == str(current_user.tenant_id),
+                Lead.public_token.isnot(None),
+                Lead.estimate_html_key.isnot(None),
+                Lead.estimate_json.isnot(None),
+            )
+            .order_by(Lead.updated_at.desc())
+            .limit(20)
+            .all()
+        )
+        logger.info(
+            "SETTINGS_ACCOUNT_REFRESH_QUOTES_START tenant_id=%s lead_count=%s",
+            str(current_user.tenant_id),
+            len(leads_to_refresh),
+        )
+        for tenant_lead in leads_to_refresh:
+            try:
+                from app.verticals.paintly.pipeline import compute_quote_for_lead
+
+                before_html_key = (getattr(tenant_lead, "estimate_html_key", None) or "").strip()
+                result = compute_quote_for_lead(db=db, lead=tenant_lead, render_html=True)
+                estimate_json = result.get("estimate_json")
+                after_html_key = (result.get("estimate_html_key") or "").strip()
+                branding_company_name = None
+                branding_logo_url = None
+                if isinstance(estimate_json, dict):
+                    company = estimate_json.get("company") if isinstance(estimate_json.get("company"), dict) else {}
+                    branding_company_name = (
+                        estimate_json.get("branding_company_name")
+                        or company.get("company_name")
+                        or company.get("name")
+                    )
+                    branding_logo_url = (
+                        estimate_json.get("branding_logo_url")
+                        or company.get("logo_url")
+                    )
+
+                if estimate_json is not None:
+                    tenant_lead.estimate_json = json.dumps(estimate_json, ensure_ascii=False)
+                if after_html_key:
+                    tenant_lead.estimate_html_key = after_html_key
+                tenant_lead.updated_at = _utcnow()
+                db.add(tenant_lead)
+                refreshed_count += 1
+                logger.info(
+                    "SETTINGS_ACCOUNT_REFRESH_QUOTE_OK tenant_id=%s lead_id=%s html_key_before=%r html_key_after=%r branding_company_name=%r branding_logo_url=%r",
+                    str(current_user.tenant_id),
+                    str(getattr(tenant_lead, "id", "")),
+                    before_html_key or None,
+                    after_html_key or None,
+                    branding_company_name,
+                    branding_logo_url,
+                )
+            except Exception:
+                refreshed_failed += 1
+                logger.exception(
+                    "SETTINGS_ACCOUNT_REFRESH_QUOTE_FAILED tenant_id=%s lead_id=%s",
+                    str(current_user.tenant_id),
+                    str(getattr(tenant_lead, "id", "")),
+                )
+        logger.info(
+            "SETTINGS_ACCOUNT_REFRESH_QUOTES_DONE tenant_id=%s refreshed=%s failed=%s",
+            str(current_user.tenant_id),
+            refreshed_count,
+            refreshed_failed,
+        )
     elif section == "pricing":
         pricing = dict(getattr(tenant, "pricing_json", {}) or {})
         parsed_price_per_m2 = _parse_money(price_per_m2)
@@ -917,6 +1111,7 @@ def app_settings_save(
     db.add(tenant)
     db.add(current_user)
     db.commit()
+    db.refresh(current_user)
 
     saved_section = section if section in {"account", "pricing"} else "1"
     return RedirectResponse(url=f"/app/settings?saved={saved_section}", status_code=303)
@@ -1517,6 +1712,60 @@ def app_lead_estimate(
     return resp
 
 
+@router.post("/leads/{lead_id}/refresh")
+def app_lead_refresh_estimate(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    lead = (
+        db.query(Lead)
+        .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
+        .first()
+    )
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    from app.verticals.paintly.pipeline import compute_quote_for_lead
+
+    before_html_key = (getattr(lead, "estimate_html_key", None) or "").strip()
+    result = compute_quote_for_lead(db=db, lead=lead, render_html=True)
+    estimate_json = result.get("estimate_json")
+    estimate_html_key = result.get("estimate_html_key")
+    branding_company_name = None
+    branding_logo_url = None
+    if isinstance(estimate_json, dict):
+        company = estimate_json.get("company") if isinstance(estimate_json.get("company"), dict) else {}
+        branding_company_name = (
+            estimate_json.get("branding_company_name")
+            or company.get("company_name")
+            or company.get("name")
+        )
+        branding_logo_url = (
+            estimate_json.get("branding_logo_url")
+            or company.get("logo_url")
+        )
+
+    if estimate_json is not None:
+        lead.estimate_json = json.dumps(estimate_json, ensure_ascii=False)
+    if estimate_html_key:
+        lead.estimate_html_key = estimate_html_key
+    lead.updated_at = _utcnow()
+    db.add(lead)
+    db.commit()
+    logger.info(
+        "APP_LEAD_REFRESH_DONE tenant_id=%s lead_id=%s html_key_before=%r html_key_after=%r branding_company_name=%r branding_logo_url=%r",
+        str(current_user.tenant_id),
+        str(getattr(lead, "id", "")),
+        before_html_key or None,
+        (estimate_html_key or None),
+        branding_company_name,
+        branding_logo_url,
+    )
+
+    return RedirectResponse(url=f"/app/leads/{lead_id}/estimate", status_code=303)
+
+
 @router.get("/leads/{lead_id}/export-pdf")
 def export_lead_estimate_pdf(
     lead_id: str,
@@ -1564,6 +1813,7 @@ def export_lead_estimate_pdf(
     # Prefer structured estimate_json for PDF rendering; fall back to stored HTML only
     # when JSON is unavailable for legacy records.
     estimate_json = getattr(lead, "estimate_json", None)
+    estimate_data: dict | None = None
     html_content: str | None = None
 
     if estimate_json:
@@ -1576,6 +1826,7 @@ def export_lead_estimate_pdf(
                 type(e).__name__,
             )
         else:
+            estimate_data = estimate if isinstance(estimate, dict) else None
             try:
                 html_content = render_estimate_pdf_html(estimate)
             except Exception as e:
@@ -1624,11 +1875,18 @@ def export_lead_estimate_pdf(
         logger.exception("export_pdf_render_failed lead_id=%s", lead_id)
         raise HTTPException(status_code=500, detail="PDF generation failed") from e
 
+    download_filename = _build_pdf_download_filename(
+        lead_id=lead_id,
+        estimate=estimate_data,
+        tenant=tenant,
+        db=db,
+    )
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="estimate-{lead_id}.pdf"',
+            "Content-Disposition": f'attachment; filename="{download_filename}"',
             "Content-Length": str(len(pdf_bytes)),
             "Cache-Control": "no-store",
         },
