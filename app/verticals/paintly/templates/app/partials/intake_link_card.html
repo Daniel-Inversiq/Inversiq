@@ -1,0 +1,83 @@
+{% if intake_url %}
+  <style>
+    .intake-link-copy-btn.intake-copy-success {
+      background-color: rgb(5 150 105);
+    }
+    .intake-link-copy-btn.intake-copy-success:hover {
+      background-color: rgb(4 120 87);
+    }
+  </style>
+  <section
+    class="relative overflow-hidden rounded-[28px] border-2 border-sky-400/70 bg-gradient-to-br from-sky-50 via-white to-sky-50/80 p-6 shadow-md ring-1 ring-sky-100"
+    aria-labelledby="intake-link-heading"
+  >
+    <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-200/40 blur-2xl"></div>
+    <div class="relative">
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Start hier</p>
+          <h2 id="intake-link-heading" class="mt-1 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+            Jouw intake-link
+          </h2>
+          <p class="mt-2 max-w-2xl text-sm text-slate-600">
+            Stuur deze link naar je klant om automatisch een offerte te maken, of zet hem op je website. Kom je er niet uit? We helpen je graag.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-sky-200/80 bg-white/90 px-4 py-3 shadow-sm">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Link voor klanten</p>
+        <p class="mt-1 break-all text-sm font-medium text-slate-900 select-all" id="intake-url-display">{{ intake_url }}</p>
+      </div>
+
+      <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <button
+          type="button"
+          class="intake-link-copy-btn inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+          data-intake-url="{{ intake_url|e }}"
+          data-copy-label="Kopieer link"
+          data-intake-copy-btn
+          aria-live="polite"
+        >
+          Kopieer link
+        </button>
+        <a
+          href="{{ intake_url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex h-11 items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+        >
+          Open link
+        </a>
+        {% set wa_intake_message = "Hallo, via deze link kun je jouw schilderaanvraag invullen: " ~ intake_url %}
+        <a
+          href="https://wa.me/?text={{ wa_intake_message|url_query_quote }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex h-11 items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-semibold text-emerald-900 shadow-sm transition hover:bg-emerald-100"
+        >
+          Deel via WhatsApp
+        </a>
+      </div>
+    </div>
+  </section>
+  <script>
+    (function () {
+      document.querySelectorAll("[data-intake-copy-btn]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var url = btn.getAttribute("data-intake-url");
+          if (!url) return;
+          var label = btn.getAttribute("data-copy-label") || "Kopieer link";
+          navigator.clipboard.writeText(url).then(function () {
+            btn.textContent = "Gekopieerd!";
+            btn.classList.add("intake-copy-success");
+            setTimeout(function () {
+              btn.textContent = label;
+              btn.classList.remove("intake-copy-success");
+            }, 2000);
+          }).catch(function () {});
+        });
+      });
+    })();
+  </script>
+{% endif %}

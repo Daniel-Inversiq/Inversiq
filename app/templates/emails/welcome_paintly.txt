@@ -14,9 +14,9 @@ Zo werkt het kort:
 2) Paintly verwerkt de aanvraag.
 3) Er staat automatisch een offerte klaar in jouw omgeving.
 
-{% if support_email %}Kom je er niet uit of wil je dat we even meekijken? Stuur ons een mail op {{ support_email }} — we helpen je graag.{% if support_whatsapp_url %} Of WhatsApp: {{ support_whatsapp }} ({{ support_whatsapp_url }}){% endif %}.
-{% elif support_whatsapp_url %}Vragen? WhatsApp: {{ support_whatsapp }} — {{ support_whatsapp_url }}
-{% else %}We helpen je graag als je vragen hebt.
+{% if support_email %}Kom je er niet uit met het plaatsen van de link of heb je andere vragen? Stuur ons een mail op {{ support_email }}{% if support_whatsapp_url %} of stuur ons een bericht via WhatsApp ({{ support_whatsapp_url }}){% endif %} — we helpen je graag.
+{% elif support_whatsapp_url %}Kom je er niet uit met het plaatsen van de link of heb je andere vragen? Stuur ons een bericht via WhatsApp ({{ support_whatsapp_url }}) — we helpen je graag.
+{% else %}Kom je er niet uit met het plaatsen van de link of heb je andere vragen? We helpen je graag.
 {% endif %}
 
 —

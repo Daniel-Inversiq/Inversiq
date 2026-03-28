@@ -39,12 +39,11 @@
                 </ol>
                 <p style="margin:0;font-size:15px;line-height:1.6;">
                   {% if support_email %}
-                  Kom je er niet uit of wil je dat we even meekijken? Stuur ons een mail op <a href="mailto:{{ support_email }}" style="color:#0b5fff;">{{ support_email }}</a>&nbsp;— we helpen je graag.{% if support_whatsapp_url %} Of stuur een WhatsApp via
-                  <a href="{{ support_whatsapp_url }}" style="color:#0b5fff;">{{ support_whatsapp }}</a>.{% endif %}
+                  Kom je er niet uit met het plaatsen van de link of heb je andere vragen? Stuur ons een mail op <a href="mailto:{{ support_email }}" style="color:#0b5fff;">{{ support_email }}</a>{% if support_whatsapp_url %} of stuur ons een bericht <a href="{{ support_whatsapp_url }}" style="color:#0b5fff;">via WhatsApp</a>{% endif %} — we helpen je graag.
                   {% elif support_whatsapp_url %}
-                  Vragen? Stuur ons een WhatsApp: <a href="{{ support_whatsapp_url }}" style="color:#0b5fff;">{{ support_whatsapp }}</a>.
+                  Kom je er niet uit met het plaatsen van de link of heb je andere vragen? Stuur ons een bericht <a href="{{ support_whatsapp_url }}" style="color:#0b5fff;">via WhatsApp</a> — we helpen je graag.
                   {% else %}
-                  We helpen je graag als je vragen hebt — gebruik het supportkanaal dat je van ons hebt gekregen.
+                  Kom je er niet uit met het plaatsen van de link of heb je andere vragen? We helpen je graag.
                   {% endif %}
                 </p>
               </td>

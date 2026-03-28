@@ -12,6 +12,7 @@ import json
 import stripe
 import os
 import re
+from urllib.parse import quote
 
 from fastapi import BackgroundTasks
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query, File, UploadFile
@@ -69,6 +70,14 @@ router = APIRouter(
 )
 templates = Jinja2Templates(directory="app/verticals/paintly/templates")
 templates.env.globals["review_label_nl"] = review_label_nl
+
+
+def _url_query_quote(value: object) -> str:
+    """URL-encode a string for use as a single query value (e.g. wa.me/?text=…)."""
+    return quote(str(value), safe="")
+
+
+templates.env.filters["url_query_quote"] = _url_query_quote
 
 ALLOWED_JOB_STATUSES = {"NEW", "SCHEDULED", "IN_PROGRESS", "DONE", "CANCELLED"}
 
@@ -1678,6 +1687,15 @@ def app_leads(
         db,
         {"leads": rows},
     )
+    tenant_obj = context.get("tenant")
+    slug = ""
+    if tenant_obj is not None:
+        raw_slug = getattr(tenant_obj, "slug", None)
+        if isinstance(raw_slug, str) and raw_slug.strip():
+            slug = raw_slug.strip()
+    base = settings.effective_app_base_url
+    intake_url = f"{base}/intake/{slug}" if slug else ""
+    context["intake_url"] = intake_url
     return templates.TemplateResponse("app/leads_list.html", context)
 
 
