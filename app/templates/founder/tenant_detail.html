@@ -1,0 +1,230 @@
+{% extends "founder/_base.html" %}
+{% import "founder/_macros.html" as founder %}
+
+{% block title %}Founder Tenant Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-10">
+  <section class="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-start gap-3">
+        <h2 class="text-xl font-semibold tracking-tight text-slate-900">{{ tenant.company_name or tenant.name }}</h2>
+        <div class="min-w-0 pt-0.5">
+          {{ founder.insight_health_badge(tenant_summary.health, tenant_summary.health_reason, false) }}
+        </div>
+      </div>
+      <p class="mt-2 font-mono text-xs text-slate-500">Tenant ID <span class="text-slate-600">{{ tenant.id }}</span></p>
+    </div>
+    <a href="{{ url_for('founder_tenants') }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+      Back to tenants
+    </a>
+  </section>
+
+  <section aria-label="Performance and revenue">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Performance</h3>
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total leads</p>
+        <p class="mt-2 tabular-nums text-2xl font-semibold text-slate-900">{{ tenant_summary.total_leads }}</p>
+      </article>
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Estimates</p>
+        <p class="mt-2 tabular-nums text-2xl font-semibold text-slate-900">{{ tenant_summary.total_estimates }}</p>
+        <p class="mt-1 text-[11px] text-slate-400">Leads with estimate payload</p>
+      </article>
+      <article class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 shadow-sm ring-1 ring-indigo-200/40">
+        <p class="text-xs font-medium uppercase tracking-wide text-indigo-900/80">Revenue (total)</p>
+        <p class="mt-2 tabular-nums text-2xl font-bold tracking-tight text-slate-900">{{ tenant_summary.revenue_total_fmt }}</p>
+        <p class="mt-1 text-[11px] text-indigo-800/70"><span class="font-mono">final_price</span> · <span class="font-mono">accepted_at</span></p>
+      </article>
+      <article class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 shadow-sm ring-1 ring-indigo-200/40">
+        <p class="text-xs font-medium uppercase tracking-wide text-indigo-900/80">Revenue (30d)</p>
+        <p class="mt-2 tabular-nums text-2xl font-bold tracking-tight text-slate-900">{{ tenant_summary.revenue_30d_fmt }}</p>
+        <p class="mt-1 text-[11px] text-indigo-800/70">Accepted in last 30 days</p>
+      </article>
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Avg deal size</p>
+        <p class="mt-2 tabular-nums text-2xl font-semibold text-slate-900">{{ tenant_summary.avg_accepted_quote_fmt }}</p>
+        <p class="mt-1 text-[11px] text-slate-400">Mean over accepted quotes</p>
+      </article>
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Conversion</p>
+        {% if tenant_summary.conversion_pct is not none %}
+        {% set cp = tenant_summary.conversion_pct %}
+        <p class="mt-2 tabular-nums text-2xl font-semibold text-slate-900">{{ cp }}%</p>
+        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div class="h-full min-w-0 rounded-full {% if cp >= 30 %}bg-emerald-500{% elif cp >= 10 %}bg-amber-500{% else %}bg-rose-400{% endif %}" style="width: {{ [cp, 100] | min }}%; max-width: 100%;"></div>
+        </div>
+        <p class="mt-2 text-[11px] leading-snug text-slate-500"><span class="tabular-nums font-medium text-slate-700">{{ tenant_summary.accepted_deals }}</span> accepted · <span class="tabular-nums">{{ tenant_summary.total_leads }}</span> leads</p>
+        {% else %}
+        <p class="mt-2 text-2xl font-semibold text-slate-300">—</p>
+        <p class="mt-1 text-[11px] text-slate-400">No leads yet</p>
+        {% endif %}
+      </article>
+    </div>
+
+    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Plan</p>
+        <div class="mt-2">{{ founder.plan_badge(tenant_summary.plan_code or "starter_99") }}</div>
+      </article>
+      <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Subscription status</p>
+        <div class="mt-2">{{ founder.status_badge(tenant_summary.status) }}</div>
+      </article>
+    </div>
+
+    <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm ring-1 ring-slate-900/[0.03]">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Activity · last 30 days</p>
+      <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div class="rounded-lg border border-slate-200/80 bg-white px-4 py-3">
+          <p class="text-xs text-slate-500">New leads</p>
+          <p class="mt-1 tabular-nums text-xl font-semibold text-slate-900">{{ tenant_summary.leads_30d }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200/80 bg-white px-4 py-3">
+          <p class="text-xs text-slate-500">Estimates created</p>
+          <p class="mt-1 tabular-nums text-xl font-semibold text-slate-900">{{ tenant_summary.estimates_30d }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200/80 bg-white px-4 py-3">
+          <p class="text-xs text-slate-500">Accepted</p>
+          <p class="mt-1 tabular-nums text-xl font-semibold text-slate-900">{{ tenant_summary.accepted_30d }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-6 lg:items-start">
+    <section aria-labelledby="sec-tenant-info">
+      <h3 id="sec-tenant-info" class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Tenant info</h3>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <dl class="space-y-3 text-sm">
+          <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Name</dt><dd class="text-right font-medium text-slate-900">{{ tenant.name or "—" }}</dd></div>
+          <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Company</dt><dd class="text-right font-medium text-slate-900">{{ tenant.company_name or "—" }}</dd></div>
+          <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Email</dt><dd class="break-all text-right font-medium text-slate-900">{{ tenant.email or "—" }}</dd></div>
+          <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Phone</dt><dd class="text-right font-medium text-slate-900">{{ tenant.phone or "—" }}</dd></div>
+          <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Slug</dt><dd class="font-mono text-right text-xs font-medium text-slate-800">{{ tenant.slug or "—" }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="shrink-0 text-slate-500">Created</dt><dd class="whitespace-nowrap text-right tabular-nums font-medium text-slate-900">{{ founder.fmt_datetime(tenant.created_at) }}</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section aria-labelledby="sec-owner-info">
+      <h3 id="sec-owner-info" class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Owner info</h3>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <dl class="space-y-3 text-sm">
+          <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Name</dt><dd class="text-right font-medium text-slate-900">{{ owner.name or "—" }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="shrink-0 text-slate-500">Email</dt><dd class="break-all text-right font-medium text-slate-900">{{ owner.email or "—" }}</dd></div>
+        </dl>
+      </article>
+    </section>
+  </div>
+
+  <section aria-labelledby="sec-branding">
+    <h3 id="sec-branding" class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Branding info</h3>
+    <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      {% if branding %}
+      <dl class="space-y-3 text-sm">
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Company name</dt><dd class="text-right font-medium text-slate-900">{{ branding.company_name or "—" }}</dd></div>
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Logo URL</dt><dd class="break-all text-right font-medium text-slate-900">{{ branding.logo_url or "—" }}</dd></div>
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Primary color</dt><dd class="text-right font-medium text-slate-900">{{ branding.primary_color or "—" }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="shrink-0 text-slate-500">Secondary color</dt><dd class="text-right font-medium text-slate-900">{{ branding.secondary_color or "—" }}</dd></div>
+      </dl>
+      {% else %}
+      <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">
+        <p class="text-sm font-medium text-slate-700">No branding settings</p>
+        <p class="mt-1 text-sm text-slate-500">This tenant has not configured branding in tenant settings.</p>
+      </div>
+      {% endif %}
+    </article>
+  </section>
+
+  <section aria-labelledby="sec-subscription">
+    <h3 id="sec-subscription" class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Subscription info</h3>
+    <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <dl class="space-y-3 text-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <dt class="text-slate-500">Plan</dt>
+          <dd>{{ founder.plan_badge(subscription.plan_code or "starter_99") }}</dd>
+        </div>
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Plan code</dt><dd class="font-mono text-right text-xs font-medium text-slate-800">{{ subscription.plan_code or "—" }}</dd></div>
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Subscription status</dt><dd class="text-right font-medium text-slate-900">{{ subscription.subscription_status or "—" }}</dd></div>
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Trial ends</dt><dd class="whitespace-nowrap text-right tabular-nums font-medium text-slate-900">{{ founder.fmt_datetime(subscription.trial_ends_at) }}</dd></div>
+        <div class="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt class="shrink-0 text-slate-500">Stripe customer ID</dt><dd class="break-all text-right font-mono text-xs font-medium text-slate-800">{{ subscription.stripe_customer_id or "—" }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="shrink-0 text-slate-500">Stripe subscription ID</dt><dd class="break-all text-right font-mono text-xs font-medium text-slate-800">{{ subscription.stripe_subscription_id or "—" }}</dd></div>
+      </dl>
+    </article>
+  </section>
+
+  <section aria-labelledby="sec-quotes-pipeline">
+    <h3 id="sec-quotes-pipeline" class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Quotes &amp; pipeline</h3>
+    <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+      <div class="border-b border-slate-100 bg-slate-50/90 px-5 py-3">
+        <p class="text-sm font-medium text-slate-800">Recent leads</p>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">
+          <span class="font-medium tabular-nums text-slate-700">{{ tenant_summary.leads_with_public_link }}</span> leads have a public quote link
+          (<code class="rounded bg-slate-100 px-1 font-mono text-slate-700">/e/&lt;token&gt;</code>).
+          Base URL: <code class="rounded bg-slate-100 px-1 font-mono text-[11px] text-slate-700">{{ app_public_origin }}</code>
+        </p>
+      </div>
+      {% if recent_quote_rows %}
+      <div class="overflow-x-auto">
+        <table class="min-w-[56rem] w-full text-sm">
+          <thead class="border-b border-slate-100 bg-slate-50/90 text-left text-xs uppercase tracking-wide text-slate-600">
+            <tr>
+              <th scope="col" class="px-5 py-3 font-semibold">Lead</th>
+              <th scope="col" class="px-5 py-3 text-right font-semibold">Price</th>
+              <th scope="col" class="px-5 py-3 font-semibold">Sent</th>
+              <th scope="col" class="px-5 py-3 font-semibold">Accepted</th>
+              <th scope="col" class="px-5 py-3 font-semibold">Status</th>
+              <th scope="col" class="min-w-[14rem] px-5 py-3 font-semibold">Public quote</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in recent_quote_rows %}
+            {% set lead = row.lead %}
+            <tr class="transition-colors hover:bg-slate-50/80">
+              <td class="px-5 py-3 align-top">
+                <span class="font-medium text-slate-900">{{ lead.name or "—" }}</span>
+                <span class="mt-0.5 block max-w-[14rem] truncate text-xs text-slate-500" title="{{ lead.email or '' }}">{{ lead.email or "—" }}</span>
+              </td>
+              <td class="px-5 py-3 align-top text-right tabular-nums font-medium text-slate-800">{{ row.price_fmt }}</td>
+              <td class="whitespace-nowrap px-5 py-3 align-top tabular-nums text-slate-700">{{ founder.fmt_datetime(lead.sent_at) }}</td>
+              <td class="whitespace-nowrap px-5 py-3 align-top tabular-nums text-slate-700">{{ founder.fmt_datetime(lead.accepted_at) }}</td>
+              <td class="px-5 py-3 align-top text-slate-800">{{ lead.status or "—" }}</td>
+              <td class="px-5 py-3 align-top">
+                {% if row.public_url %}
+                <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+                  <p class="min-w-0 break-all font-mono text-[11px] leading-snug text-slate-700" title="{{ row.public_url }}">{{ row.public_url }}</p>
+                  <div class="flex shrink-0 flex-wrap gap-2">
+                    <a href="{{ row.public_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-800 shadow-sm hover:bg-slate-50">Open</a>
+                    <button type="button" data-copy-url="{{ row.public_url }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-800 shadow-sm hover:bg-slate-50">Copy</button>
+                  </div>
+                </div>
+                {% else %}
+                <span class="text-slate-400">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      {{ founder.empty_state("No leads", "Leads for this tenant will show here once they are created.") }}
+      {% endif %}
+    </article>
+  </section>
+  <script>
+  (function () {
+    document.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-copy-url]");
+      if (!btn) return;
+      var url = btn.getAttribute("data-copy-url");
+      if (!url || !navigator.clipboard) return;
+      e.preventDefault();
+      navigator.clipboard.writeText(url).catch(function () {});
+    });
+  })();
+  </script>
+</div>
+{% endblock %}

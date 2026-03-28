@@ -25,6 +25,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="1")
+    is_platform_admin: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="0"
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

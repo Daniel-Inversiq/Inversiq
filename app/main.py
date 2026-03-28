@@ -46,6 +46,7 @@ from app.routers import uploads, intake, quotes, files
 from app.routers import settings_logo
 from app.routers import billing
 from app.routers import stripe_webhook
+from app.routers.founder import router as founder_router
 from app.observability.metrics import router as metrics_router
 from app.routers import internal
 from app.routers import processing
@@ -183,6 +184,7 @@ app.include_router(quote_router)
 app.include_router(onboarding.router)
 app.include_router(billing.router)
 app.include_router(stripe_webhook.router)
+app.include_router(founder_router)
 
 
 # DEV-only routes (hardening)
