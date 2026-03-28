@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from app.core.settings import settings
 from app.auth.deps import require_user_html
 from app.db import get_db
 from app.models.calendar_connection import CalendarConnection
@@ -14,6 +17,9 @@ from app.verticals.paintly.google_calendar_oauth import (
     exchange_code_for_tokens,
     token_expiry_from_response,
     validate_oauth_state,
+)
+from app.verticals.paintly.google_calendar_service import (
+    create_google_calendar_event_for_tenant,
 )
 
 router = APIRouter(
@@ -79,6 +85,32 @@ def google_calendar_callback(
     db.commit()
 
     return RedirectResponse(url="/app/settings?saved=integrations", status_code=303)
+
+
+@router.get("/test-event")
+def google_calendar_test_event(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    if not settings.ENABLE_DEV_ROUTES:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    tenant_id = str(current_user.tenant_id)
+    now = datetime.now(UTC)
+    start = now + timedelta(hours=1)
+    end = now + timedelta(hours=2)
+    event_payload = {
+        "summary": "Paintly Test Event",
+        "start": {"dateTime": start.isoformat(), "timeZone": "UTC"},
+        "end": {"dateTime": end.isoformat(), "timeZone": "UTC"},
+    }
+    return create_google_calendar_event_for_tenant(
+        db=db,
+        tenant_id=tenant_id,
+        event_payload=event_payload,
+        not_connected_status=404,
+        not_connected_detail="Google Calendar is not connected.",
+    )
 
 
 @router.delete("/disconnect")

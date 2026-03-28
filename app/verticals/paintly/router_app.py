@@ -20,7 +20,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import desc, func, or_
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 from app.auth.deps import require_user_html
 from app.db import get_db
@@ -50,6 +50,11 @@ from app.dependencies import tenant_service
 from app.config.plans import PLANS
 from app.services.usage_service import get_or_create_usage, increment_usage
 from app.services.billing_summary_service import get_billing_usage_summary
+from app.verticals.paintly.google_calendar_service import (
+    build_appointment_event_payload,
+    create_google_calendar_event_for_tenant,
+    utc_normalize_appointment_datetime,
+)
 from app.verticals.paintly.email_render import render_estimate_ready_email
 from app.verticals.paintly.estimate_email import (
     send_estimate_ready_email_to_customer,
@@ -228,6 +233,18 @@ def _dashboard_context(
     if extra:
         ctx.update(extra)
     return ctx
+
+
+def _merge_intake_url_into_context(context: dict) -> None:
+    """Set ``intake_url`` for the tenant's public intake page (share/copy in app UI)."""
+    tenant_obj = context.get("tenant")
+    slug = ""
+    if tenant_obj is not None:
+        raw_slug = getattr(tenant_obj, "slug", None)
+        if isinstance(raw_slug, str) and raw_slug.strip():
+            slug = raw_slug.strip()
+    base = settings.effective_app_base_url
+    context["intake_url"] = f"{base}/intake/{slug}" if slug else ""
 
 
 # -------------------------
@@ -1166,6 +1183,7 @@ def app_dashboard(
             "open_quotes": open_quotes,
         },
     )
+    _merge_intake_url_into_context(context)
     return templates.TemplateResponse("app/dashboard.html", context)
 
 
@@ -1212,6 +1230,54 @@ def app_settings(
         },
     )
     return templates.TemplateResponse("app/settings.html", context)
+
+
+class ScheduleAppointmentBody(BaseModel):
+    title: str = Field(..., min_length=1, max_length=1024)
+    start_datetime: datetime
+    end_datetime: datetime
+    description: str | None = Field(None, max_length=8000)
+    attendee_emails: list[EmailStr] | None = Field(None, max_length=10)
+
+
+@router.post("/calendar/appointments")
+def schedule_paintly_appointment(
+    body: ScheduleAppointmentBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    tenant_id = str(current_user.tenant_id)
+    start_utc = utc_normalize_appointment_datetime(body.start_datetime)
+    end_utc = utc_normalize_appointment_datetime(body.end_datetime)
+    if end_utc <= start_utc:
+        raise HTTPException(
+            status_code=400,
+            detail="end_datetime must be after start_datetime",
+        )
+    attendees = [str(e) for e in body.attendee_emails] if body.attendee_emails else None
+    event_payload = build_appointment_event_payload(
+        title=body.title,
+        start_utc=start_utc,
+        end_utc=end_utc,
+        description=body.description,
+        attendee_emails=attendees,
+    )
+    send_updates = "none" if attendees else None
+    event = create_google_calendar_event_for_tenant(
+        db=db,
+        tenant_id=tenant_id,
+        event_payload=event_payload,
+        send_updates=send_updates,
+    )
+    event_id = str(event.get("id") or "").strip()
+    if not event_id:
+        raise HTTPException(status_code=400, detail="Google Calendar event missing id.")
+    html_link = event.get("htmlLink")
+    return {
+        "ok": True,
+        "event_id": event_id,
+        "html_link": html_link if isinstance(html_link, str) else None,
+    }
 
 
 @router.post("/settings")
@@ -1687,15 +1753,7 @@ def app_leads(
         db,
         {"leads": rows},
     )
-    tenant_obj = context.get("tenant")
-    slug = ""
-    if tenant_obj is not None:
-        raw_slug = getattr(tenant_obj, "slug", None)
-        if isinstance(raw_slug, str) and raw_slug.strip():
-            slug = raw_slug.strip()
-    base = settings.effective_app_base_url
-    intake_url = f"{base}/intake/{slug}" if slug else ""
-    context["intake_url"] = intake_url
+    _merge_intake_url_into_context(context)
     return templates.TemplateResponse("app/leads_list.html", context)
 
 

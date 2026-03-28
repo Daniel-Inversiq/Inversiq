@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -25,12 +25,8 @@ from app.verticals.paintly.calendar_ics import (
     build_quote_ics,
     build_quote_ics_filename,
 )
-from app.verticals.paintly.google_calendar_oauth import (
-    create_google_calendar_event,
-    decrypt_token,
-    encrypt_token,
-    refresh_access_token,
-    token_expiry_from_response,
+from app.verticals.paintly.google_calendar_service import (
+    create_google_calendar_event_for_tenant,
 )
 from app.verticals.paintly.google_calendar_quote import build_google_event_payload
 from app.verticals.registry import get as get_vertical
@@ -728,34 +724,11 @@ def _create_google_calendar_event_for_quote(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    access_token = decrypt_token(connection.access_token_encrypted)
-    expires_at = connection.token_expires_at
-    if expires_at is not None:
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=UTC)
-        if expires_at <= datetime.now(UTC):
-            if not connection.refresh_token_encrypted:
-                raise HTTPException(status_code=409, detail="Google token expired. Reconnect integration.")
-            refreshed = refresh_access_token(
-                decrypt_token(connection.refresh_token_encrypted)
-            )
-            refreshed_access = str(refreshed.get("access_token") or "").strip()
-            if not refreshed_access:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Failed to refresh Google token. Reconnect integration.",
-                )
-            access_token = refreshed_access
-            connection.access_token_encrypted = encrypt_token(refreshed_access)
-            connection.token_expires_at = token_expiry_from_response(refreshed)
-            db.add(connection)
-            db.commit()
-
-    event_payload = build_google_event_payload(payload)
-    event = create_google_calendar_event(
-        access_token=access_token,
-        calendar_id=connection.calendar_id or "primary",
-        event_payload=event_payload,
+    event = create_google_calendar_event_for_tenant(
+        db=db,
+        tenant_id=tenant_id,
+        event_payload=build_google_event_payload(payload),
+        connection=connection,
     )
     event_id = str(event.get("id") or "").strip()
     if not event_id:

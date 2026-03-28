@@ -144,9 +144,12 @@ def create_google_calendar_event(
     access_token: str,
     calendar_id: str,
     event_payload: dict[str, Any],
+    send_updates: str | None = None,
 ) -> dict[str, Any]:
     encoded_calendar = urllib.parse.quote(calendar_id or "primary", safe="")
     url = f"{GOOGLE_CALENDAR_API}/calendars/{encoded_calendar}/events"
+    if send_updates is not None:
+        url = f"{url}?{urllib.parse.urlencode({'sendUpdates': send_updates})}"
     with httpx.Client(timeout=20.0) as client:
         response = client.post(
             url,

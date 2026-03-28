@@ -176,10 +176,137 @@
         {% endif %}
       </div>
     </div>
+    {% if google_calendar_connected %}
+    <div class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 space-y-3">
+      <div class="text-sm font-medium text-slate-900">Afspraak plannen</div>
+      <p class="text-xs text-slate-500">Voeg een afspraak toe aan je gekoppelde Google-agenda.</p>
+      <div class="space-y-2">
+        <label class="block text-xs font-medium text-slate-700" for="appt-title">Titel</label>
+        <input
+          id="appt-title"
+          type="text"
+          class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          value="Afspraak"
+        />
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="block text-xs font-medium text-slate-700" for="appt-start">Start</label>
+          <input
+            id="appt-start"
+            type="datetime-local"
+            class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700" for="appt-end">Einde</label>
+          <input
+            id="appt-end"
+            type="datetime-local"
+            class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700" for="appt-desc">Omschrijving (optioneel)</label>
+        <textarea
+          id="appt-desc"
+          rows="2"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          placeholder="Notities voor de afspraak"
+        ></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700" for="appt-email">E-mail deelnemer (optioneel)</label>
+        <input
+          id="appt-email"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          placeholder="naam@voorbeeld.nl"
+        />
+      </div>
+      <button
+        type="button"
+        onclick="schedulePaintlyAppointment()"
+        class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-500 px-3 text-xs font-medium text-white transition hover:bg-sky-600"
+      >
+        Toevoegen aan agenda
+      </button>
+      <p id="appt-msg" class="hidden text-xs text-slate-600" role="status"></p>
+    </div>
+    {% endif %}
   </div>
 </div>
 
 <script>
+  async function schedulePaintlyAppointment() {
+    const elMsg = document.getElementById("appt-msg");
+    const titleEl = document.getElementById("appt-title");
+    const startEl = document.getElementById("appt-start");
+    const endEl = document.getElementById("appt-end");
+    const descEl = document.getElementById("appt-desc");
+    const emailEl = document.getElementById("appt-email");
+    if (!titleEl || !startEl || !endEl || !elMsg) return;
+    const title = (titleEl.value || "").trim();
+    if (!title) {
+      window.alert("Vul een titel in.");
+      return;
+    }
+    if (!startEl.value || !endEl.value) {
+      window.alert("Kies start- en eindtijd.");
+      return;
+    }
+    const start = new Date(startEl.value);
+    const end = new Date(endEl.value);
+    if (!(start instanceof Date) || !(end instanceof Date) || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      window.alert("Ongeldige datum/tijd.");
+      return;
+    }
+    if (end <= start) {
+      window.alert("Einde moet na start zijn.");
+      return;
+    }
+    const desc = descEl ? (descEl.value || "").trim() : "";
+    const emailRaw = emailEl ? (emailEl.value || "").trim() : "";
+    const attendee_emails = emailRaw ? [emailRaw] : null;
+    elMsg.classList.add("hidden");
+    try {
+      const res = await fetch("/app/calendar/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          title,
+          start_datetime: start.toISOString(),
+          end_datetime: end.toISOString(),
+          description: desc || null,
+          attendee_emails,
+        }),
+      });
+      const data = await res.json().catch(function () {
+        return {};
+      });
+      if (!res.ok) {
+        const detail = data && data.detail;
+        const msg =
+          typeof detail === "string"
+            ? detail
+            : Array.isArray(detail)
+              ? detail.map(function (d) { return d.msg || ""; }).filter(Boolean).join(" ") || "Aanmaken mislukt."
+              : "Aanmaken mislukt.";
+        window.alert(msg);
+        return;
+      }
+      elMsg.textContent = data.html_link
+        ? "Afspraak toegevoegd. Open in Google Agenda: " + data.html_link
+        : "Afspraak toegevoegd.";
+      elMsg.classList.remove("hidden");
+    } catch (e) {
+      window.alert("Netwerkfout. Probeer opnieuw.");
+    }
+  }
+
   async function disconnectGoogleCalendar() {
     const ok = window.confirm("Google Calendar ontkoppelen?");
     if (!ok) return;
