@@ -12,7 +12,8 @@ import json
 import stripe
 import os
 import re
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
+from typing import Any
 
 from fastapi import BackgroundTasks
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query, File, UploadFile
@@ -20,6 +21,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import desc, func, or_
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr, Field
 
 from app.auth.deps import require_user_html
@@ -29,6 +31,7 @@ from app.models.job import Job
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.calendar_connection import CalendarConnection
+from app.models.calendar_event import CalendarEvent
 from app.models.tenant_settings import TenantSettings
 from app.services.storage import get_storage, get_text
 from app.models.lead import LeadFile
@@ -53,6 +56,7 @@ from app.services.billing_summary_service import get_billing_usage_summary
 from app.verticals.paintly.google_calendar_service import (
     build_appointment_event_payload,
     create_google_calendar_event_for_tenant,
+    fetch_upcoming_calendar_events_merged,
     utc_normalize_appointment_datetime,
 )
 from app.verticals.paintly.email_render import render_estimate_ready_email
@@ -351,6 +355,62 @@ def build_followup_summary(overrides: dict, tz_name: str) -> dict:
             if next_action_at_utc is not None
             else ""
         ),
+    }
+
+
+def _bezichtiging_prefill_from_lead(lead: Lead, intake_payload: dict) -> dict[str, str]:
+    """Defaults for Agenda appointment form when scheduling a bezichtiging from a lead."""
+    name = (getattr(lead, "name", "") or "").strip() or "Klant"
+    email = (getattr(lead, "email", "") or "").strip()
+    phone = (getattr(lead, "phone", "") or "").strip()
+    lid = str(lead.id)
+    lead_short = f"Offerte #{lid[-6:].upper()}"
+
+    street = (intake_payload.get("street") or intake_payload.get("address_street") or "").strip()
+    city = (intake_payload.get("city") or intake_payload.get("address_city") or "").strip()
+    zip_code = (intake_payload.get("zip") or intake_payload.get("postal_code") or "").strip()
+    addr_parts = [p for p in [street, zip_code, city] if p]
+    address_line = ", ".join(addr_parts) if addr_parts else ""
+
+    if address_line:
+        title = f"Bezichtiging — {address_line} — {name}"
+    else:
+        title = f"Bezichtiging — {name}"
+    if len(title) > 1024:
+        title = title[:1021] + "..."
+
+    base = settings.effective_app_base_url.rstrip("/")
+    lead_url = f"{base}/app/leads/{lead.id}"
+
+    lines = [
+        f"Paintly · {lead_short}",
+        f"Klant: {name}",
+    ]
+    if phone:
+        lines.append(f"Telefoon: {phone}")
+    if email:
+        lines.append(f"E-mail: {email}")
+    if address_line:
+        lines.append(f"Adres: {address_line}")
+    notes = (getattr(lead, "notes", "") or "").strip()
+    if notes:
+        lines.append("")
+        lines.append("Notities:")
+        lines.append(notes)
+    lines.append("")
+    lines.append(f"Lead: {lead_url}")
+
+    description = "\n".join(lines)
+    if len(description) > 8000:
+        description = description[:7997] + "..."
+
+    return {
+        "title": title,
+        "description": description,
+        "email": email,
+        "lead_id": str(lead.id),
+        "lead_short": lead_short,
+        "customer_name": name,
     }
 
 
@@ -1238,6 +1298,7 @@ class ScheduleAppointmentBody(BaseModel):
     end_datetime: datetime
     description: str | None = Field(None, max_length=8000)
     attendee_emails: list[EmailStr] | None = Field(None, max_length=10)
+    quote_id: str | None = Field(None, max_length=100)
 
 
 @router.post("/calendar/appointments")
@@ -1273,11 +1334,53 @@ def schedule_paintly_appointment(
     if not event_id:
         raise HTTPException(status_code=400, detail="Google Calendar event missing id.")
     html_link = event.get("htmlLink")
+    html_link_str = html_link if isinstance(html_link, str) else None
+    qid = (body.quote_id or "").strip() or None
+    if qid:
+        lead_ok = (
+            db.query(Lead.id)
+            .filter(Lead.id == qid, Lead.tenant_id == tenant_id)
+            .first()
+        )
+        if not lead_ok:
+            raise HTTPException(status_code=400, detail="Invalid quote_id for this tenant.")
+    row = CalendarEvent(
+        tenant_id=tenant_id,
+        google_event_id=event_id,
+        title=body.title.strip(),
+        start_datetime=start_utc,
+        end_datetime=end_utc,
+        html_link=html_link_str,
+        quote_id=qid,
+    )
+    db.add(row)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
     return {
         "ok": True,
         "event_id": event_id,
-        "html_link": html_link if isinstance(html_link, str) else None,
+        "html_link": html_link_str,
     }
+
+
+@router.get("/calendar/upcoming-events")
+def get_calendar_upcoming_events(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+    days: int = Query(default=30, ge=1, le=90),
+):
+    tenant_id = str(current_user.tenant_id)
+    tz_name = _get_tenant_timezone(current_user, None)
+    items = fetch_upcoming_calendar_events_merged(
+        db,
+        tenant_id,
+        tz_name=tz_name,
+        days_ahead=days,
+        max_results=25,
+    )
+    return {"items": items}
 
 
 @router.post("/settings")
@@ -2862,6 +2965,8 @@ def app_calendar_week(
     current_user: User = Depends(require_user_html),
     week: str | None = Query(default=None),
     show_done: int = Query(default=0),
+    intent: str | None = Query(default=None),
+    lead_id: str | None = Query(default=None),
 ):
     tenant_id = str(current_user.tenant_id)
     tz_name = _get_tenant_timezone(current_user, None)
@@ -3014,6 +3119,51 @@ def app_calendar_week(
         f"/app/calendar?week={year}-W{week_no:02d}&show_done={0 if show_done else 1}"
     )
 
+    bezichtiging_prefill: dict[str, str] | None = None
+    calendar_nav_qs = ""
+    raw_intent = (intent or "").strip().lower()
+    raw_lead_id = (lead_id or "").strip()
+    if raw_intent == "bezichtiging" and raw_lead_id:
+        lead_bz = (
+            db.query(Lead)
+            .filter(Lead.id == raw_lead_id, Lead.tenant_id == tenant_id)
+            .first()
+        )
+        if lead_bz:
+            intake_dict: dict = {}
+            raw_pl = getattr(lead_bz, "intake_payload", None)
+            if raw_pl:
+                try:
+                    parsed = json.loads(raw_pl)
+                    if isinstance(parsed, dict):
+                        intake_dict = parsed
+                except Exception:
+                    intake_dict = {}
+            bezichtiging_prefill = _bezichtiging_prefill_from_lead(lead_bz, intake_dict)
+            calendar_nav_qs = urlencode(
+                {"intent": "bezichtiging", "lead_id": str(lead_bz.id)}
+            )
+            toggle_done_url += f"&{calendar_nav_qs}"
+
+    google_connection = (
+        db.query(CalendarConnection)
+        .filter(
+            CalendarConnection.tenant_id == tenant_id,
+            CalendarConnection.provider == "google",
+        )
+        .first()
+    )
+
+    upcoming_calendar_events: list[dict[str, Any]] = []
+    if google_connection:
+        upcoming_calendar_events = fetch_upcoming_calendar_events_merged(
+            db,
+            tenant_id,
+            tz_name=tz_name,
+            days_ahead=30,
+            max_results=25,
+        )
+
     context = _dashboard_context(
         request,
         current_user,
@@ -3028,6 +3178,13 @@ def app_calendar_week(
             "unscheduled": unscheduled_vm,
             "show_done": show_done,
             "toggle_done_url": toggle_done_url,
+            "google_calendar_connected": bool(google_connection),
+            "google_calendar_id": (
+                google_connection.calendar_id if google_connection else "primary"
+            ),
+            "bezichtiging_prefill": bezichtiging_prefill,
+            "calendar_nav_qs": calendar_nav_qs,
+            "upcoming_calendar_events": upcoming_calendar_events,
         },
     )
     return templates.TemplateResponse("app/calendar_week.html", context)

@@ -51,6 +51,14 @@
   {% if country %}{% set _ = address_parts.append(country) %}{% endif %}
   {% set full_address = address_parts | join(', ') %}
 
+  {% set quote_bez_customer = lead.name or 'Klant' %}
+  {% set quote_bez_title = 'Bezichtiging - ' ~ quote_bez_customer %}
+  {% set quote_bez_desc_lines = [] %}
+  {% if full_address %}{% set _ = quote_bez_desc_lines.append('Adres: ' ~ full_address) %}{% endif %}
+  {% if lead.notes and (lead.notes|string)|trim %}{% set _ = quote_bez_desc_lines.append('Notities: ' ~ ((lead.notes|string)|trim)) %}{% endif %}
+  {% set quote_bez_description_raw = quote_bez_desc_lines | join('\n\n') %}
+  {% set quote_bez_description = quote_bez_description_raw[0:8000] if quote_bez_description_raw|length > 8000 else quote_bez_description_raw %}
+
   {% set header_work_summary = (job_type ~ (' • ' ~ square_meters ~ ' m²' if square_meters else '')) if job_type else ((square_meters ~ ' m²') if square_meters else 'Werksamenvatting niet ingevuld') %}
 
   <!-- Header -->
@@ -88,6 +96,17 @@
           {% endif %}
         </div>
         <div class="flex flex-shrink-0 flex-wrap items-center gap-2">
+        {% if google_calendar_connected %}
+        <button type="button" onclick="openQuoteBezichtigingModal()"
+                class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-500 px-3 text-xs font-medium text-white shadow-sm transition hover:bg-sky-600">
+          Plan bezichtiging
+        </button>
+        {% else %}
+        <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+           href="/app/settings">
+          Plan bezichtiging
+        </a>
+        {% endif %}
         {% if quote_ui and quote_ui.can_view %}
           <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
              href="/app/leads/{{ lead.id }}/estimate" target="_blank">
@@ -130,6 +149,36 @@
         {% endif %}
         </div>
       </div>
+    </div>
+  </div>
+
+  <div
+    id="quote-bez-success-toast"
+    class="pointer-events-none fixed bottom-6 left-1/2 z-[100] hidden w-[min(100%-2rem,26rem)] -translate-x-1/2 px-0"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <div
+      class="pointer-events-auto flex gap-3 rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-xl shadow-slate-900/15 ring-1 ring-slate-900/5"
+    >
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <div class="min-w-0 flex-1 pt-0.5">
+        <p class="text-sm font-semibold text-emerald-900">Bezichtiging gepland</p>
+        <p class="mt-1 text-sm leading-snug text-emerald-800" id="quote-bez-success-toast-line"></p>
+      </div>
+      <button
+        type="button"
+        onclick="hideQuoteBezSuccessToast()"
+        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        aria-label="Melding sluiten"
+      >
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
   </div>
 
@@ -704,7 +753,248 @@
   </div>
 </div>
 
+{% if google_calendar_connected %}
+<div
+  id="quote-bez-modal"
+  class="fixed inset-0 z-50 flex hidden items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-12 sm:pt-16"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="quote-bez-modal-title"
+>
+  <div class="fixed inset-0 z-0" aria-hidden="true" onclick="closeQuoteBezichtigingModal()"></div>
+  <div class="relative z-10 mt-0 w-full max-w-lg rounded-[24px] border border-slate-200/80 bg-white shadow-xl" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <h3 id="quote-bez-modal-title" class="text-base font-semibold text-slate-900">Bezichtiging plannen</h3>
+      <button type="button" onclick="closeQuoteBezichtigingModal()"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Sluiten">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="space-y-4 p-5">
+      <div
+        id="quote-bez-modal-error"
+        class="hidden flex gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800"
+        role="alert"
+        aria-live="assertive"
+      >
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="min-w-0 flex-1 text-sm leading-snug" id="quote-bez-modal-error-line"></p>
+      </div>
+      <div class="space-y-2">
+        <label class="block text-xs font-medium text-slate-700" for="quote-bez-title">Titel</label>
+        <input id="quote-bez-title" type="text"
+               class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+               value="{{ quote_bez_title|e }}" />
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="block text-xs font-medium text-slate-700" for="quote-bez-start">Start</label>
+          <input id="quote-bez-start" type="datetime-local"
+                 class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700" for="quote-bez-end">Einde</label>
+          <input id="quote-bez-end" type="datetime-local"
+                 class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700" for="quote-bez-desc">Omschrijving (optioneel)</label>
+        <textarea id="quote-bez-desc" rows="{{ 4 if quote_bez_description else 2 }}"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                  placeholder="Adres en notities">{{ quote_bez_description|e }}</textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700" for="quote-bez-email">E-mail deelnemer (optioneel)</label>
+        <input id="quote-bez-email" type="email" inputmode="email" autocomplete="email"
+               class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+               placeholder="naam@voorbeeld.nl"
+               value="{{ (lead.email or '')|e }}" />
+      </div>
+      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+        <button type="button" onclick="closeQuoteBezichtigingModal()"
+                class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+          Annuleren
+        </button>
+        <button type="button" onclick="scheduleQuoteBezichtiging()"
+                class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600">
+          Toevoegen aan agenda
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <script>
+  var QUOTE_BEZ_DEFAULTS = {
+    title: {{ quote_bez_title|tojson }},
+    description: {{ quote_bez_description|tojson }},
+    email: {{ (lead.email or "")|tojson }},
+    descRows: {{ 4 if quote_bez_description else 2 }}
+  };
+
+  function hideQuoteBezSuccessToast() {
+    var ok = document.getElementById("quote-bez-success-toast");
+    if (ok) ok.classList.add("hidden");
+  }
+
+  function hideQuoteBezModalError() {
+    var wrap = document.getElementById("quote-bez-modal-error");
+    if (wrap) wrap.classList.add("hidden");
+  }
+
+  function showQuoteBezError(msg) {
+    var wrap = document.getElementById("quote-bez-modal-error");
+    var line = document.getElementById("quote-bez-modal-error-line");
+    if (line) line.textContent = msg;
+    if (wrap) {
+      wrap.classList.remove("hidden");
+      try {
+        wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      } catch (e) {}
+    }
+  }
+
+  function resetQuoteBezichtigingForm() {
+    var d = QUOTE_BEZ_DEFAULTS || {};
+    var titleEl = document.getElementById("quote-bez-title");
+    var startEl = document.getElementById("quote-bez-start");
+    var endEl = document.getElementById("quote-bez-end");
+    var descEl = document.getElementById("quote-bez-desc");
+    var emailEl = document.getElementById("quote-bez-email");
+    if (titleEl) titleEl.value = d.title != null ? d.title : "Bezichtiging";
+    if (startEl) startEl.value = "";
+    if (endEl) endEl.value = "";
+    if (descEl) {
+      descEl.value = d.description != null ? d.description : "";
+      descEl.rows = d.descRows || 2;
+    }
+    if (emailEl) emailEl.value = d.email != null ? d.email : "";
+  }
+
+  function openQuoteBezichtigingModal() {
+    var m = document.getElementById("quote-bez-modal");
+    if (!m) return;
+    hideQuoteBezSuccessToast();
+    hideQuoteBezModalError();
+    m.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+    setTimeout(function () {
+      var el = document.getElementById("quote-bez-start");
+      if (el) el.focus();
+    }, 50);
+  }
+
+  function closeQuoteBezichtigingModal() {
+    var m = document.getElementById("quote-bez-modal");
+    if (!m) return;
+    m.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+    hideQuoteBezModalError();
+  }
+
+  function showQuoteBezSuccess(data) {
+    closeQuoteBezichtigingModal();
+    resetQuoteBezichtigingForm();
+    var wrap = document.getElementById("quote-bez-success-toast");
+    var line = document.getElementById("quote-bez-success-toast-line");
+    if (!line || !wrap) return;
+    line.textContent = "";
+    if (data && data.html_link) {
+      line.appendChild(document.createTextNode("Toegevoegd aan je agenda. "));
+      var a = document.createElement("a");
+      a.href = data.html_link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "font-medium text-emerald-900 underline decoration-emerald-400/80 underline-offset-2 hover:text-emerald-950";
+      a.textContent = "Open in Google Calendar";
+      line.appendChild(a);
+    } else {
+      line.textContent = "Toegevoegd aan je gekoppelde Google-agenda.";
+    }
+    wrap.classList.remove("hidden");
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      var m = document.getElementById("quote-bez-modal");
+      if (m && !m.classList.contains("hidden")) closeQuoteBezichtigingModal();
+    }
+  });
+
+  async function scheduleQuoteBezichtiging() {
+    var titleEl = document.getElementById("quote-bez-title");
+    var startEl = document.getElementById("quote-bez-start");
+    var endEl = document.getElementById("quote-bez-end");
+    var descEl = document.getElementById("quote-bez-desc");
+    var emailEl = document.getElementById("quote-bez-email");
+    if (!titleEl || !startEl || !endEl) return;
+    hideQuoteBezSuccessToast();
+    hideQuoteBezModalError();
+    var title = (titleEl.value || "").trim();
+    if (!title) {
+      showQuoteBezError("Vul een titel in.");
+      return;
+    }
+    if (!startEl.value || !endEl.value) {
+      showQuoteBezError("Kies start- en eindtijd.");
+      return;
+    }
+    var start = new Date(startEl.value);
+    var end = new Date(endEl.value);
+    if (!(start instanceof Date) || !(end instanceof Date) || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      showQuoteBezError("Ongeldige datum/tijd.");
+      return;
+    }
+    if (end <= start) {
+      showQuoteBezError("Einde moet na start zijn.");
+      return;
+    }
+    var desc = descEl ? (descEl.value || "").trim() : "";
+    var emailRaw = emailEl ? (emailEl.value || "").trim() : "";
+    var attendee_emails = emailRaw ? [emailRaw] : null;
+    try {
+      var res = await fetch("/app/calendar/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          title: title,
+          start_datetime: start.toISOString(),
+          end_datetime: end.toISOString(),
+          description: desc || null,
+          attendee_emails: attendee_emails,
+          quote_id: {{ lead.id|tojson }},
+        }),
+      });
+      var data = await res.json().catch(function () {
+        return {};
+      });
+      if (!res.ok) {
+        var detail = data && data.detail;
+        var msg =
+          typeof detail === "string"
+            ? detail
+            : Array.isArray(detail)
+              ? detail
+                  .map(function (d) {
+                    return d.msg || "";
+                  })
+                  .filter(Boolean)
+                  .join(" ") || "Aanmaken mislukt."
+              : "Aanmaken mislukt.";
+        showQuoteBezError(msg);
+        return;
+      }
+      showQuoteBezSuccess(data);
+    } catch (err) {
+      showQuoteBezError("Netwerkfout. Probeer opnieuw.");
+    }
+  }
+
   function pad(n){ return String(n).padStart(2,'0'); }
 
   function setDayOffset(offsetDays){

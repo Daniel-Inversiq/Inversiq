@@ -162,3 +162,37 @@ def create_google_calendar_event(
     if response.status_code >= 400:
         raise HTTPException(status_code=400, detail="Failed to create Google Calendar event.")
     return response.json()
+
+
+def _rfc3339_utc(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    dt = dt.astimezone(UTC)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def list_google_calendar_events(
+    *,
+    access_token: str,
+    calendar_id: str,
+    time_min_utc: datetime,
+    time_max_utc: datetime,
+    max_results: int = 50,
+) -> dict[str, Any]:
+    encoded_calendar = urllib.parse.quote(calendar_id or "primary", safe="")
+    params = {
+        "singleEvents": "true",
+        "orderBy": "startTime",
+        "timeMin": _rfc3339_utc(time_min_utc),
+        "timeMax": _rfc3339_utc(time_max_utc),
+        "maxResults": max_results,
+    }
+    url = f"{GOOGLE_CALENDAR_API}/calendars/{encoded_calendar}/events?{urllib.parse.urlencode(params)}"
+    with httpx.Client(timeout=20.0) as client:
+        response = client.get(
+            url,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    if response.status_code >= 400:
+        raise HTTPException(status_code=400, detail="Failed to list Google Calendar events.")
+    return response.json()
