@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, Session
 from sqlalchemy.types import JSON
@@ -23,6 +24,11 @@ class Tenant(Base):
     subscription_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
     plan_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    welcome_email_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

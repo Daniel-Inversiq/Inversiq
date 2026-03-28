@@ -19,11 +19,24 @@ class Settings(BaseSettings):
     AWS_PROFILE: Optional[str] = None
     AWS_SESSION_TOKEN: Optional[str] = None
 
-    # Postmark
+    # Postmark / transactional email (HTTP API)
     POSTMARK_SERVER_TOKEN: str = ""
+    # Prefer EMAILS_FROM; POSTMARK_FROM / POSTMARK_FROM_EMAIL are legacy aliases.
+    EMAILS_FROM: str = ""
     POSTMARK_FROM: str = ""
+    POSTMARK_FROM_EMAIL: str = ""
+    POSTMARK_FROM_NAME: str = "Paintly"
+    POSTMARK_MESSAGE_STREAM: str = "outbound"
+    POSTMARK_HTTP_TIMEOUT_SECONDS: float = 20.0
     POSTMARK_REPLY_TO: str = ""
+    # Public URL for links (intake, etc.). Falls back to APP_PUBLIC_BASE_URL when empty.
+    APP_BASE_URL: str = ""
     APP_PUBLIC_BASE_URL: str = "http://127.0.0.1:8000"
+    SUPPORT_EMAIL: str = ""
+    # E.164 or local display number for WhatsApp (e.g. +31612345678)
+    SUPPORT_WHATSAPP: str = ""
+    # When false, email sends are no-ops (same idea as legacy EMAIL_ENABLED env).
+    EMAIL_ENABLED: bool = False
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_OAUTH_REDIRECT_URI: str = ""
@@ -126,6 +139,19 @@ class Settings(BaseSettings):
     @property
     def s3_upload_allowed_types_list(self) -> List[str]:
         return [t.strip() for t in self.S3_UPLOAD_ALLOWED_TYPES.split(",") if t.strip()]
+
+    @property
+    def emails_from_address(self) -> str:
+        """From-address for Postmark (EMAILS_FROM wins over POSTMARK_FROM / POSTMARK_FROM_EMAIL)."""
+        return (
+            self.EMAILS_FROM or self.POSTMARK_FROM or self.POSTMARK_FROM_EMAIL or ""
+        ).strip()
+
+    @property
+    def effective_app_base_url(self) -> str:
+        """Base URL for absolute links (trailing slashes stripped)."""
+        base = (self.APP_BASE_URL or self.APP_PUBLIC_BASE_URL or "").strip().rstrip("/")
+        return base or "http://127.0.0.1:8000"
 
 
 settings = Settings()

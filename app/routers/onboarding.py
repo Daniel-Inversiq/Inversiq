@@ -1,4 +1,7 @@
 # app/routers/onboarding.py
+# TODO: When POST /onboarding/tenant also creates an owner User (same contract as /auth/register),
+# schedule `send_welcome_email_task` after commit, mirroring the auth register flow. Today this
+# endpoint only creates a Tenant row — welcome mail is triggered from /auth/register.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

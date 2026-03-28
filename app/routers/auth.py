@@ -4,7 +4,7 @@ import re
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -14,6 +14,7 @@ from app.auth.passwords import hash_password, verify_password
 from app.db import get_db
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.services.onboarding_email_service import send_welcome_email_task
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -93,9 +94,10 @@ def login_form(
 
 @router.post("/register")
 def register_form(
+    background_tasks: BackgroundTasks,
     company_name: str = Form(...),
     email: str = Form(...),
-    phone: str = Form(None),
+    phone: str | None = Form(default=None),
     walls_rate_eur_per_sqm: float = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_db),
@@ -142,6 +144,7 @@ def register_form(
         email=email_norm,
         password_hash=hash_password(password[:72]),
         is_active=True,
+        is_platform_admin=False,
     )
 
     db.add(tenant)
@@ -149,6 +152,9 @@ def register_form(
     db.commit()
     db.refresh(tenant)
     db.refresh(user)
+
+    # Schedule welcome email only after a successful commit + refresh so persisted tenant/user IDs exist.
+    background_tasks.add_task(send_welcome_email_task, tenant.id, user.id)
 
     token = create_access_token(
         user_id=user.id,
@@ -166,7 +172,9 @@ def register_form(
         max_age=60 * 60 * 24,
         path="/",
     )
-    logger.info("AUTH_REGISTER_SUCCESS user_id=%s tenant_id=%s", user.id, user.tenant_id)
+    logger.info(
+        "AUTH_REGISTER_SUCCESS user_id=%s tenant_id=%s", user.id, user.tenant_id
+    )
     return resp
 
 

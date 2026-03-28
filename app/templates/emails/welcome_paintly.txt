@@ -1,0 +1,23 @@
+Welkom bij Paintly{% if first_name %}, {{ first_name }}{% endif %}!
+
+Fijn dat {{ company_name }} erbij is. Je hebt {{ trial_days }} dagen gratis toegang om Paintly uit te proberen.
+
+Jouw persoonlijke intake-link:
+{{ intake_url }}
+
+Je kunt deze link:
+- naar klanten sturen (bijv. per mail of WhatsApp)
+- op je website zetten als start van een aanvraag
+
+Zo werkt het kort:
+1) De klant vult de intake in.
+2) Paintly verwerkt de aanvraag.
+3) Er staat automatisch een offerte klaar in jouw omgeving.
+
+{% if support_email %}Kom je er niet uit of wil je dat we even meekijken? Stuur ons een mail op {{ support_email }} — we helpen je graag.{% if support_whatsapp_url %} Of WhatsApp: {{ support_whatsapp }} ({{ support_whatsapp_url }}){% endif %}.
+{% elif support_whatsapp_url %}Vragen? WhatsApp: {{ support_whatsapp }} — {{ support_whatsapp_url }}
+{% else %}We helpen je graag als je vragen hebt.
+{% endif %}
+
+—
+Deze mail is verstuurd naar {{ recipient_email }} voor {{ company_name }} ({{ tenant_slug }}).
