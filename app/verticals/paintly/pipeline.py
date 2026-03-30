@@ -285,7 +285,7 @@ def compute_quote_for_lead(db: Session, lead: Lead, render_html: bool = True) ->
                     self.subscription_status = getattr(tenant_obj, "subscription_status", None)
                     self.trial_ends_at = getattr(tenant_obj, "trial_ends_at", None)
                     self.quotes_sent = None
-                    self.quote_limit = None
+                    self.monthly_usage_baseline = None
 
             branding_ctx = _BrandingCtx(tenant_row)
             ent = check_entitlement(branding_ctx, Action.USE_BRANDING.value)

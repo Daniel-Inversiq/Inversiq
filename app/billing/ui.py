@@ -28,9 +28,16 @@ class FeatureUI:
 
 _DEFAULT_HINTS: Mapping[str, str] = {
     Feature.BASIC_SENDING.value: "Beschikbaar vanaf Starter",
-    Feature.PDF_EXPORT.value: "Beschikbaar vanaf Starter",
+    Feature.PDF_EXPORT.value: "Beschikbaar vanaf Pro",
     Feature.BRANDING.value: "Beschikbaar vanaf Pro",
+    Feature.PROFESSIONAL_LAYOUT.value: "Beschikbaar vanaf Pro",
+    Feature.SMART_PRICING.value: "Beschikbaar vanaf Pro",
+    Feature.NOTIFICATIONS.value: "Beschikbaar vanaf Pro",
+    Feature.PLANNING_CALENDAR.value: "Beschikbaar vanaf Pro",
+    Feature.AUTOMATION.value: "Beschikbaar vanaf Business",
+    Feature.PRIORITY_PROCESSING.value: "Beschikbaar vanaf Business",
     Feature.WHITELABEL.value: "Beschikbaar vanaf Business",
+    Feature.PRIORITY_SUPPORT.value: "Beschikbaar vanaf Business",
 }
 
 

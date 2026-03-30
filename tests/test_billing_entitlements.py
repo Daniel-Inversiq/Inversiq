@@ -13,19 +13,19 @@ class TenantStub:
     plan_code: str | None
     subscription_status: str | None
     quotes_sent: int | None = None
-    quote_limit: int | None = None
+    monthly_usage_baseline: int | None = None
 
 
 @pytest.mark.parametrize(
     "plan_code",
     ["starter_99", "pro_199", "business_399"],
 )
-def test_send_quote_allowed_under_limit_for_paid_plans(plan_code: str) -> None:
+def test_send_quote_allowed_for_all_tiers_when_subscription_active(plan_code: str) -> None:
     tenant = TenantStub(
         plan_code=plan_code,
         subscription_status="active",
         quotes_sent=5,
-        quote_limit=10,
+        monthly_usage_baseline=10,
     )
 
     res = check_entitlement(tenant, Action.SEND_QUOTE.value)
@@ -33,6 +33,35 @@ def test_send_quote_allowed_under_limit_for_paid_plans(plan_code: str) -> None:
     assert res.allowed is True
     assert res.reason is None
     assert res.feature == Feature.BASIC_SENDING.value
+
+
+@pytest.mark.parametrize(
+    "plan_code, quotes_sent, monthly_usage_baseline",
+    [
+        ("starter_99", 10, 10),
+        ("pro_199", 10, 10),
+        ("business_399", 10, 10),
+        ("starter_99", 25, 10),
+        ("pro_199", 25, 10),
+        ("business_399", 25, 10),
+    ],
+)
+def test_send_quote_not_blocked_by_usage_across_tiers(
+    plan_code: str, quotes_sent: int, monthly_usage_baseline: int
+) -> None:
+    tenant = TenantStub(
+        plan_code=plan_code,
+        subscription_status="active",
+        quotes_sent=quotes_sent,
+        monthly_usage_baseline=monthly_usage_baseline,
+    )
+
+    res = check_entitlement(tenant, Action.SEND_QUOTE.value)
+    assert res.allowed is True
+    assert res.reason is None
+    # Usage counters are still surfaced for analytics / monitoring.
+    assert res.usage_limit == monthly_usage_baseline
+    assert res.usage_current == quotes_sent
 
 
 @pytest.mark.parametrize(
@@ -44,7 +73,7 @@ def test_send_quote_denied_for_inactive_subscription(subscription_status: str | 
         plan_code="pro_199",
         subscription_status=subscription_status,
         quotes_sent=0,
-        quote_limit=10,
+        monthly_usage_baseline=10,
     )
 
     res = check_entitlement(tenant, Action.SEND_QUOTE.value)
@@ -52,17 +81,18 @@ def test_send_quote_denied_for_inactive_subscription(subscription_status: str | 
     assert res.reason == "subscription_inactive"
 
 
-def test_send_quote_denied_when_usage_limit_reached() -> None:
+def test_send_quote_allowed_when_usage_limit_reached_but_ignored() -> None:
     tenant = TenantStub(
         plan_code="pro_199",
         subscription_status="active",
         quotes_sent=10,
-        quote_limit=10,
+        monthly_usage_baseline=10,
     )
 
     res = check_entitlement(tenant, Action.SEND_QUOTE.value)
-    assert res.allowed is False
-    assert res.reason == "usage_limit_reached"
+    # Usage counters are still captured, but monthly offer caps are no longer enforced.
+    assert res.allowed is True
+    assert res.reason is None
     assert res.usage_limit == 10
     assert res.usage_current == 10
 
@@ -73,7 +103,7 @@ def test_send_quote_denied_for_unknown_or_none_plan(plan_code: str | None) -> No
         plan_code=plan_code,
         subscription_status="active",
         quotes_sent=0,
-        quote_limit=10,
+        monthly_usage_baseline=10,
     )
 
     res = check_entitlement(tenant, Action.SEND_QUOTE.value)
@@ -85,7 +115,7 @@ def test_send_quote_denied_for_unknown_or_none_plan(plan_code: str | None) -> No
 @pytest.mark.parametrize(
     "plan_code, expected_allowed",
     [
-        ("starter_99", True),
+        ("starter_99", False),
         ("pro_199", True),
         ("business_399", True),
     ],

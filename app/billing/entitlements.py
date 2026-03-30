@@ -43,7 +43,7 @@ class TenantUsageLike(Protocol):
     trial_ends_at: datetime | None
     # Optional usage fields; implemented either on tenant or a related usage object.
     quotes_sent: int | None  # type: ignore[assignment]
-    quote_limit: int | None  # type: ignore[assignment]
+    monthly_usage_baseline: int | None  # type: ignore[assignment]
 
 
 @dataclass(slots=True)
@@ -110,7 +110,7 @@ def build_upgrade_url(feature: str | None = None, action: str | None = None) -> 
 
 def _extract_usage(tenant: TenantUsageLike | None) -> tuple[int | None, int | None]:
     """
-    Extract (quotes_sent, quote_limit) from a tenant/usage-like object.
+    Extract (quotes_sent, monthly_usage_baseline) from a tenant/usage-like object.
     Safe when attributes are missing or None.
     """
 
@@ -118,7 +118,10 @@ def _extract_usage(tenant: TenantUsageLike | None) -> tuple[int | None, int | No
         return None, None
 
     raw_sent = getattr(tenant, "quotes_sent", None)
-    raw_limit = getattr(tenant, "quote_limit", None)
+    # Backward compatible fallback for legacy contexts that still expose quote_limit.
+    raw_limit = getattr(tenant, "monthly_usage_baseline", None)
+    if raw_limit is None:
+        raw_limit = getattr(tenant, "quote_limit", None)
 
     try:
         sent = int(raw_sent) if raw_sent is not None else None
@@ -191,24 +194,9 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
                 subscription_status=subscription_status,
             )
 
-        # 3) Usage/paywall check (quotes_sent vs quote_limit)
+        # 3) Usage/paywall fields for analytics / abuse monitoring.
+        # NOTE: We intentionally do not *block* based on monthly offer limits anymore.
         usage_current, usage_limit = _extract_usage(tenant)
-        if (
-            usage_limit is not None
-            and usage_current is not None
-            and usage_current >= usage_limit
-        ):
-            return EntitlementResult(
-                allowed=False,
-                action=act.value,
-                reason="usage_limit_reached",
-                feature=feature,
-                upgrade_url=build_upgrade_url(feature=feature, action=act.value),
-                usage_limit=usage_limit,
-                usage_current=usage_current,
-                plan_code=plan_code,
-                subscription_status=subscription_status,
-            )
 
         # All checks passed
         return EntitlementResult(
@@ -223,7 +211,7 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
             subscription_status=subscription_status,
         )
 
-    # EXPORT_PDF: subscription only; not tier-gated (matches export-pdf route policy).
+    # EXPORT_PDF: feature + subscription (same feature-based rules as other actions).
     if act is Action.EXPORT_PDF:
         if not is_subscription_accessible(subscription_status, trial_ends_at):
             logger.info(
@@ -246,7 +234,7 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
                 plan_code=plan_code,
                 subscription_status=subscription_status,
             )
-        if tenant is None:
+        if tenant is None or not tenant_has_feature(tenant, Feature.PDF_EXPORT.value):
             return EntitlementResult(
                 allowed=False,
                 action=act.value,

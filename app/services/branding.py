@@ -4,7 +4,7 @@ import hashlib
 import json
 from typing import Any
 
-ALLOWED_BRANDING_TIERS = {"pro", "business"}
+from app.billing.features import Feature, plan_supports_feature
 
 _PLAN_NORMALIZATION_MAP = {
     "pro_199": "pro",
@@ -24,7 +24,8 @@ def normalize_plan(plan: str | None) -> str:
 
 
 def is_custom_branding_allowed(plan: str | None) -> bool:
-    return normalize_plan(plan) in ALLOWED_BRANDING_TIERS
+    # Use centralized feature matrix instead of hardcoded tier names.
+    return plan_supports_feature(plan, Feature.BRANDING.value)
 
 
 def log_branding_state(logger: Any, stage: str, data: dict[str, Any]) -> None:

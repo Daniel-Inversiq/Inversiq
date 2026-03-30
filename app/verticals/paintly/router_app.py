@@ -50,7 +50,6 @@ from app.core.plan_catalog import (
     get_stripe_price_id,
 )
 from app.dependencies import tenant_service
-from app.config.plans import PLANS
 from app.services.usage_service import get_or_create_usage, increment_usage
 from app.services.billing_summary_service import get_billing_usage_summary
 from app.verticals.paintly.google_calendar_service import (
@@ -1211,14 +1210,6 @@ def app_dashboard(
     usage = get_or_create_usage(db, str(current_user.tenant_id))
     quotes_sent_this_month = int(getattr(usage, "quotes_sent", 0) or 0)
 
-    plan = PLANS.get(current_plan_code) or PLANS.get(DEFAULT_PLAN_CODE) or {}
-    quote_limit = plan.get("quote_limit")
-    quotes_remaining = (
-        None
-        if quote_limit is None
-        else max(int(quote_limit) - int(quotes_sent_this_month), 0)
-    )
-
     context = _dashboard_context(
         request,
         current_user,
@@ -1233,8 +1224,6 @@ def app_dashboard(
             "trial_ends_at": trial_ends_at,
             "trial_days_left": trial_days_left,
             "quotes_sent_this_month": quotes_sent_this_month,
-            "quote_limit": quote_limit,
-            "quotes_remaining": quotes_remaining,
             "feature_flags": tenant_feature_flags(tenant),
             "features": tenant_feature_ui(tenant),
             "entitlements": tenant_entitlements(tenant),
@@ -2469,38 +2458,34 @@ def send_estimate(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    # Plan-based usage limit check (before sending)
+    # Usage context for analytics/logging (no volume-based gating).
     plan_code = getattr(tenant, "plan_code", None) if tenant is not None else None
     plan_key = plan_code or DEFAULT_PLAN_CODE
 
     usage = get_or_create_usage(db, str(lead.tenant_id))
-    plan = PLANS.get(plan_key) or PLANS[DEFAULT_PLAN_CODE]
-    quote_limit = plan.get("quote_limit")
 
     logger.info(
-        "SEND_ESTIMATE_USAGE_CHECK lead_id=%s tenant_id=%s tenant_plan_code=%s "
-        "plan_key=%s quotes_sent=%s quote_limit=%s",
+        "SEND_ESTIMATE_USAGE_ANALYTICS lead_id=%s tenant_id=%s tenant_plan_code=%s "
+        "plan_key=%s quotes_sent=%s",
         lead.id,
         lead.tenant_id,
         plan_code,
         plan_key,
         getattr(usage, "quotes_sent", None),
-        quote_limit,
     )
 
     # Centralized entitlement check (subscription + feature + usage/paywall)
     class _SendQuoteContext:
-        def __init__(self, tenant_obj: Tenant, quotes_sent: int | None, limit: int | None):
+        def __init__(self, tenant_obj: Tenant, quotes_sent: int | None):
             self.plan_code = getattr(tenant_obj, "plan_code", None)
             self.subscription_status = getattr(tenant_obj, "subscription_status", None)
             self.trial_ends_at = getattr(tenant_obj, "trial_ends_at", None)
             self.quotes_sent = quotes_sent
-            self.quote_limit = limit
+            self.monthly_usage_baseline = None
 
     ctx = _SendQuoteContext(
         tenant_obj=tenant,
         quotes_sent=getattr(usage, "quotes_sent", None),
-        limit=quote_limit if quote_limit is not None else None,
     )
     ent = check_entitlement(ctx, Action.SEND_QUOTE.value)
     if not ent.allowed:
@@ -2514,17 +2499,6 @@ def send_estimate(
                 )
             return RedirectResponse(
                 url="/app/billing?send_error=billing_status",
-                status_code=303,
-            )
-        if ent.reason == "usage_limit_reached":
-            if is_htmx:
-                return _paintly_hx_toast(
-                    "error",
-                    "Limiet bereikt",
-                    "Je maandelijkse offertelimiet is bereikt.",
-                )
-            return RedirectResponse(
-                url=f"/app/leads/{lead_id}?send_error=quote_limit",
                 status_code=303,
             )
 

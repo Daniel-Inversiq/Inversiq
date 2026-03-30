@@ -23,7 +23,14 @@ class Feature(StrEnum):
     BASIC_SENDING = "BASIC_SENDING"
     PDF_EXPORT = "PDF_EXPORT"
     BRANDING = "BRANDING"
+    PROFESSIONAL_LAYOUT = "PROFESSIONAL_LAYOUT"
+    SMART_PRICING = "SMART_PRICING"
+    NOTIFICATIONS = "NOTIFICATIONS"
+    PLANNING_CALENDAR = "PLANNING_CALENDAR"
+    AUTOMATION = "AUTOMATION"
+    PRIORITY_PROCESSING = "PRIORITY_PROCESSING"
     WHITELABEL = "WHITELABEL"
+    PRIORITY_SUPPORT = "PRIORITY_SUPPORT"
 
 
 FeatureName = str
@@ -115,7 +122,6 @@ def tenant_has_feature(tenant: TenantLike, feature: str) -> bool:
     Rules:
     - First require an accessible subscription status (active or trialing)
     - Then check whether the tenant plan includes the feature
-    - PDF export is not tier-gated: any accessible subscription may use it
     """
 
     subscription_status = getattr(tenant, "subscription_status", None)
@@ -123,26 +129,7 @@ def tenant_has_feature(tenant: TenantLike, feature: str) -> bool:
     plan_code = getattr(tenant, "plan_code", None)
     resolved_features = sorted(get_plan_features(plan_code))
     if not is_subscription_accessible(subscription_status, trial_ends_at):
-        if feature == Feature.PDF_EXPORT.value:
-            logger.info(
-                "PDF_TENANT_HAS_FEATURE plan_code=%s subscription_status=%s feature=%s resolved_features=%s result=%s",
-                plan_code,
-                subscription_status,
-                feature,
-                resolved_features,
-                False,
-            )
         return False
-    if feature == Feature.PDF_EXPORT.value:
-        logger.info(
-            "PDF_TENANT_HAS_FEATURE plan_code=%s subscription_status=%s feature=%s resolved_features=%s result=%s",
-            plan_code,
-            subscription_status,
-            feature,
-            resolved_features,
-            True,
-        )
-        return True
     result = plan_supports_feature(plan_code, feature)
     return result
 

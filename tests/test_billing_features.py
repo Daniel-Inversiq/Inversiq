@@ -28,7 +28,6 @@ class TenantStub:
             "starter_99",
             {
                 Feature.BASIC_SENDING.value,
-                Feature.PDF_EXPORT.value,
             },
         ),
         (
@@ -37,6 +36,10 @@ class TenantStub:
                 Feature.BASIC_SENDING.value,
                 Feature.PDF_EXPORT.value,
                 Feature.BRANDING.value,
+                Feature.PROFESSIONAL_LAYOUT.value,
+                Feature.SMART_PRICING.value,
+                Feature.NOTIFICATIONS.value,
+                Feature.PLANNING_CALENDAR.value,
             },
         ),
         (
@@ -45,7 +48,14 @@ class TenantStub:
                 Feature.BASIC_SENDING.value,
                 Feature.PDF_EXPORT.value,
                 Feature.BRANDING.value,
+                Feature.PROFESSIONAL_LAYOUT.value,
+                Feature.SMART_PRICING.value,
+                Feature.NOTIFICATIONS.value,
+                Feature.PLANNING_CALENDAR.value,
+                Feature.AUTOMATION.value,
+                Feature.PRIORITY_PROCESSING.value,
                 Feature.WHITELABEL.value,
+                Feature.PRIORITY_SUPPORT.value,
             },
         ),
     ],
@@ -61,23 +71,44 @@ def test_get_plan_features_unknown_or_none(plan_code: str | None) -> None:
 
 def test_plan_matrix_starter_99() -> None:
     assert plan_supports_feature("starter_99", Feature.BASIC_SENDING.value) is True
-    assert plan_supports_feature("starter_99", Feature.PDF_EXPORT.value) is True
+    assert plan_supports_feature("starter_99", Feature.PDF_EXPORT.value) is False
     assert plan_supports_feature("starter_99", Feature.BRANDING.value) is False
+    assert plan_supports_feature("starter_99", Feature.PROFESSIONAL_LAYOUT.value) is False
+    assert plan_supports_feature("starter_99", Feature.SMART_PRICING.value) is False
+    assert plan_supports_feature("starter_99", Feature.NOTIFICATIONS.value) is False
+    assert plan_supports_feature("starter_99", Feature.PLANNING_CALENDAR.value) is False
+    assert plan_supports_feature("starter_99", Feature.AUTOMATION.value) is False
+    assert plan_supports_feature("starter_99", Feature.PRIORITY_PROCESSING.value) is False
     assert plan_supports_feature("starter_99", Feature.WHITELABEL.value) is False
+    assert plan_supports_feature("starter_99", Feature.PRIORITY_SUPPORT.value) is False
 
 
 def test_plan_matrix_pro_199() -> None:
     assert plan_supports_feature("pro_199", Feature.BASIC_SENDING.value) is True
     assert plan_supports_feature("pro_199", Feature.PDF_EXPORT.value) is True
     assert plan_supports_feature("pro_199", Feature.BRANDING.value) is True
+    assert plan_supports_feature("pro_199", Feature.PROFESSIONAL_LAYOUT.value) is True
+    assert plan_supports_feature("pro_199", Feature.SMART_PRICING.value) is True
+    assert plan_supports_feature("pro_199", Feature.NOTIFICATIONS.value) is True
+    assert plan_supports_feature("pro_199", Feature.PLANNING_CALENDAR.value) is True
+    assert plan_supports_feature("pro_199", Feature.AUTOMATION.value) is False
+    assert plan_supports_feature("pro_199", Feature.PRIORITY_PROCESSING.value) is False
     assert plan_supports_feature("pro_199", Feature.WHITELABEL.value) is False
+    assert plan_supports_feature("pro_199", Feature.PRIORITY_SUPPORT.value) is False
 
 
 def test_plan_matrix_business_399() -> None:
     assert plan_supports_feature("business_399", Feature.BASIC_SENDING.value) is True
     assert plan_supports_feature("business_399", Feature.PDF_EXPORT.value) is True
     assert plan_supports_feature("business_399", Feature.BRANDING.value) is True
+    assert plan_supports_feature("business_399", Feature.PROFESSIONAL_LAYOUT.value) is True
+    assert plan_supports_feature("business_399", Feature.SMART_PRICING.value) is True
+    assert plan_supports_feature("business_399", Feature.NOTIFICATIONS.value) is True
+    assert plan_supports_feature("business_399", Feature.PLANNING_CALENDAR.value) is True
+    assert plan_supports_feature("business_399", Feature.AUTOMATION.value) is True
+    assert plan_supports_feature("business_399", Feature.PRIORITY_PROCESSING.value) is True
     assert plan_supports_feature("business_399", Feature.WHITELABEL.value) is True
+    assert plan_supports_feature("business_399", Feature.PRIORITY_SUPPORT.value) is True
 
 
 @pytest.mark.parametrize(
@@ -135,6 +166,6 @@ def test_tenant_has_feature_requires_accessible_subscription() -> None:
 def test_unknown_plan_code_resolves_to_starter_features() -> None:
     t = TenantStub(plan_code="unknown_plan", subscription_status="active")
     assert tenant_has_feature(t, Feature.BASIC_SENDING.value) is True
-    assert tenant_has_feature(t, Feature.PDF_EXPORT.value) is True
+    assert tenant_has_feature(t, Feature.PDF_EXPORT.value) is False
     assert tenant_has_feature(t, Feature.BRANDING.value) is False
     assert tenant_has_feature(t, Feature.WHITELABEL.value) is False

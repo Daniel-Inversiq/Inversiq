@@ -2,7 +2,8 @@
 
 PLANS = {
     "starter_99": {
-        "quote_limit": 99,
+        # Unlimited offers across all plans; no volume-based differentiation.
+        "monthly_usage_baseline": None,
         "features": {
             "pdf": True,
             "branding": False,
@@ -10,7 +11,8 @@ PLANS = {
         },
     },
     "pro_199": {
-        "quote_limit": 200,
+        # Unlimited offers across all plans; no volume-based differentiation.
+        "monthly_usage_baseline": None,
         "features": {
             "pdf": True,
             "branding": True,
@@ -18,7 +20,8 @@ PLANS = {
         },
     },
     "business_399": {
-        "quote_limit": None,  # unlimited
+        # Unlimited offers across all plans; no volume-based differentiation.
+        "monthly_usage_baseline": None,
         "features": {
             "pdf": True,
             "branding": True,
