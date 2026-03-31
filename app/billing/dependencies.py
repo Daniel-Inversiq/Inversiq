@@ -10,7 +10,11 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
-from app.billing.features import get_plan_features, tenant_has_feature
+from app.billing.features import (
+    get_plan_features,
+    is_subscription_accessible,
+    tenant_has_feature,
+)
 from app.billing.entitlements import EntitlementResult, check_entitlement
 from app.db import get_db
 from app.models.tenant import Tenant
@@ -252,5 +256,42 @@ def ensure_entitlement_or_redirect(
 
     target = result.upgrade_url or result.billing_url or "/app/billing"
     return RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
+
+
+def require_active_subscription_for_write(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Tenant:
+    """
+    Central write/compute guard for tenants whose trial has expired.
+
+    Rules:
+    - Allows when `is_subscription_accessible` is True (active or trialing & in de toekomst).
+    - When access is not allowed:
+      - For HTML requests (Accept header bevat "text/html"): 303 redirect naar /app/billing.
+      - Voor API/JSON requests: 403 met detail "subscription_inactive".
+    """
+
+    tenant = _get_tenant_for_user(user=user, db=db)
+    if is_subscription_accessible(
+        getattr(tenant, "subscription_status", None),
+        getattr(tenant, "trial_ends_at", None),
+    ):
+        return tenant
+
+    wants_html = "text/html" in (request.headers.get("accept") or "")
+
+    if wants_html:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail="subscription_inactive",
+            headers={"Location": "/app/billing"},
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="subscription_inactive",
+    )
 
 

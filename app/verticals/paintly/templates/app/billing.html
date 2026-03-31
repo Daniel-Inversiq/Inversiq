@@ -200,12 +200,15 @@
       }
 
       const data = await response.json();
-      if (!data || !data.checkout_url) {
-        alert("Geen geldige checkout URL ontvangen van de server.");
+      if (data && data.checkout_url) {
+        window.location.href = data.checkout_url;
         return;
       }
-
-      window.location.href = data.checkout_url;
+      if (data && data.redirect_url) {
+        window.location.href = data.redirect_url;
+        return;
+      }
+      alert("Geen geldige URL ontvangen van de server.");
     } catch (err) {
       alert("Er ging iets mis bij het kiezen van je abonnement.");
     }

@@ -35,6 +35,20 @@ def start_trial(
 
     tenant = _get_tenant_for_user(user, db)
 
+    has_used_trial = tenant.trial_ends_at is not None
+    has_existing_subscription = bool(tenant.stripe_subscription_id)
+    customer_has_subscription = False
+    if tenant.stripe_customer_id:
+        customer_has_subscription = stripe_service.customer_has_any_subscription(
+            tenant.stripe_customer_id
+        )
+
+    if has_used_trial or has_existing_subscription or customer_has_subscription:
+        raise HTTPException(
+            status_code=400,
+            detail="trial_already_used_or_existing_subscription",
+        )
+
     # 1) Ensure customer
     if not tenant.stripe_customer_id:
         customer = stripe_service.create_customer(email=tenant.email or user.email)

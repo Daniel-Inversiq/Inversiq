@@ -68,7 +68,10 @@ from app.utils.slugs import slugify
 from app.billing.features import Feature, tenant_has_feature
 from app.billing.ui import tenant_entitlements, tenant_feature_flags, tenant_feature_ui
 from app.billing.entitlements import Action, check_entitlement
-from app.billing.dependencies import require_entitlement
+from app.billing.dependencies import (
+    require_entitlement,
+    require_active_subscription_for_write,
+)
 
 
 router = APIRouter(
@@ -1015,6 +1018,7 @@ def dev_set_timezone(
     tz: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     tz = (tz or "").strip()
     try:
@@ -1295,6 +1299,7 @@ def schedule_paintly_appointment(
     body: ScheduleAppointmentBody,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     tenant_id = str(current_user.tenant_id)
     start_utc = utc_normalize_appointment_datetime(body.start_datetime)
@@ -1385,6 +1390,7 @@ async def app_settings_save(
     travel_cost: str | None = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     def _parse_money(raw: str | None) -> float | None:
         if raw is None:
@@ -1768,26 +1774,83 @@ def app_billing_upgrade(
 
     try:
         ensure_stripe_api_key()
-        base = (os.getenv("APP_BASE_URL") or settings.APP_PUBLIC_BASE_URL or str(request.base_url)).rstrip("/")
+        base = (
+            os.getenv("APP_BASE_URL")
+            or settings.APP_PUBLIC_BASE_URL
+            or str(request.base_url)
+        ).rstrip("/")
 
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            line_items=[{"price": price_id, "quantity": 1}],
-            success_url=f"{base}/app/billing?checkout=success",
-            cancel_url=f"{base}/app/billing?checkout=cancel",
-            client_reference_id=str(tenant.id),
-            metadata={
-                "tenant_id": str(tenant.id),
-                "target_plan_code": resolved_plan_code,
-            },
-            subscription_data={
-                "trial_period_days": 14,
-                "metadata": {
+        # Existing subscribers must be updated in place. Creating a new subscription
+        # here can unintentionally grant a fresh trial period.
+        if tenant.stripe_subscription_id:
+            subscription = stripe.Subscription.retrieve(
+                tenant.stripe_subscription_id,
+                expand=["items.data"],
+            )
+            items = getattr(getattr(subscription, "items", None), "data", []) or []
+            if not items:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Stripe subscription has no items to update",
+                )
+            subscription_item_id = items[0].id
+
+            updated_subscription = stripe.Subscription.modify(
+                tenant.stripe_subscription_id,
+                items=[{"id": subscription_item_id, "price": price_id}],
+                proration_behavior="create_prorations",
+                metadata={
                     "tenant_id": str(tenant.id),
                     "plan_code": resolved_plan_code,
                 },
+            )
+
+            tenant.plan_code = resolved_plan_code
+            tenant.subscription_status = (
+                getattr(updated_subscription, "status", None) or tenant.subscription_status
+            )
+            db.add(tenant)
+            db.commit()
+
+            return {"redirect_url": f"{base}/app/billing?checkout=success"}
+
+        has_used_trial = tenant.trial_ends_at is not None
+        customer_has_subscription = False
+        if tenant.stripe_customer_id:
+            existing_subs = stripe.Subscription.list(
+                customer=tenant.stripe_customer_id,
+                status="all",
+                limit=1,
+            )
+            customer_has_subscription = bool(getattr(existing_subs, "data", None))
+
+        allow_trial = (not has_used_trial) and (not customer_has_subscription)
+
+        subscription_data = {
+            "metadata": {
+                "tenant_id": str(tenant.id),
+                "plan_code": resolved_plan_code,
+            }
+        }
+        if allow_trial:
+            subscription_data["trial_period_days"] = 14
+
+        checkout_payload: dict[str, Any] = {
+            "mode": "subscription",
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "success_url": f"{base}/app/billing?checkout=success",
+            "cancel_url": f"{base}/app/billing?checkout=cancel",
+            "client_reference_id": str(tenant.id),
+            "metadata": {
+                "tenant_id": str(tenant.id),
+                "target_plan_code": resolved_plan_code,
             },
-        )
+            "subscription_data": subscription_data,
+        }
+        if tenant.stripe_customer_id:
+            checkout_payload["customer"] = tenant.stripe_customer_id
+
+        session = stripe.checkout.Session.create(**checkout_payload)
     except stripe.error.StripeError as exc:
         raise HTTPException(
             status_code=502,
@@ -2175,6 +2238,7 @@ def app_lead_refresh_estimate(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     # Full pipeline recompute + new HTML. For template-only refreshes use POST .../rerender-estimate-html.
     lead = (
@@ -2230,6 +2294,7 @@ def app_lead_rerender_estimate_html(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     """
     Re-materialize stored estimate HTML from estimate_json + overrides only (no AI/pipeline).
@@ -2395,6 +2460,7 @@ def update_branding_settings(
     payload: BrandingUpdate,
     current_user: User = Depends(require_user_html),
     tenant: Tenant = Depends(require_entitlement(Action.USE_BRANDING.value)),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     """
     Update branding settings (currently: logo_url) for the current tenant.
@@ -2635,6 +2701,7 @@ def app_job_set_status(
     status: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     s = (status or "").upper().strip()
     if s not in ALLOWED_JOB_STATUSES:
@@ -2740,6 +2807,7 @@ def job_schedule(
     scheduled_at_local: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     job = _get_job_or_404(db, job_id, tenant_id=str(current_user.tenant_id))
 
@@ -2781,6 +2849,7 @@ def job_quick_schedule(
     return_to: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     job = _get_job_or_404(db, job_id, tenant_id=str(current_user.tenant_id))
 
@@ -2837,6 +2906,7 @@ def job_unschedule(
     job_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     job = _get_job_or_404(db, job_id, tenant_id=str(current_user.tenant_id))
 
@@ -2866,6 +2936,7 @@ def job_schedule_now(
     job_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     job = _get_job_or_404(db, job_id, tenant_id=str(current_user.tenant_id))
 
@@ -2895,6 +2966,7 @@ def job_start(
     job_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     job = _get_job_or_404(db, job_id, tenant_id=str(current_user.tenant_id))
 
@@ -2918,6 +2990,7 @@ def job_done(
     job_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     job = _get_job_or_404(db, job_id, tenant_id=str(current_user.tenant_id))
 
@@ -3383,6 +3456,7 @@ def app_review_generate_estimate(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     lead = (
         db.query(Lead)
@@ -3421,6 +3495,7 @@ def app_review_generate_estimate(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     lead = (
         db.query(Lead)
@@ -3462,6 +3537,7 @@ def app_review_save_overrides(
     project_description: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     lead = (
         db.query(Lead)
@@ -3581,6 +3657,7 @@ def edit_estimate_post(
     vat_rate_percent: float | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     lead = (
         db.query(Lead)

@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.settings import settings
 from app.db import get_db
 from app.auth.deps import get_current_user
+from app.billing.dependencies import require_active_subscription_for_write
 
 from app.models import Lead
 from app.models.user import User
@@ -152,6 +153,7 @@ async def presign_upload(
     req: PresignRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ) -> Dict:
     """
     Presign for intake:
@@ -377,6 +379,7 @@ async def complete_upload(
     req: UploadCompleteRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ) -> Dict:
     """
     Called by frontend AFTER upload succeeds.
@@ -710,6 +713,7 @@ async def local_upload(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ) -> Dict:
     """
     Client post hiernaartoe met de 'fields' uit presign + file.

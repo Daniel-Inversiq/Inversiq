@@ -9,7 +9,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
-from app.billing.dependencies import require_entitlement
+from app.billing.dependencies import (
+    require_entitlement,
+    require_active_subscription_for_write,
+)
 from app.billing.entitlements import Action
 from app.db import get_db
 from app.models.tenant import Tenant
@@ -31,6 +34,7 @@ async def upload_logo(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     tenant: Tenant = Depends(require_entitlement(Action.USE_BRANDING.value)),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     _ = tenant
     content_type = (file.content_type or "").strip().lower()
@@ -71,6 +75,7 @@ def update_company(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     tenant: Tenant = Depends(require_entitlement(Action.USE_BRANDING.value)),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     _ = tenant
     company_name = payload.company_name.strip()

@@ -40,6 +40,14 @@ class StripeService:
     def get_subscription(self, subscription_id: str) -> stripe.Subscription:
         return stripe.Subscription.retrieve(subscription_id)
 
+    def customer_has_any_subscription(self, customer_id: str) -> bool:
+        subscriptions = stripe.Subscription.list(
+            customer=customer_id,
+            status="all",
+            limit=1,
+        )
+        return bool(getattr(subscriptions, "data", None))
+
 
 def compute_trial_end(trial_end_timestamp: Optional[int]) -> Optional[datetime]:
     if not trial_end_timestamp:

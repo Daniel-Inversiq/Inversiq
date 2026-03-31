@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user, require_user_html
+from app.billing.dependencies import require_active_subscription_for_write
 from app.db import get_db
 from app.models import Lead, LeadFile, Tenant
 from app.models.calendar_connection import CalendarConnection
@@ -361,6 +362,7 @@ def publish_quote_route(
     background: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ):
     tenant_id = str(current_user.tenant_id)
     logger.info(
@@ -761,6 +763,7 @@ def create_quote_google_calendar(
     quote_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ):
     return _create_google_calendar_event_for_quote(
         quote_id=quote_id, db=db, current_user=current_user
@@ -773,6 +776,7 @@ def create_quote_google_calendar_partial(
     quote_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ):
     try:
         result = _create_google_calendar_event_for_quote(

@@ -24,6 +24,12 @@
 
       <!-- Form -->
       <div class="px-8 py-6">
+        {% if reset %}
+        <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Je wachtwoord is succesvol bijgewerkt. Log in met je nieuwe wachtwoord.
+        </div>
+        {% endif %}
+
         <form method="post" action="/auth/login" class="space-y-5">
           <input type="hidden" name="next" value="{{ next }}" />
 

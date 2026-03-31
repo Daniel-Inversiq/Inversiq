@@ -10,8 +10,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user, require_user_html
+from app.billing.features import is_subscription_accessible
 from app.db import get_db
-from app.models import Lead
+from app.billing.dependencies import require_active_subscription_for_write
+from app.models import Lead, Tenant
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,7 @@ def lead_status_json(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    tenant = Depends(require_active_subscription_for_write),
 ) -> dict:
     tenant_id = str(current_user.tenant_id)
     lead = (
@@ -244,6 +247,7 @@ def processing_page(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    tenant = Depends(require_active_subscription_for_write),
 ) -> HTMLResponse:
     lead = (
         db.query(Lead)
@@ -388,14 +392,33 @@ def public_processing_status(flow_token: str, db: Session = Depends(get_db)) -> 
     }
 
 
-@router.post("/public/processing/{flow_token}/retry")
-def public_processing_retry(flow_token: str, db: Session = Depends(get_db)) -> dict:
+@router.post("/public/processing/{flow_token}/retry", response_model=None)
+def public_processing_retry(
+    flow_token: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     logger.info("[SECURITY_FIX] public_processing_requested")
     lead = _load_lead_by_public_token(db, flow_token)
     if not lead:
         logger.warning("[SECURITY_FIX] public_flow_token_invalid")
         raise HTTPException(status_code=404, detail="Not found")
     logger.info("[SECURITY_FIX] public_flow_token_valid")
+
+    tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+    subscription_status = getattr(tenant, "subscription_status", None) if tenant else None
+    trial_ends_at = getattr(tenant, "trial_ends_at", None) if tenant else None
+    if not is_subscription_accessible(subscription_status, trial_ends_at):
+        # Public retry is blocked for trial-expired/inactive tenants:
+        # no publish trigger, return controlled response.
+        wants_html = "text/html" in (request.headers.get("accept") or "")
+        if wants_html:
+            return HTMLResponse(
+                content="<div class='text-sm text-slate-600'>Retry is niet beschikbaar: abonnement niet actief.</div>",
+                status_code=200,
+            )
+        raise HTTPException(status_code=403, detail="subscription_inactive")
+
     try:
         from app.routers.quotes import publish_quote
 
