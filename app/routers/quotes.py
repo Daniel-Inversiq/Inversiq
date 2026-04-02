@@ -35,11 +35,51 @@ from app.core.settings import settings
 from app.verticals.paintly.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
+from app.i18n.service import setup_jinja_i18n
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 templates = Jinja2Templates(directory="app/templates")
 paintly_templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+setup_jinja_i18n(templates)
+setup_jinja_i18n(paintly_templates)
 logger = logging.getLogger(__name__)
+def _tenant_missing_wall_rate(tenant: Tenant | None) -> bool:
+    pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
+    return pricing.get("walls_rate_eur_per_sqm") in (None, "")
+
+
+def _mark_needs_review_missing_wall_rate(db: Session, lead: Lead) -> None:
+    reason = "missing_wall_rate"
+    payload: dict[str, Any] = {}
+    try:
+        if isinstance(getattr(lead, "estimate_json", None), str) and lead.estimate_json:
+            parsed = json.loads(lead.estimate_json)
+            if isinstance(parsed, dict):
+                payload = parsed
+    except Exception:
+        payload = {}
+
+    meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
+    reasons = meta.get("needs_review_reasons")
+    if not isinstance(reasons, list):
+        reasons = []
+    if reason not in reasons:
+        reasons.append(reason)
+    meta["needs_review_reasons"] = reasons
+    payload["meta"] = meta
+
+    lead.status = "NEEDS_REVIEW"
+    lead.error_message = None
+    lead.estimate_json = json.dumps(payload, ensure_ascii=False, default=str)
+    lead.updated_at = datetime.utcnow()
+    if hasattr(lead, "needs_review_reasons"):
+        try:
+            setattr(lead, "needs_review_reasons", reasons)
+        except Exception:
+            pass
+    db.add(lead)
+    db.commit()
+
 
 
 async def _send_ready_email_task(
@@ -51,14 +91,40 @@ async def _send_ready_email_task(
     lead_id: str,
     tenant_id: str,
 ) -> None:
-    await send_estimate_ready_email_to_customer(
-        to_email=to_email,
-        customer_name=customer_name,
-        quote_url=quote_url,
-        company_name=company_name,
-        lead_id=lead_id,
-        tenant_id=tenant_id,
+    logger.info(
+        "ESTIMATE_READY_TASK_START lead_id=%s tenant_id=%s to=%s quote_url=%s",
+        lead_id,
+        tenant_id,
+        to_email,
+        quote_url,
     )
+    try:
+        await send_estimate_ready_email_to_customer(
+            to_email=to_email,
+            customer_name=customer_name,
+            quote_url=quote_url,
+            company_name=company_name,
+            lead_id=lead_id,
+            tenant_id=tenant_id,
+        )
+        logger.info(
+            "ESTIMATE_READY_TASK_SUCCESS lead_id=%s tenant_id=%s to=%s quote_url=%s",
+            lead_id,
+            tenant_id,
+            to_email,
+            quote_url,
+        )
+    except Exception as exc:
+        logger.exception(
+            "ESTIMATE_READY_TASK_FAILURE lead_id=%s tenant_id=%s to=%s quote_url=%s error=%s",
+            lead_id,
+            tenant_id,
+            to_email,
+            quote_url,
+            str(exc),
+        )
+        # Keep failures isolated to background email delivery.
+        return
 
 
 def _load_lead(db: Session, lead_id: str, tenant_id: str | None = None) -> Lead:
@@ -413,18 +479,34 @@ def publish_quote(
             status_code=303,
         )
 
+    tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+    if _tenant_missing_wall_rate(tenant):
+        _mark_needs_review_missing_wall_rate(db, lead)
+        redirect_target = _publish_redirect_target(
+            lead_id=str(lead.id),
+            status="NEEDS_REVIEW",
+            is_public_flow=is_public_flow,
+        )
+        logger.info(
+            "PUBLISH_FLOW_REVIEW_BLOCKED lead_id=%s reason=%s redirect_target=%r",
+            lead.id,
+            "missing_wall_rate",
+            redirect_target,
+        )
+        return RedirectResponse(url=redirect_target, status_code=303)
+
     # Als al bezig -> direct naar lead detail offerteview
     if lead.status == "RUNNING":
         inc("publish_already_running_total")
-    redirect_target = _publish_redirect_target(
-        lead_id=str(lead.id),
-        status="SUCCEEDED",
-        is_public_flow=is_public_flow,
-    )
-    return RedirectResponse(
-        url=redirect_target,
-        status_code=303,
-    )
+        redirect_target = _publish_redirect_target(
+            lead_id=str(lead.id),
+            status="SUCCEEDED",
+            is_public_flow=is_public_flow,
+        )
+        return RedirectResponse(
+            url=redirect_target,
+            status_code=303,
+        )
 
     files = db.query(LeadFile).filter(LeadFile.lead_id == lead.id).all()
     if not files:
@@ -462,6 +544,7 @@ def publish_quote(
         v = get_vertical(vertical_id)
 
         inc("compute_started_total")
+        logger.info("PUBLISH_FLOW_COMPUTE_BEGIN lead=%s", lead.id)
         logger.info(
             "LEAD %s compute_quote START vertical=%s tenant=%s",
             lead.id,
@@ -570,6 +653,7 @@ def publish_quote(
                 lead_id_value = str(lead.id)
                 tenant_id_value = str(getattr(lead, "tenant_id", "") or "")
 
+                logger.info("PUBLISH_FLOW_EMAIL_SCHEDULE lead=%s to=%s", lead.id, to_email)
                 background.add_task(
                     _send_ready_email_task,
                     to_email=to_email,

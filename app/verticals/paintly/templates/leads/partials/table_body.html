@@ -3,17 +3,17 @@
     {% set st = (lead.status or '').upper() %}
     {% set followup = lead.followup_summary or {} %}
     {% set status_labels = {
-      'ACCEPTED': 'Geaccepteerd',
-      'DONE': 'Afgerond',
-      'COMPLETED': 'Compleet',
-      'SENT': 'Verstuurd',
-      'VIEWED': 'Bekeken',
-      'CANCELLED': 'Geannuleerd',
-      'NEW': 'Nieuw',
-      'DRAFT': 'Concept',
-      'SUCCEEDED': 'Gereed',
-      'REJECTED': 'Afgewezen',
-      'RUNNING': 'Bezig'
+      'ACCEPTED': t('lead_detail.status.accepted'),
+      'DONE': t('lead_detail.status.done'),
+      'COMPLETED': t('lead_detail.status.completed'),
+      'SENT': t('lead_detail.status.sent'),
+      'VIEWED': t('lead_detail.status.viewed'),
+      'CANCELLED': t('lead_detail.status.cancelled'),
+      'NEW': t('lead_detail.status.new'),
+      'DRAFT': t('leads_list.status.draft'),
+      'SUCCEEDED': t('leads_list.status.ready'),
+      'REJECTED': t('lead_detail.status.rejected'),
+      'RUNNING': t('leads_list.status.in_progress')
     } %}
     {% if st in ['ACCEPTED','DONE','COMPLETED'] %}
       {% set badge_color = 'bg-white text-emerald-700 border-emerald-200/80' %}
@@ -25,12 +25,17 @@
       {% set badge_color = 'bg-white text-slate-600 border-slate-200/90' %}
     {% endif %}
 
-    {% set urgency = (followup.status_label or '') %}
-    {% if urgency == 'Te laat' %}
+    {% set urgency = (followup.status_code or '') %}
+    {% set urgency_labels = {
+      'overdue': t('lead_detail.followup.overdue'),
+      'today': t('lead_detail.followup.today'),
+      'upcoming': t('lead_detail.followup.upcoming')
+    } %}
+    {% if urgency == 'overdue' %}
       {% set urgency_class = 'bg-white text-rose-700 border-rose-200/80' %}
-    {% elif urgency == 'Vandaag' %}
+    {% elif urgency == 'today' %}
       {% set urgency_class = 'bg-white text-amber-700 border-amber-200/80' %}
-    {% elif urgency == 'Komt eraan' %}
+    {% elif urgency == 'upcoming' %}
       {% set urgency_class = 'bg-white text-sky-700 border-sky-200/80' %}
     {% else %}
       {% set urgency_class = 'bg-white text-slate-500 border-slate-200/90' %}
@@ -41,12 +46,12 @@
     {% set searchable = ((lead.customer_name or '') ~ ' ' ~ (status_labels.get(st, st or '')) ~ ' ' ~ (followup.next_action or ''))|lower %}
     <tr
       class="border-b border-slate-100/90 align-top last:border-0 transition hover:bg-slate-50/70"
-      x-show='match({ search: {{ searchable|tojson }}, status: {{ st|lower|tojson }}, urgentie: {{ urgency|lower|tojson }} })'
+      x-show='match({ search: {{ searchable|tojson }}, status: {{ st|lower|tojson }}, urgentie: {{ urgency|tojson }} })'
     >
       <td class="px-5 py-4 align-middle">
         <div class="flex min-w-[260px] flex-col gap-1.5">
           <a href="/app/leads/{{ lead.id }}" class="text-[15px] font-semibold text-slate-900 transition hover:text-sky-700">
-            {{ lead.customer_name or "—" }}
+            {{ lead.customer_name or t('leads_list.table.empty_customer') }}
           </a>
           {% if lead.address %}
             <div class="flex items-center gap-1.5 text-xs text-slate-500">
@@ -55,9 +60,9 @@
           {% endif %}
           <div class="text-xs text-slate-500">
             {% if total is not none %}
-              Offertebedrag: <span class="font-semibold text-slate-700">€ {{ "%.2f"|format(total) }}</span>
+              {{ t('leads_list.table.quote_amount') }}: <span class="font-semibold text-slate-700">€ {{ "%.2f"|format(total) }}</span>
             {% else %}
-              Offertebedrag nog niet bekend
+              {{ t('leads_list.table.quote_amount_unknown') }}
             {% endif %}
           </div>
         </div>
@@ -65,15 +70,15 @@
       <td class="px-5 py-4 align-middle">
         <div class="flex min-w-[190px] flex-col gap-2">
           <span class="inline-flex w-fit items-center rounded-full border px-3 py-1 text-xs font-semibold {{ badge_color }}">
-            {{ status_labels.get(st, st or "Onbekend") }}
+            {{ status_labels.get(st, st or t('leads_list.status.unknown')) }}
           </span>
           {% if lead.estimate_html_key %}
             <span class="inline-flex w-fit items-center rounded-full border border-sky-200/80 bg-sky-50/50 px-3 py-1 text-xs font-medium text-sky-700">
-              Offerte gereed
+              {{ t('leads_list.quote_state.ready') }}
             </span>
           {% else %}
             <span class="inline-flex w-fit items-center rounded-full border border-slate-200/90 bg-white px-3 py-1 text-xs font-medium text-slate-600">
-              Offerte in opbouw
+              {{ t('leads_list.quote_state.building') }}
             </span>
           {% endif %}
         </div>
@@ -82,17 +87,17 @@
         <div class="min-w-[250px] space-y-2">
           {% if followup.has_followup %}
             <div class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold {{ urgency_class }}">
-              {{ urgency or "Gepland" }}
+              {{ urgency_labels.get(urgency, t('leads_list.followup.scheduled')) }}
             </div>
-            <div class="text-sm font-medium text-slate-700">{{ followup.next_action or "Opvolgactie" }}</div>
+            <div class="text-sm font-medium text-slate-700">{{ followup.next_action or t('leads_list.followup.action') }}</div>
             {% if followup.next_action_at_human %}
               <div class="text-xs text-slate-500">{{ followup.next_action_at_human }}</div>
             {% else %}
-              <div class="text-xs text-slate-500">Moment nog niet gepland</div>
+              <div class="text-xs text-slate-500">{{ t('leads_list.followup.moment_not_planned') }}</div>
             {% endif %}
           {% else %}
             <div class="inline-flex items-center rounded-full border border-slate-200/90 bg-white px-3 py-1 text-xs font-medium text-slate-500">
-              Geen opvolging gepland
+              {{ t('leads_list.followup.none_planned') }}
             </div>
           {% endif %}
         </div>
@@ -106,7 +111,7 @@
                 class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-60"
                 type="submit"
               >
-                Bekijk offerte
+                {{ t('lead_detail.actions.view_quote') }}
               </button>
             </form>
           {% else %}
@@ -114,7 +119,7 @@
               class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
               href="{{ a.href }}"
             >
-              Bekijk offerte
+              {{ t('lead_detail.actions.view_quote') }}
             </a>
           {% endif %}
           {% if lead.public_url %}
@@ -124,7 +129,7 @@
               target="_blank"
               rel="noopener noreferrer"
             >
-              Bekijk klantlink
+              {{ t('lead_detail.actions.view_customer_link') }}
             </a>
           {% endif %}
           {% if lead.public_url %}
@@ -136,7 +141,7 @@
               <svg class="mr-2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
-              Link kopiëren
+              {{ t('lead_detail.actions.copy_link') }}
             </button>
           {% endif %}
         </div>
@@ -151,11 +156,11 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
           </div>
-          <p class="text-sm font-medium text-slate-900">Geen offertes gevonden</p>
-          <p class="mt-1 text-xs text-slate-500">Pas je filters aan of maak direct een nieuwe offerte.</p>
+          <p class="text-sm font-medium text-slate-900">{{ t('leads_list.empty.no_results_title') }}</p>
+          <p class="mt-1 text-xs text-slate-500">{{ t('leads_list.empty.no_results_subtitle') }}</p>
           <a href="/intake/paintly"
              class="mt-4 inline-flex h-9 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600">
-            Nieuwe offerte
+            {{ t('leads_list.actions.new_quote') }}
           </a>
         </div>
       </td>

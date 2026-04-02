@@ -19,7 +19,7 @@ from app.db import get_db
 from app.auth.deps import get_current_user
 from app.billing.dependencies import require_active_subscription_for_write
 
-from app.models import Lead
+from app.models import Lead, Tenant
 from app.models.user import User
 from app.models.upload_record import UploadRecord, UploadStatus
 
@@ -127,6 +127,26 @@ def _lead_and_tenant_public(db: Session, lead_id: str) -> tuple[Lead, str]:
         )
         raise HTTPException(status_code=500, detail="lead_missing_tenant_id")
     return lead, tenant_id
+
+
+def _mark_needs_review_if_missing_wall_rate(db: Session, lead: Lead) -> bool:
+    """
+    Hard precondition for auto-compute trigger:
+    skip compute entirely when tenant wall rate is missing.
+    """
+    tenant = db.query(Tenant).filter(Tenant.id == str(getattr(lead, "tenant_id", "") or "")).first()
+    if tenant is None:
+        return False
+
+    from app.routers.quotes import (
+        _mark_needs_review_missing_wall_rate,
+        _tenant_missing_wall_rate,
+    )
+
+    if _tenant_missing_wall_rate(tenant):
+        _mark_needs_review_missing_wall_rate(db, lead)
+        return True
+    return False
 
 
 def _local_path_if_available(
@@ -519,6 +539,13 @@ async def complete_upload(
                     .count()
                 )
                 if files_count > 0:
+                    if _mark_needs_review_if_missing_wall_rate(db, lead):
+                        logger.info(
+                            "AUTO_COMPUTE_UPLOAD_SKIPPED lead=%s reason=%s",
+                            lead_id_value,
+                            "missing_wall_rate",
+                        )
+                        return {"status": "ok", "object_key": req.object_key}
                     logger.info(
                         "AUTO_COMPUTE_UPLOAD_TRIGGER_START lead=%s tenant=%s files=%s",
                         lead_id_value,
@@ -673,6 +700,13 @@ async def public_complete_upload(
                     db.query(LeadFile).filter(LeadFile.lead_id == req.lead_id).count()
                 )
                 if files_count > 0:
+                    if _mark_needs_review_if_missing_wall_rate(db, lead):
+                        logger.info(
+                            "AUTO_COMPUTE_UPLOAD_SKIPPED lead=%s reason=%s",
+                            lead_id_value,
+                            "missing_wall_rate",
+                        )
+                        return {"status": "ok", "object_key": req.object_key}
                     logger.info(
                         "AUTO_COMPUTE_UPLOAD_TRIGGER_START lead=%s tenant=%s files=%s",
                         lead_id_value,

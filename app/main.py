@@ -49,6 +49,7 @@ from app.routers import stripe_webhook
 from app.routers.founder import router as founder_router
 from app.observability.metrics import router as metrics_router
 from app.routers import internal
+from app.i18n.service import SUPPORTED_LANGS, set_language_cookie, setup_jinja_i18n
 from app.routers import processing
 
 
@@ -82,6 +83,7 @@ logger.info("startup", service=getattr(settings, "SERVICE_NAME", "aether-api"))
 
 
 app.state.templates = Jinja2Templates(directory="app/templates")
+setup_jinja_i18n(app.state.templates)
 
 
 @app.get("/", include_in_schema=False)
@@ -154,6 +156,12 @@ async def logging_middleware(request: Request, call_next):
     bound_logger.bind(status_code=response.status_code, latency_ms=latency_ms).info(
         "request_finished"
     )
+
+    # Persist explicit language choice from ?lang=xx as a cookie.
+    lang = (request.query_params.get("lang") or "").strip().lower()
+    if lang in SUPPORTED_LANGS:
+        set_language_cookie(response, lang)
+
     return response
 
 

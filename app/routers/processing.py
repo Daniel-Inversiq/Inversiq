@@ -21,6 +21,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["processing"])
 
 
+def _tenant_missing_wall_rate(tenant: Tenant | None) -> bool:
+    pricing = (
+        dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
+    )
+    return pricing.get("walls_rate_eur_per_sqm") in (None, "")
+
+
 def _friendly_processing_error(_: str | None = None) -> str:
     return "Er ging iets mis bij het opstellen van je offerte. Probeer het opnieuw of ga terug."
 
@@ -48,7 +55,9 @@ def _short_customer_reference(lead: Lead | None, lead_id: str | None) -> str | N
     return f"PA-{year}-{number}"
 
 
-def _map_lead_status_for_ui(*, lead_status: str, lead_id: str) -> tuple[str, str | None, str | None]:
+def _map_lead_status_for_ui(
+    *, lead_status: str, lead_id: str
+) -> tuple[str, str | None, str | None]:
     """
     UI status flow:
     queued -> running -> done -> failed
@@ -59,12 +68,10 @@ def _map_lead_status_for_ui(*, lead_status: str, lead_id: str) -> tuple[str, str
     if s == "RUNNING":
         return "running", None, None
     if s in {"SUCCEEDED", "NEEDS_REVIEW"}:
-        # SUCCEEDED: route that is immediately available when estimate_html_key exists.
-        # NEEDS_REVIEW: customer thank-you flow.
+        # SUCCEEDED: quote HTML
+        # NEEDS_REVIEW: internal review queue/detail (not an error state)
         redirect_url = (
-            f"/quotes/{lead_id}/html"
-            if s == "SUCCEEDED"
-            else f"/thank-you?lead_id={lead_id}&review=1"
+            f"/quotes/{lead_id}/html" if s == "SUCCEEDED" else f"/app/reviews/{lead_id}"
         )
         return "done", redirect_url, None
     if s == "FAILED":
@@ -87,18 +94,22 @@ def _public_redirect_for_lead(lead: Lead) -> str | None:
     return f"/e/{token}"
 
 
+def _public_needs_review_without_estimate(
+    lead_status: str, has_estimate_html: bool
+) -> bool:
+    return (lead_status or "").upper() == "NEEDS_REVIEW" and not has_estimate_html
+
+
 @router.get("/leads/{lead_id}/status")
 def lead_status_json(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    tenant = Depends(require_active_subscription_for_write),
+    tenant=Depends(require_active_subscription_for_write),
 ) -> dict:
     tenant_id = str(current_user.tenant_id)
     lead = (
-        db.query(Lead)
-        .filter(Lead.id == lead_id, Lead.tenant_id == tenant_id)
-        .first()
+        db.query(Lead).filter(Lead.id == lead_id, Lead.tenant_id == tenant_id).first()
     )
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
@@ -138,7 +149,7 @@ def lead_status_json(
     # 1) Lead niet bestaat: handled hierboven.
     # 2) Verwerking gefaald: lead.status == FAILED (of error_message aanwezig).
     lead_status = (getattr(lead, "status", "") or "").upper()
-    error_message = (getattr(lead, "error_message", None) or None)
+    error_message = getattr(lead, "error_message", None) or None
 
     if lead_status == "FAILED" or error_message:
         response = {
@@ -164,9 +175,8 @@ def lead_status_json(
         lead_status=lead_status, lead_id=str(lead.id)
     )
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
-    is_done_available = (
-        (lead_status == "SUCCEEDED" and has_estimate_html)
-        or (lead_status == "NEEDS_REVIEW")
+    is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
+        lead_status == "NEEDS_REVIEW"
     )
     if mapped_status == "done" and is_done_available:
         response = {
@@ -180,9 +190,11 @@ def lead_status_json(
             response["lead_id"],
             response["status"],
             response["redirect_url"],
-            "/quotes/{lead_id}/html"
-            if str(redirect_url).startswith("/quotes/")
-            else "/thank-you",
+            (
+                "/quotes/{lead_id}/html"
+                if str(redirect_url).startswith("/quotes/")
+                else "/thank-you"
+            ),
         )
         return response
 
@@ -196,9 +208,7 @@ def lead_status_json(
             age = datetime.now(timezone.utc) - updated_at
             if age > timedelta(minutes=15):
                 lead.status = "FAILED"
-                lead.error_message = (
-                    "We konden je aanvraag niet op tijd verwerken. Probeer het later opnieuw."
-                )
+                lead.error_message = "We konden je aanvraag niet op tijd verwerken. Probeer het later opnieuw."
                 lead.updated_at = datetime.now(timezone.utc)
                 db.add(lead)
                 db.commit()
@@ -247,7 +257,7 @@ def processing_page(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
-    tenant = Depends(require_active_subscription_for_write),
+    tenant=Depends(require_active_subscription_for_write),
 ) -> HTMLResponse:
     lead = (
         db.query(Lead)
@@ -257,6 +267,13 @@ def processing_page(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
+    # Guard rail: do not show processing UI when required pricing config is missing.
+    if _tenant_missing_wall_rate(tenant):
+        return RedirectResponse(
+            url=f"/app/reviews/{lead_id}?missing_wall_rate=1",
+            status_code=303,
+        )
+
     # UX polish: if this route is hit again after completion, skip rendering
     # processing.html and redirect immediately to final route to avoid flash.
     lead_status = (getattr(lead, "status", "") or "").upper()
@@ -264,9 +281,8 @@ def processing_page(
         lead_status=lead_status, lead_id=str(lead.id)
     )
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
-    is_done_available = (
-        (lead_status == "SUCCEEDED" and has_estimate_html)
-        or (lead_status == "NEEDS_REVIEW")
+    is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
+        lead_status == "NEEDS_REVIEW"
     )
     if mapped_status == "done" and is_done_available and redirect_url:
         logger.info(
@@ -309,9 +325,15 @@ def public_processing_page(
     lead_status = (getattr(lead, "status", "") or "").upper()
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
     public_redirect = _public_redirect_for_lead(lead)
-    is_done_available = (
-        (lead_status == "SUCCEEDED" and has_estimate_html)
-        or (lead_status == "NEEDS_REVIEW")
+
+    if _public_needs_review_without_estimate(lead_status, has_estimate_html):
+        return RedirectResponse(
+            url=f"/thank-you?lead_id={lead.id}&review=1",
+            status_code=303,
+        )
+
+    is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
+        lead_status == "NEEDS_REVIEW" and has_estimate_html
     )
     if is_done_available and public_redirect:
         return RedirectResponse(url=public_redirect, status_code=303)
@@ -358,7 +380,7 @@ def public_processing_status(flow_token: str, db: Session = Depends(get_db)) -> 
             db.refresh(lead)
             lead_status = "FAILED"
 
-    error_message = (getattr(lead, "error_message", None) or None)
+    error_message = getattr(lead, "error_message", None) or None
     if lead_status == "FAILED" or error_message:
         return {
             "status": "failed",
@@ -371,15 +393,24 @@ def public_processing_status(flow_token: str, db: Session = Depends(get_db)) -> 
 
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
     public_redirect = _public_redirect_for_lead(lead)
-    is_done_available = (
-        (lead_status == "SUCCEEDED" and has_estimate_html)
-        or (lead_status == "NEEDS_REVIEW")
+    is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
+        lead_status == "NEEDS_REVIEW" and has_estimate_html
     )
     if is_done_available and public_redirect:
         return {
             "status": "done",
             "redirect_url": public_redirect,
             "error": None,
+        }
+
+    if _public_needs_review_without_estimate(lead_status, has_estimate_html):
+        return {
+            "status": "done",
+            "redirect_url": f"/thank-you?lead_id={lead.id}&review=1",
+            "error": None,
+            "user_message": "Er is nog een extra controle nodig voordat we de offerte kunnen tonen.",
+            "can_retry": False,
+            "back_url": "/",
         }
 
     return {
@@ -406,7 +437,9 @@ def public_processing_retry(
     logger.info("[SECURITY_FIX] public_flow_token_valid")
 
     tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
-    subscription_status = getattr(tenant, "subscription_status", None) if tenant else None
+    subscription_status = (
+        getattr(tenant, "subscription_status", None) if tenant else None
+    )
     trial_ends_at = getattr(tenant, "trial_ends_at", None) if tenant else None
     if not is_subscription_accessible(subscription_status, trial_ends_at):
         # Public retry is blocked for trial-expired/inactive tenants:
@@ -493,16 +526,11 @@ def thank_you_page(
     lead_id: str | None = None,
     review: str | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_user_html),
 ) -> HTMLResponse:
     is_review_mode = (review or "").strip().lower() in {"1", "true", "yes"}
     lead = None
     if lead_id:
-        lead = (
-            db.query(Lead)
-            .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
-            .first()
-        )
+        lead = db.query(Lead).filter(Lead.id == lead_id).first()
     short_reference = _short_customer_reference(lead, lead_id)
 
     return request.app.state.templates.TemplateResponse(
@@ -514,4 +542,3 @@ def thank_you_page(
             "is_review_mode": is_review_mode,
         },
     )
-

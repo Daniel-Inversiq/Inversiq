@@ -2,8 +2,7 @@
 
 PLANS = {
     "starter_99": {
-        # Unlimited offers across all plans; no volume-based differentiation.
-        "monthly_usage_baseline": None,
+        "monthly_usage_baseline": 25,
         "features": {
             "pdf": True,
             "branding": False,

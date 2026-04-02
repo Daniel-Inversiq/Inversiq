@@ -15,9 +15,11 @@ from app.models import Lead
 from app.models.user import User
 from app.auth.deps import require_user_html
 from app.services.metrics import inc, snapshot  # ✅ only once
+from app.i18n.service import setup_jinja_i18n
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 templates = Jinja2Templates(directory="app/templates")
+setup_jinja_i18n(templates)
 logger = logging.getLogger(__name__)
 
 

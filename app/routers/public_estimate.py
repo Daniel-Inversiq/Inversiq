@@ -33,11 +33,13 @@ from app.verticals.paintly.email_render import (
     render_painter_estimate_accepted_email,
 )
 from app.workflow.status import apply_workflow
+from app.i18n.service import setup_jinja_i18n
 
 router = APIRouter(prefix="/e", tags=["public_estimate"])
 # Alias router for simple customer-friendly quote URL (/q/{public_token})
 router_q = APIRouter(prefix="/q", tags=["public_quote"])
 paintly_templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+setup_jinja_i18n(paintly_templates)
 
 logger = logging.getLogger(__name__)
 

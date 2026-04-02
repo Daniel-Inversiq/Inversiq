@@ -12,6 +12,7 @@ from app.billing.features import (
     is_subscription_accessible,
     tenant_has_feature,
 )
+from app.core.plan_catalog import get_plan_item
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,13 @@ def _extract_usage(tenant: TenantUsageLike | None) -> tuple[int | None, int | No
     return sent, limit
 
 
+def _resolve_monthly_offer_limit(plan_code: str | None) -> int | None:
+    item = get_plan_item(plan_code, allow_aliases=True)
+    if item is None:
+        return None
+    return item.monthly_offer_limit
+
+
 def check_entitlement(tenant: TenantUsageLike | None, action: str) -> EntitlementResult:
     """
     Central entitlement check that combines:
@@ -194,9 +202,27 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
                 subscription_status=subscription_status,
             )
 
-        # 3) Usage/paywall fields for analytics / abuse monitoring.
-        # NOTE: We intentionally do not *block* based on monthly offer limits anymore.
+        # 3) Usage/paywall enforcement per plan.
         usage_current, usage_limit = _extract_usage(tenant)
+        if usage_limit is None:
+            usage_limit = _resolve_monthly_offer_limit(plan_code)
+
+        if (
+            usage_limit is not None
+            and usage_current is not None
+            and usage_current >= usage_limit
+        ):
+            return EntitlementResult(
+                allowed=False,
+                action=act.value,
+                reason="monthly_offer_limit_reached",
+                feature=feature,
+                upgrade_url=build_upgrade_url(feature=feature, action=act.value),
+                usage_limit=usage_limit,
+                usage_current=usage_current,
+                plan_code=plan_code,
+                subscription_status=subscription_status,
+            )
 
         # All checks passed
         return EntitlementResult(

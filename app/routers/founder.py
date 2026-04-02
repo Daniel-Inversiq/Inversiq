@@ -22,6 +22,7 @@ from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
 from app.models.user import User
 from app.services.founder_insights import get_tenant_health
+from app.i18n.service import setup_jinja_i18n
 
 router = APIRouter(
     prefix="/founder",
@@ -29,6 +30,7 @@ router = APIRouter(
     dependencies=[Depends(require_platform_admin)],
 )
 templates = Jinja2Templates(directory="app/templates")
+setup_jinja_i18n(templates)
 
 
 FOUNDER_TENANT_SORTS = frozenset(

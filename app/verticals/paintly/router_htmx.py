@@ -26,10 +26,12 @@ from app.verticals.paintly.router_app import (
     get_estimate_overrides,
     public_url_for,
 )
+from app.i18n.service import resolve_language, setup_jinja_i18n, translate
 
 logger = logging.getLogger(__name__)
 
 templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+setup_jinja_i18n(templates)
 
 router = APIRouter(
     prefix="/app",
@@ -180,11 +182,11 @@ def _quote_ui_for_lead(lead: Lead) -> dict[str, Any]:
     }
 
 
-def timeline_rows_for_lead(lead: Lead, tz_name: str) -> list[dict[str, Any]]:
+def timeline_rows_for_lead(lead: Lead, tz_name: str, lang: str = "nl") -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     rows.append(
         {
-            "label": "Aangemaakt",
+            "label": translate("lead_detail.timeline.created", lang=lang),
             "value": _utc_to_local_human(getattr(lead, "created_at", None), tz_name) or "—",
             "tone": "slate",
         }
@@ -192,7 +194,7 @@ def timeline_rows_for_lead(lead: Lead, tz_name: str) -> list[dict[str, Any]]:
     if getattr(lead, "sent_at", None):
         rows.append(
             {
-                "label": "Verstuurd naar klant",
+                "label": translate("lead_detail.timeline.sent_to_customer", lang=lang),
                 "value": _utc_to_local_human(lead.sent_at, tz_name),
                 "tone": "sky",
             }
@@ -200,7 +202,7 @@ def timeline_rows_for_lead(lead: Lead, tz_name: str) -> list[dict[str, Any]]:
     if getattr(lead, "viewed_at", None):
         rows.append(
             {
-                "label": "Bekeken door klant",
+                "label": translate("lead_detail.timeline.viewed_by_customer", lang=lang),
                 "value": _utc_to_local_human(lead.viewed_at, tz_name),
                 "tone": "amber",
             }
@@ -209,7 +211,7 @@ def timeline_rows_for_lead(lead: Lead, tz_name: str) -> list[dict[str, Any]]:
     if st == "ACCEPTED" and getattr(lead, "accepted_at", None):
         rows.append(
             {
-                "label": "Geaccepteerd",
+                "label": translate("lead_detail.timeline.accepted", lang=lang),
                 "value": _utc_to_local_human(lead.accepted_at, tz_name),
                 "tone": "emerald",
             }
@@ -217,7 +219,7 @@ def timeline_rows_for_lead(lead: Lead, tz_name: str) -> list[dict[str, Any]]:
     elif st == "REJECTED":
         rows.append(
             {
-                "label": "Afgewezen",
+                "label": translate("lead_detail.timeline.rejected", lang=lang),
                 "value": _utc_to_local_human(getattr(lead, "updated_at", None), tz_name)
                 or "—",
                 "tone": "rose",
@@ -226,7 +228,7 @@ def timeline_rows_for_lead(lead: Lead, tz_name: str) -> list[dict[str, Any]]:
         if getattr(lead, "reject_reason", None):
             rows.append(
                 {
-                    "label": "Toelichting klant",
+                    "label": translate("lead_detail.timeline.customer_note", lang=lang),
                     "value": (lead.reject_reason or "")[:500],
                     "tone": "rose",
                     "small": True,
@@ -241,6 +243,7 @@ def build_quote_oob_context(
     current_user: User,
     lead: Lead,
 ) -> dict[str, Any]:
+    lang = resolve_language(request)
     job = (
         db.query(Job)
         .filter(Job.lead_id == lead.id, Job.tenant_id == str(current_user.tenant_id))
@@ -263,15 +266,15 @@ def build_quote_oob_context(
 
     st = raw_status
     status_labels = {
-        "ACCEPTED": "Geaccepteerd",
-        "DONE": "Afgerond",
-        "COMPLETED": "Compleet",
-        "SENT": "Verstuurd",
-        "VIEWED": "Bekeken",
-        "REJECTED": "Afgewezen",
-        "DECLINED": "Afgewezen",
-        "CANCELLED": "Geannuleerd",
-        "NEW": "Nieuw",
+        "ACCEPTED": translate("lead_detail.status.accepted", lang=lang),
+        "DONE": translate("lead_detail.status.done", lang=lang),
+        "COMPLETED": translate("lead_detail.status.completed", lang=lang),
+        "SENT": translate("lead_detail.status.sent", lang=lang),
+        "VIEWED": translate("lead_detail.status.viewed", lang=lang),
+        "REJECTED": translate("lead_detail.status.rejected", lang=lang),
+        "DECLINED": translate("lead_detail.status.declined", lang=lang),
+        "CANCELLED": translate("lead_detail.status.cancelled", lang=lang),
+        "NEW": translate("lead_detail.status.new", lang=lang),
     }
     if st in ["ACCEPTED", "DONE", "COMPLETED"]:
         lead_status_badge = "bg-emerald-50 text-emerald-700"
@@ -293,12 +296,13 @@ def build_quote_oob_context(
         "quote_ui": quote_ui,
         "tz_name": tz_name,
         "sent_display": _utc_to_local_human(getattr(lead, "sent_at", None), tz_name),
-        "timeline_rows": timeline_rows_for_lead(lead, tz_name),
+        "timeline_rows": timeline_rows_for_lead(lead, tz_name, lang=lang),
         "status_labels": status_labels,
         "lead_status_badge": lead_status_badge,
         "st": st,
         "internal_notes": internal_notes,
         "followup_summary": followup_summary,
+        "lang": lang,
     }
 
 
@@ -313,8 +317,8 @@ def render_quote_oob_response(
     current_user: User,
     lead_id: str,
     *,
-    toast_title: str = "Offerte verzonden",
-    toast_message: str = "De klant ontvangt de e-mail binnenkort.",
+    toast_title: str | None = None,
+    toast_message: str | None = None,
 ) -> HTMLResponse:
     lead = (
         db.query(Lead)
@@ -325,13 +329,14 @@ def render_quote_oob_response(
         raise HTTPException(status_code=404, detail="Lead not found")
 
     ctx = build_quote_oob_context(request, db, current_user, lead)
+    lang = ctx.get("lang", "nl")
     html = _render_template("quotes/partials/send_success_oob.html", ctx)
     trigger = json.dumps(
         {
             "show-toast": {
                 "level": "success",
-                "title": toast_title,
-                "message": toast_message,
+                "title": toast_title or translate("lead_detail.send.toast_sent_title", lang=lang),
+                "message": toast_message or translate("lead_detail.send.toast_sent_message", lang=lang),
             }
         }
     )
@@ -411,8 +416,8 @@ def hx_save_internal_notes(
         {
             "show-toast": {
                 "level": "success",
-                "title": "Opgeslagen",
-                "message": "Opvolging bijgewerkt.",
+                "title": translate("lead_detail.followup.toast_saved_title", lang=resolve_language(request)),
+                "message": translate("lead_detail.followup.toast_saved_message", lang=resolve_language(request)),
             }
         }
     )

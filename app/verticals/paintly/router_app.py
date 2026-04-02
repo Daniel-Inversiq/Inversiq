@@ -16,6 +16,7 @@ from urllib.parse import quote, urlencode
 from typing import Any
 
 from fastapi import BackgroundTasks
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query, File, UploadFile
 from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -51,7 +52,11 @@ from app.core.plan_catalog import (
 )
 from app.dependencies import tenant_service
 from app.services.usage_service import get_or_create_usage, increment_usage
-from app.services.billing_summary_service import get_billing_usage_summary
+from app.services.billing_summary_service import (
+    get_billing_offer_usage_view,
+    get_billing_usage_summary,
+)
+from app.i18n.service import resolve_language, setup_jinja_i18n, translate
 from app.verticals.paintly.google_calendar_service import (
     build_appointment_event_payload,
     create_google_calendar_event_for_tenant,
@@ -62,6 +67,7 @@ from app.verticals.paintly.email_render import render_estimate_ready_email
 from app.verticals.paintly.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
+from app.services.email_service import EmailSendError
 from app.verticals.paintly.render_estimate import render_estimate_pdf_html
 from app.verticals.paintly.review_labels import review_label_nl
 from app.utils.slugs import slugify
@@ -81,6 +87,7 @@ router = APIRouter(
 )
 templates = Jinja2Templates(directory="app/verticals/paintly/templates")
 templates.env.globals["review_label_nl"] = review_label_nl
+setup_jinja_i18n(templates)
 
 
 def _url_query_quote(value: object) -> str:
@@ -345,6 +352,16 @@ def build_followup_summary(overrides: dict, tz_name: str) -> dict:
     if next_action_at_utc is not None:
         is_overdue = next_action_at_utc < _utcnow()
 
+    status_label = ""
+    status_code = ""
+    if next_action_at_utc is not None:
+        status_label = _followup_status_label(next_action_at_utc, tz_name)
+        status_code = (
+            "overdue"
+            if status_label == "Te laat"
+            else ("today" if status_label == "Vandaag" else "upcoming")
+        )
+
     return {
         "has_followup": bool(next_action),
         "next_action": next_action,
@@ -352,11 +369,8 @@ def build_followup_summary(overrides: dict, tz_name: str) -> dict:
         "next_action_at_human": next_action_at_human,
         "next_action_at_input": next_action_at_input,
         "is_overdue": is_overdue,
-        "status_label": (
-            _followup_status_label(next_action_at_utc, tz_name)
-            if next_action_at_utc is not None
-            else ""
-        ),
+        "status_label": status_label,
+        "status_code": status_code,
     }
 
 
@@ -1071,18 +1085,10 @@ def compute_next_action(lead: Lead, job: Job | None) -> dict:
         }
 
     if lead_status == "SENT":
-        return (
-            {"label": "Open publieke offerte", "href": f"/e/{lead.public_token}"}
-            if has_public
-            else {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
-        )
+        return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
 
     if lead_status == "VIEWED":
-        return (
-            {"label": "Follow up (open)", "href": f"/e/{lead.public_token}"}
-            if has_public
-            else {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
-        )
+        return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
 
     if lead_status == "ACCEPTED":
         if not job:
@@ -1185,6 +1191,9 @@ def app_dashboard(
     open_quotes = open_quotes[:20]
 
     tenant = db.query(Tenant).filter(Tenant.id == str(current_user.tenant_id)).first()
+    pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
+    wall_rate_value = pricing.get("walls_rate_eur_per_sqm")
+    missing_wall_rate = wall_rate_value in (None, "")
     billing_usage_summary = (
         get_billing_usage_summary(db, tenant) if tenant is not None else None
     )
@@ -1234,6 +1243,8 @@ def app_dashboard(
             "tenant_id": tenant_id,
             "followups": followups,
             "open_quotes": open_quotes,
+            "missing_wall_rate": missing_wall_rate,
+            "current_wall_rate": wall_rate_value,
         },
     )
     _merge_intake_url_into_context(context)
@@ -1611,22 +1622,25 @@ def app_billing(
 
     is_paid_or_trialing = subscription_status in ("trialing", "active")
 
-    _plan_cta_labels = {
-        "starter_99": "Kies Starter",
-        "pro_199": "Kies Pro",
-        "business_399": "Kies Business",
-    }
-    _subscription_status_labels = {
-        "trialing": "Proefperiode actief",
-        "active": "Abonnement actief",
-        "inactive": "Nog geen actief abonnement",
-        "past_due": "Betaling vereist",
-        "canceled": "Opgezegd",
-        "unpaid": "Niet betaald",
-    }
-
     current_plan_item = get_plan_item(current_plan_code) or PLAN_CATALOG[DEFAULT_PLAN_CODE]
-    current_plan_name = current_plan_item.name
+    _plan_i18n_keys = {
+        "starter_99": "starter",
+        "pro_199": "pro",
+        "business_399": "business",
+    }
+    request_lang = resolve_language(request)
+    current_plan_price_label = (
+        f"{current_plan_item.price_display} {translate('billing.price_period_monthly', lang=request_lang)}".strip()
+    )
+    current_plan_i18n_key = _plan_i18n_keys.get(current_plan_item.code, "starter")
+    current_plan_name = translate(
+        f"billing.plan.{current_plan_i18n_key}.name", lang=request_lang
+    )
+    billing_offer_usage = (
+        get_billing_offer_usage_view(db, tenant, lang=request_lang)
+        if tenant is not None
+        else None
+    )
 
     trial_ends_at_display: str | None = None
     if trial_ends_at is not None:
@@ -1637,7 +1651,14 @@ def app_billing(
             "%d-%m-%Y"
         )
 
-    subscription_status_label = _subscription_status_labels.get(
+    subscription_status_label = {
+        "trialing": translate("billing.status.trialing", lang=request_lang),
+        "active": translate("billing.status.active", lang=request_lang),
+        "inactive": translate("billing.status.inactive", lang=request_lang),
+        "past_due": translate("billing.status.past_due", lang=request_lang),
+        "canceled": translate("billing.status.canceled", lang=request_lang),
+        "unpaid": translate("billing.status.unpaid", lang=request_lang),
+    }.get(
         subscription_status,
         subscription_status.replace("_", " ").title(),
     )
@@ -1645,14 +1666,40 @@ def app_billing(
     plans = [
         {
             "code": item.code,
-            "name": item.name,
+            "name": translate(
+                f"billing.plan.{_plan_i18n_keys.get(item.code, 'starter')}.name",
+                lang=request_lang,
+            ),
             "price_display": item.price_display,
-            "price_period": item.price_period,
-            "quote_limit_label": item.quote_limit_label,
-            "features": list(item.ui_features),
-            "tagline": item.tagline_nl,
+            "price_period": translate("billing.price_period_monthly", lang=request_lang),
+            "quote_limit_label": translate(
+                f"billing.plan.{_plan_i18n_keys.get(item.code, 'starter')}.limit_label",
+                lang=request_lang,
+            ),
+            "features": [
+                translate(
+                    f"billing.plan.{_plan_i18n_keys.get(item.code, 'starter')}.features.f1",
+                    lang=request_lang,
+                ),
+                translate(
+                    f"billing.plan.{_plan_i18n_keys.get(item.code, 'starter')}.features.f2",
+                    lang=request_lang,
+                ),
+                translate(
+                    f"billing.plan.{_plan_i18n_keys.get(item.code, 'starter')}.features.f3",
+                    lang=request_lang,
+                ),
+            ],
+            "tagline": translate(
+                f"billing.plan.{_plan_i18n_keys.get(item.code, 'starter')}.subtitle",
+                lang=request_lang,
+            ),
             "is_recommended": item.code == "pro_199",
-            "cta_label": _plan_cta_labels[item.code],
+            "cta_label": {
+                "starter_99": translate("billing.cta.choose_starter", lang=request_lang),
+                "pro_199": translate("billing.cta.choose_pro", lang=request_lang),
+                "business_399": translate("billing.cta.choose_business", lang=request_lang),
+            }[item.code],
         }
         for item in (PLAN_CATALOG[c] for c in CANONICAL_PLAN_CODES)
     ]
@@ -1662,10 +1709,11 @@ def app_billing(
         current_user,
         db,
         {
-            "title": "Abonnement",
+            "title": translate("billing.title", lang=request_lang),
             "plans": plans,
             "current_plan_code": current_plan_code,
             "current_plan_name": current_plan_name,
+            "current_plan_price_label": current_plan_price_label,
             "subscription_status": subscription_status,
             "subscription_status_label": subscription_status_label,
             "trial_ends_at": trial_ends_at,
@@ -1674,6 +1722,7 @@ def app_billing(
             "is_paid_or_trialing": is_paid_or_trialing,
             "billing_status_error": billing_status_error,
             "portal_error_no_customer": portal_error_no_customer,
+            "billing_offer_usage": billing_offer_usage,
             "feature_flags": tenant_feature_flags(tenant),
             "features": tenant_feature_ui(tenant),
         },
@@ -1919,12 +1968,14 @@ def app_lead_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
 ):
+    lang = resolve_language(request)
     lead = (
         db.query(Lead)
         .filter(Lead.id == lead_id, Lead.tenant_id == str(current_user.tenant_id))
         .first()
     )
     if not lead:
+        logger.warning("SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=lead_not_found", lead_id)
         raise HTTPException(status_code=404, detail="Lead not found")
 
     intake_payload_dict = {}
@@ -2144,6 +2195,14 @@ def app_lead_detail(
 
     internal_notes_val = str(overrides.get("internal_notes") or "")
     followup_summary = build_followup_summary(overrides, tz_name)
+    tenant_pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
+    current_wall_rate = tenant_pricing.get("walls_rate_eur_per_sqm")
+    missing_wall_rate = current_wall_rate in (None, "")
+    show_missing_wall_rate_prompt = (
+        missing_wall_rate
+        and (request.query_params.get("missing_wall_rate") or "").strip().lower()
+        in {"1", "true", "yes"}
+    )
 
     context = _dashboard_context(
         request,
@@ -2174,9 +2233,12 @@ def app_lead_detail(
             "effective_total_display": effective_total_display,
             "entitlements": tenant_entitlements(tenant),
             "google_calendar_connected": bool(google_connection),
-            "timeline_rows": timeline_rows_for_lead(lead, tz_name),
+            "timeline_rows": timeline_rows_for_lead(lead, tz_name, lang=lang),
             "internal_notes": internal_notes_val,
             "followup_summary": followup_summary,
+            "current_wall_rate": current_wall_rate,
+            "missing_wall_rate": missing_wall_rate,
+            "show_missing_wall_rate_prompt": show_missing_wall_rate_prompt,
         },
     )
     return templates.TemplateResponse("app/lead_detail.html", context)
@@ -2213,24 +2275,7 @@ def app_lead_estimate(
         f"GET {request.url.path}",
     )
 
-    storage = get_storage()
-
-    # ✅ Redirect to presigned URL (fresh each time)
-    if hasattr(storage, "presigned_get_url"):
-        url = storage.presigned_get_url(
-            tenant_id=str(current_user.tenant_id),
-            key=html_key,
-            expires_seconds=300,
-        )
-        resp = RedirectResponse(url=url, status_code=302)
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-
-    # fallback: public url (if you don't have presign)
-    url = storage.public_url(tenant_id=str(current_user.tenant_id), key=html_key)
-    resp = RedirectResponse(url=url, status_code=302)
-    resp.headers["Cache-Control"] = "no-store"
-    return resp
+    return RedirectResponse(url=f"/app/leads/{lead_id}", status_code=303)
 
 
 @router.post("/leads/{lead_id}/refresh")
@@ -2508,9 +2553,21 @@ def send_estimate(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
 ):
-    logger.warning("SEND_ESTIMATE_HIT lead_id=%s", lead_id)
+    lang = (
+        getattr(current_user, "lang", None)
+        or getattr(current_user, "language", None)
+        or resolve_language(request)
+        or "nl"
+    )
+    logger.info(
+        "SEND_ESTIMATE_ROUTE_HIT lead_id=%s user_id=%s tenant_id=%s",
+        lead_id,
+        str(getattr(current_user, "id", "")),
+        str(getattr(current_user, "tenant_id", "")),
+    )
 
     is_htmx = (request.headers.get("hx-request") or "").lower() == "true"
+    logger.info("SEND_ESTIMATE_REQUEST_MODE lead_id=%s is_htmx=%s", lead_id, is_htmx)
 
     lead = (
         db.query(Lead)
@@ -2519,25 +2576,36 @@ def send_estimate(
     )
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
+    logger.info(
+        "SEND_ESTIMATE_LEAD_FOUND lead_id=%s tenant_id=%s status=%s",
+        lead_id,
+        str(getattr(lead, "tenant_id", "")),
+        str(getattr(lead, "status", "")),
+    )
 
     tenant = db.query(Tenant).filter(Tenant.id == lead.tenant_id).first()
     if not tenant:
+        logger.warning("SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=tenant_not_found", lead_id)
         raise HTTPException(status_code=404, detail="Tenant not found")
+    logger.info("SEND_ESTIMATE_TENANT_FOUND lead_id=%s tenant_id=%s", lead_id, str(lead.tenant_id))
 
-    # Usage context for analytics/logging (no volume-based gating).
+    # Usage context for centralized entitlement + monthly volume gating.
     plan_code = getattr(tenant, "plan_code", None) if tenant is not None else None
     plan_key = plan_code or DEFAULT_PLAN_CODE
+    plan_item = get_plan_item(plan_key)
+    monthly_offer_limit = getattr(plan_item, "monthly_offer_limit", None)
 
     usage = get_or_create_usage(db, str(lead.tenant_id))
 
     logger.info(
         "SEND_ESTIMATE_USAGE_ANALYTICS lead_id=%s tenant_id=%s tenant_plan_code=%s "
-        "plan_key=%s quotes_sent=%s",
+        "plan_key=%s quotes_sent=%s monthly_offer_limit=%s",
         lead.id,
         lead.tenant_id,
         plan_code,
         plan_key,
         getattr(usage, "quotes_sent", None),
+        monthly_offer_limit,
     )
 
     # Centralized entitlement check (subscription + feature + usage/paywall)
@@ -2547,52 +2615,123 @@ def send_estimate(
             self.subscription_status = getattr(tenant_obj, "subscription_status", None)
             self.trial_ends_at = getattr(tenant_obj, "trial_ends_at", None)
             self.quotes_sent = quotes_sent
-            self.monthly_usage_baseline = None
+            self.monthly_usage_baseline = monthly_offer_limit
 
     ctx = _SendQuoteContext(
         tenant_obj=tenant,
         quotes_sent=getattr(usage, "quotes_sent", None),
     )
     ent = check_entitlement(ctx, Action.SEND_QUOTE.value)
+    logger.info(
+        "SEND_ESTIMATE_ENTITLEMENT lead_id=%s allowed=%s reason=%s",
+        lead_id,
+        bool(getattr(ent, "allowed", False)),
+        str(getattr(ent, "reason", "") or ""),
+    )
     if not ent.allowed:
+        lang = resolve_language(request)
         # Preserve existing UX while using centralized reasoning
         if ent.reason == "subscription_inactive":
             if is_htmx:
+                logger.info(
+                    "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=subscription_inactive response=hx_toast",
+                    lead_id,
+                )
                 return _paintly_hx_toast(
                     "error",
-                    "Abonnement",
-                    "Abonnement niet actief. Open facturatie om te upgraden.",
+                    translate("lead_detail.send.subscription_title", lang=lang),
+                    translate("lead_detail.send.subscription_inactive", lang=lang),
                 )
+            logger.info(
+                "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=subscription_inactive response=redirect",
+                lead_id,
+            )
             return RedirectResponse(
                 url="/app/billing?send_error=billing_status",
+                status_code=303,
+            )
+        if ent.reason == "monthly_offer_limit_reached":
+            limit = int(ent.usage_limit or monthly_offer_limit or 25)
+            msg = translate("errors.offer_limit_message", lang=lang, limit=limit)
+            if is_htmx:
+                logger.info(
+                    "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=monthly_offer_limit_reached response=hx_toast",
+                    lead_id,
+                )
+                return _paintly_hx_toast(
+                    "error",
+                    translate("errors.offer_limit_title", lang=lang),
+                    msg,
+                )
+            accepts_json = "application/json" in (
+                request.headers.get("accept", "").lower()
+            )
+            if accepts_json:
+                logger.info(
+                    "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=monthly_offer_limit_reached response=http_403_json",
+                    lead_id,
+                )
+                raise HTTPException(status_code=403, detail=msg)
+            logger.info(
+                "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=monthly_offer_limit_reached response=redirect",
+                lead_id,
+            )
+            return RedirectResponse(
+                url=f"/app/leads/{lead_id}?send_error=offer_limit",
                 status_code=303,
             )
 
         upgrade_url = ent.upgrade_url or f"/app/billing?upgrade=1&feature={Feature.BASIC_SENDING.value}"
         if is_htmx:
+            logger.info(
+                "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=entitlement_denied response=hx_toast",
+                lead_id,
+            )
             return _paintly_hx_toast(
                 "error",
-                "Niet toegestaan",
-                "Versturen is met dit abonnement niet mogelijk.",
+                translate("lead_detail.send.not_allowed_title", lang=lang),
+                translate("lead_detail.send.not_allowed_message", lang=lang),
             )
+        logger.info(
+            "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=entitlement_denied response=redirect",
+            lead_id,
+        )
         return RedirectResponse(url=upgrade_url, status_code=303)
 
-    if not lead.estimate_html_key:
+    has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
+    logger.info(
+        "SEND_ESTIMATE_ARTIFACT_CHECK lead_id=%s has_estimate_html=%s",
+        lead_id,
+        has_estimate_html,
+    )
+    if not has_estimate_html:
         # Geen offerte beschikbaar om te versturen -> nette melding op lead detail
         if is_htmx:
+            logger.info(
+                "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=no_estimate_html response=hx_toast",
+                lead_id,
+            )
             return _paintly_hx_toast(
                 "error",
-                "Geen offerte",
-                "Genereer eerst een offerte voordat je deze verstuurt.",
+                translate("lead_detail.send.no_quote_title", lang=lang),
+                translate("lead_detail.send.no_quote_message", lang=lang),
             )
+        logger.info(
+            "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=no_estimate_html response=redirect",
+            lead_id,
+        )
         return RedirectResponse(
             url=f"/app/leads/{lead_id}?send_error=no_estimate",
             status_code=303,
         )
 
     # ensure public token
-    if not lead.public_token:
+    had_public_token = bool((getattr(lead, "public_token", None) or "").strip())
+    if not had_public_token:
         lead.public_token = secrets.token_hex(16)
+        logger.info("SEND_ESTIMATE_PUBLIC_TOKEN_GENERATED lead_id=%s", lead_id)
+    else:
+        logger.info("SEND_ESTIMATE_PUBLIC_TOKEN_EXISTS lead_id=%s", lead_id)
 
     # build public quote url
     base = (settings.APP_PUBLIC_BASE_URL or str(request.base_url)).rstrip("/")
@@ -2600,14 +2739,23 @@ def send_estimate(
 
     # must have email
     to_email = (getattr(lead, "email", "") or "").strip()
+    logger.info("SEND_ESTIMATE_RECIPIENT_CHECK lead_id=%s has_recipient=%s", lead_id, bool(to_email))
     if not to_email:
         # Geen klant e-mail -> nette melding op lead detail
         if is_htmx:
+            logger.info(
+                "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=no_recipient_email response=hx_toast",
+                lead_id,
+            )
             return _paintly_hx_toast(
                 "error",
-                "Geen e-mail",
-                "Vul eerst een klant-e-mailadres in.",
+                translate("lead_detail.send.no_email_title", lang=lang),
+                translate("lead_detail.send.no_email_message", lang=lang),
             )
+        logger.info(
+            "SEND_ESTIMATE_EARLY_RETURN lead_id=%s reason=no_recipient_email response=redirect",
+            lead_id,
+        )
         return RedirectResponse(
             url=f"/app/leads/{lead_id}?send_error=no_email",
             status_code=303,
@@ -2627,7 +2775,27 @@ def send_estimate(
             tenant_id=str(lead.tenant_id),
         )
 
-    background_tasks.add_task(_send)
+    try:
+        asyncio.run(_send())
+    except EmailSendError:
+        logger.exception("SEND_ESTIMATE_EMAIL_SEND_FAILED lead_id=%s", lead_id)
+        if is_htmx:
+            return _paintly_hx_toast(
+                "error",
+                translate("lead_detail.send.not_allowed_title", lang=lang),
+                "Kon offerte niet verzenden. Probeer het opnieuw.",
+            )
+        return RedirectResponse(url=f"/app/leads/{lead_id}?send_error=1", status_code=303)
+    except Exception:
+        logger.exception("SEND_ESTIMATE_UNEXPECTED_SEND_EXCEPTION lead_id=%s", lead_id)
+        if is_htmx:
+            return _paintly_hx_toast(
+                "error",
+                translate("lead_detail.send.not_allowed_title", lang=lang),
+                "Kon offerte niet verzenden. Probeer het opnieuw.",
+            )
+        return RedirectResponse(url=f"/app/leads/{lead_id}?send_error=1", status_code=303)
+    logger.info("SEND_ESTIMATE_BACKGROUND_TASK_SCHEDULED lead_id=%s to=%s", lead_id, to_email)
 
     # Increment usage only after a successful send has been scheduled
     increment_usage(db, str(lead.tenant_id))
@@ -2648,10 +2816,11 @@ def send_estimate(
             db,
             current_user,
             lead_id,
-            toast_title="Offerte verzonden",
-            toast_message="De klant ontvangt de e-mail binnenkort.",
+            toast_title=translate("lead_detail.send.toast_sent_title", lang=lang),
+            toast_message=translate("lead_detail.send.toast_sent_message", lang=lang),
         )
         resp.background = background_tasks
+        logger.info("SEND_ESTIMATE_RESPONSE lead_id=%s response=htmx_oob", lead_id)
         return resp
 
     response = RedirectResponse(
@@ -2659,6 +2828,7 @@ def send_estimate(
         status_code=303,
     )
     response.background = background_tasks
+    logger.info("SEND_ESTIMATE_RESPONSE lead_id=%s response=redirect", lead_id)
     return response
 
 
@@ -3434,6 +3604,19 @@ def app_review_detail(
     except Exception:
         intake = {}
 
+    tenant = (
+        db.query(Tenant)
+        .filter(Tenant.id == str(current_user.tenant_id))
+        .first()
+    )
+    tenant_pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
+    current_wall_rate = tenant_pricing.get("walls_rate_eur_per_sqm")
+    missing_wall_rate = current_wall_rate in (None, "")
+    has_missing_wall_rate_reason = "missing_wall_rate" in reasons
+    show_missing_wall_rate_prompt = missing_wall_rate or has_missing_wall_rate_reason
+    if (request.query_params.get("missing_wall_rate") or "").strip().lower() in {"1", "true", "yes"}:
+        show_missing_wall_rate_prompt = True
+
     context = _dashboard_context(
         request,
         current_user,
@@ -3446,6 +3629,9 @@ def app_review_detail(
             "can_preview": can_preview,
             "estimate_preview_url": estimate_preview_url,
             "intake": intake,
+            "current_wall_rate": current_wall_rate,
+            "missing_wall_rate": missing_wall_rate,
+            "show_missing_wall_rate_prompt": show_missing_wall_rate_prompt,
         },
     )
     return templates.TemplateResponse("app/review_detail.html", context)

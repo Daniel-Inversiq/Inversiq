@@ -1,7 +1,7 @@
 <div class="rounded-md border border-slate-200/60 bg-slate-50/15 px-2.5 py-2">
   <div class="mb-1 flex items-center justify-between gap-2">
-    <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Historie</h3>
-    <span class="text-[10px] text-slate-400">Logboek</span>
+    <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{{ t('lead_detail.timeline.title') }}</h3>
+    <span class="text-[10px] text-slate-400">{{ t('lead_detail.timeline.subtitle') }}</span>
   </div>
   <ol class="max-h-36 space-y-1.5 overflow-y-auto pr-1">
     {% for row in timeline_rows %}
@@ -21,7 +21,7 @@
         </div>
       </li>
     {% else %}
-      <li class="text-xs text-slate-500">Nog geen regels in het logboek.</li>
+      <li class="text-xs text-slate-500">{{ t('lead_detail.timeline.empty') }}</li>
     {% endfor %}
   </ol>
 </div>

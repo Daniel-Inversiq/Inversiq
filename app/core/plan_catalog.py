@@ -28,6 +28,7 @@ class PlanCatalogItem:
     price_display: str
     price_period: str
     quote_limit_label: str
+    monthly_offer_limit: int | None
     tagline_nl: str
     ui_features: tuple[str, ...]
     entitlement_features: frozenset[str]
@@ -40,12 +41,13 @@ PLAN_CATALOG: dict[str, PlanCatalogItem] = {
         name="Starter",
         price_display="€99",
         price_period="per maand",
-        quote_limit_label="Onbeperkt offertes inbegrepen",
+        quote_limit_label="Tot 25 offertes per maand",
+        monthly_offer_limit=25,
         tagline_nl="Voor zelfstandige schilders die snel professioneel willen starten.",
         ui_features=(
-            "Onbeperkt offertes versturen",
             "Basis offertegeneratie voor dagelijkse aanvragen",
             "Duidelijke offertes waarmee je sneller kunt opvolgen",
+            "Ideaal voor kleinere volumes",
         ),
         entitlement_features=frozenset(
             {
@@ -59,10 +61,11 @@ PLAN_CATALOG: dict[str, PlanCatalogItem] = {
         name="Pro",
         price_display="€199",
         price_period="per maand",
-        quote_limit_label="Onbeperkt offertes inbegrepen",
+        quote_limit_label="Onbeperkt offertes",
+        monthly_offer_limit=None,
         tagline_nl="Voor groeiende teams die meer conversie en minder handwerk willen.",
         ui_features=(
-            "Onbeperkt offertes versturen",
+            "Alles uit Starter",
             "Branding, professionele lay-out en slimme prijsvoorstellen",
             "Notificaties en planning met kalender voor strakke opvolging",
         ),
@@ -84,11 +87,12 @@ PLAN_CATALOG: dict[str, PlanCatalogItem] = {
         name="Business",
         price_display="€399",
         price_period="per maand",
-        quote_limit_label="Onbeperkt offertes inbegrepen",
+        quote_limit_label="Onbeperkt offertes",
+        monthly_offer_limit=None,
         tagline_nl="Voor teams die maximaal willen schalen met minimale operationele frictie.",
         ui_features=(
             "Alles van Pro, inclusief white-label ervaring",
-            "Automatisering en prioriteitsverwerking voor snellere doorlooptijd",
+            "Automatisering en prioriteitsverwerking",
             "Prioritaire ondersteuning voor je team",
         ),
         entitlement_features=frozenset(

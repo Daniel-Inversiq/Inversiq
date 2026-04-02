@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from app.services.email_service import send_email, EmailSendError
 from app.verticals.paintly.email_render import render_estimate_ready_email
+
+logger = logging.getLogger(__name__)
 
 
 async def send_estimate_ready_email_to_customer(
@@ -37,6 +40,13 @@ async def send_estimate_ready_email_to_customer(
     if tenant_id is not None:
         metadata["tenant_id"] = str(tenant_id)
 
+    logger.info(
+        "ESTIMATE_READY_PROVIDER_SEND_START lead_id=%s tenant_id=%s to=%s quote_url=%s",
+        str(lead_id) if lead_id is not None else "",
+        str(tenant_id) if tenant_id is not None else "",
+        to_email,
+        quote_url,
+    )
     try:
         await send_email(
             to=to_email,
@@ -46,7 +56,19 @@ async def send_estimate_ready_email_to_customer(
             tag="customer-estimate-ready",
             metadata=metadata,
         )
-    except EmailSendError:
-        # Swallow provider-level errors so they don't break the main request flow
-        return
+        logger.info(
+            "ESTIMATE_READY_PROVIDER_SUCCESS lead_id=%s tenant_id=%s to=%s",
+            str(lead_id) if lead_id is not None else "",
+            str(tenant_id) if tenant_id is not None else "",
+            to_email,
+        )
+    except EmailSendError as exc:
+        logger.exception(
+            "ESTIMATE_READY_PROVIDER_FAILURE lead_id=%s tenant_id=%s to=%s error=%s",
+            str(lead_id) if lead_id is not None else "",
+            str(tenant_id) if tenant_id is not None else "",
+            to_email,
+            str(exc),
+        )
+        raise
 

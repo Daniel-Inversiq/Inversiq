@@ -295,6 +295,14 @@
         }
       } catch (e) { /* ignore */ }
     });
+
+    document.addEventListener('htmx:responseError', function () {
+      window.paintlyToast({ level: 'error', title: 'Fout', message: 'Actie mislukt. Probeer opnieuw.' });
+    });
+
+    document.addEventListener('htmx:sendError', function () {
+      window.paintlyToast({ level: 'error', title: 'Netwerkfout', message: 'Verbinding mislukt. Probeer opnieuw.' });
+    });
   </script>
 </body>
 </html>

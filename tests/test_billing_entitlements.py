@@ -35,33 +35,64 @@ def test_send_quote_allowed_for_all_tiers_when_subscription_active(plan_code: st
     assert res.feature == Feature.BASIC_SENDING.value
 
 
-@pytest.mark.parametrize(
-    "plan_code, quotes_sent, monthly_usage_baseline",
-    [
-        ("starter_99", 10, 10),
-        ("pro_199", 10, 10),
-        ("business_399", 10, 10),
-        ("starter_99", 25, 10),
-        ("pro_199", 25, 10),
-        ("business_399", 25, 10),
-    ],
-)
-def test_send_quote_not_blocked_by_usage_across_tiers(
-    plan_code: str, quotes_sent: int, monthly_usage_baseline: int
-) -> None:
+def test_send_quote_starter_under_limit_allowed() -> None:
     tenant = TenantStub(
-        plan_code=plan_code,
+        plan_code="starter_99",
         subscription_status="active",
-        quotes_sent=quotes_sent,
-        monthly_usage_baseline=monthly_usage_baseline,
+        quotes_sent=24,
+        monthly_usage_baseline=None,
     )
 
     res = check_entitlement(tenant, Action.SEND_QUOTE.value)
     assert res.allowed is True
     assert res.reason is None
-    # Usage counters are still surfaced for analytics / monitoring.
-    assert res.usage_limit == monthly_usage_baseline
-    assert res.usage_current == quotes_sent
+    assert res.usage_limit == 25
+    assert res.usage_current == 24
+
+
+def test_send_quote_starter_at_limit_denied() -> None:
+    tenant = TenantStub(
+        plan_code="starter_99",
+        subscription_status="active",
+        quotes_sent=25,
+        monthly_usage_baseline=None,
+    )
+
+    res = check_entitlement(tenant, Action.SEND_QUOTE.value)
+    assert res.allowed is False
+    assert res.reason == "monthly_offer_limit_reached"
+    assert res.usage_limit == 25
+    assert res.usage_current == 25
+
+
+def test_send_quote_pro_unlimited_allowed() -> None:
+    tenant = TenantStub(
+        plan_code="pro_199",
+        subscription_status="active",
+        quotes_sent=999,
+        monthly_usage_baseline=None,
+    )
+
+    res = check_entitlement(tenant, Action.SEND_QUOTE.value)
+    assert res.allowed is True
+    assert res.reason is None
+    assert res.usage_limit is None
+    assert res.usage_current == 999
+
+
+def test_send_quote_business_unlimited_allowed() -> None:
+    tenant = TenantStub(
+        plan_code="business_399",
+        subscription_status="active",
+        quotes_sent=999,
+        monthly_usage_baseline=None,
+    )
+
+    res = check_entitlement(tenant, Action.SEND_QUOTE.value)
+    assert res.allowed is True
+    assert res.reason is None
+    assert res.usage_limit is None
+    assert res.usage_current == 999
 
 
 @pytest.mark.parametrize(
@@ -81,24 +112,8 @@ def test_send_quote_denied_for_inactive_subscription(subscription_status: str | 
     assert res.reason == "subscription_inactive"
 
 
-def test_send_quote_allowed_when_usage_limit_reached_but_ignored() -> None:
-    tenant = TenantStub(
-        plan_code="pro_199",
-        subscription_status="active",
-        quotes_sent=10,
-        monthly_usage_baseline=10,
-    )
-
-    res = check_entitlement(tenant, Action.SEND_QUOTE.value)
-    # Usage counters are still captured, but monthly offer caps are no longer enforced.
-    assert res.allowed is True
-    assert res.reason is None
-    assert res.usage_limit == 10
-    assert res.usage_current == 10
-
-
 @pytest.mark.parametrize("plan_code", [None, "", "unknown_plan"])
-def test_send_quote_denied_for_unknown_or_none_plan(plan_code: str | None) -> None:
+def test_send_quote_defaults_to_starter_for_missing_or_unknown_plan(plan_code: str | None) -> None:
     tenant = TenantStub(
         plan_code=plan_code,
         subscription_status="active",
@@ -107,9 +122,9 @@ def test_send_quote_denied_for_unknown_or_none_plan(plan_code: str | None) -> No
     )
 
     res = check_entitlement(tenant, Action.SEND_QUOTE.value)
-    assert res.allowed is False
-    assert res.reason == "feature_not_in_plan"
-    assert res.feature == Feature.BASIC_SENDING.value
+    assert res.allowed is True
+    assert res.reason is None
+    assert res.usage_limit == 10
 
 
 @pytest.mark.parametrize(

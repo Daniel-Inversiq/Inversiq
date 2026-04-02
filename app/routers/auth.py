@@ -25,6 +25,7 @@ from app.services.password_reset_service import (
     create_password_reset_token,
     validate_password_reset_token,
 )
+from app.i18n.service import setup_jinja_i18n
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ TEMPLATES_DIR = (
     Path(__file__).resolve().parents[1] / "verticals" / "paintly" / "templates"
 )
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+setup_jinja_i18n(templates)
 
 
 def slugify(value: str) -> str:
@@ -161,15 +163,15 @@ def login_form(
 @router.post("/register")
 def register_form(
     background_tasks: BackgroundTasks,
-    company_name: str = Form(...),
+    company_name: str | None = Form(default=None),
     email: str = Form(...),
     phone: str | None = Form(default=None),
-    walls_rate_eur_per_sqm: float = Form(...),
+    walls_rate_eur_per_sqm: float | None = Form(default=None),
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
     logger.info("AUTH_REGISTER_FORM_HIT email=%s company_name=%s", email, company_name)
-    company_name_clean = company_name.strip()
+    company_name_clean = (company_name or "").strip() or "Mijn schildersbedrijf"
     email_norm = email.lower().strip()
     phone_clean = phone.strip() if phone else None
 
@@ -199,9 +201,11 @@ def register_form(
         plan_code="pro_199",
         subscription_status="trialing",
         trial_ends_at=trial_end,
-        pricing_json={
-            "walls_rate_eur_per_sqm": float(walls_rate_eur_per_sqm),
-        },
+        pricing_json=(
+            {"walls_rate_eur_per_sqm": float(walls_rate_eur_per_sqm)}
+            if walls_rate_eur_per_sqm is not None
+            else {}
+        ),
     )
 
     user = User(
@@ -228,7 +232,7 @@ def register_form(
         email=user.email,
     )
 
-    resp = RedirectResponse(url="/app/leads", status_code=303)
+    resp = RedirectResponse(url="/onboarding/link", status_code=303)
     resp.set_cookie(
         key="access_token",
         value=token,

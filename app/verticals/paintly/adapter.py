@@ -17,8 +17,10 @@ from app.tasks.vision_task import run_vision_for_lead
 from app.services.lead_training_service import capture_ml_data
 from aether.engine.facade import compute_quote_for_lead_v15
 from app.verticals.paintly.eu_config import resolve_eu_config
+from app.i18n.service import setup_jinja_i18n
 
 paintly_templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+setup_jinja_i18n(paintly_templates)
 logger = logging.getLogger(__name__)
 
 

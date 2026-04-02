@@ -1,11 +1,11 @@
 {% set q = quote_ui or {} %}
 {% set qs = q.quote_status or 'none' %}
 {% set quote_labels = {
-  'none': 'Nog niet opgesteld',
-  'generated': 'Klaar om te verzenden',
-  'review': 'Controle nodig',
-  'sent': 'Verzonden naar klant',
-  'accepted': 'Geaccepteerd'
+  'none': t('lead_detail.quote_status.none'),
+  'generated': t('lead_detail.quote_status.generated'),
+  'review': t('lead_detail.quote_status.review'),
+  'sent': t('lead_detail.quote_status.sent'),
+  'accepted': t('lead_detail.quote_status.accepted')
 } %}
 {% if qs == 'accepted' %}
   {% set qbadge = 'bg-emerald-50 text-emerald-700' %}
@@ -25,21 +25,21 @@
 
 <div class="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2.5">
   <div class="flex flex-wrap items-center gap-2.5">
-    <span class="text-[11px] font-medium text-slate-500">Offerte</span>
+    <span class="text-[11px] font-medium text-slate-500">{{ t('lead_detail.meta_label') }}</span>
     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ qbadge }}">
-      {{ quote_labels.get(qs, 'Nog niet opgesteld') }}
+      {{ quote_labels.get(qs, t('lead_detail.quote_status.none')) }}
     </span>
     <span class="text-slate-300">•</span>
-    <span class="text-[11px] font-medium text-slate-500">Aanvraag</span>
+    <span class="text-[11px] font-medium text-slate-500">{{ t('lead_detail.badges.request') }}</span>
     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ lead_badge }}">
-      {{ status_labels.get(st, 'Nieuw') }}
+      {{ status_labels.get(st, t('lead_detail.status.new')) }}
     </span>
   </div>
 </div>
 
 {% if sent_display %}
   <div class="mt-2.5 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 text-xs text-slate-600">
-    <span class="text-[11px] font-medium text-slate-500">Laatst verzonden</span>
+    <span class="text-[11px] font-medium text-slate-500">{{ t('lead_detail.badges.last_sent') }}</span>
     <span class="mt-0.5 block font-medium text-slate-800">{{ sent_display }} <span class="font-normal text-slate-500">({{ tz_name }})</span></span>
   </div>
 {% endif %}
