@@ -38,13 +38,24 @@
       </div>
 
       {% if tenant and tenant.slug %}
-        <a
-          href="/intake/{{ tenant.slug }}"
-          class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white transition hover:bg-slate-800"
-        >
-          Nieuwe offerte
-        </a>
-      {% endif %}
+  <a
+    href="/intake/{{ tenant.slug }}"
+    class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 text-xs font-semibold text-white shadow-[0_8px_20px_rgba(59,130,246,0.25)] transition hover:opacity-95"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      class="h-4 w-4 shrink-0"
+      aria-hidden="true"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+    </svg>
+    <span>Nieuwe offerte</span>
+  </a>
+{% endif %}
     </div>
   </section>
 
