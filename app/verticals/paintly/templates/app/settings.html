@@ -1,14 +1,14 @@
 {% extends "app/layout.html" %}
 {% block content %}
 
-<div class="mx-auto max-w-2xl space-y-6">
-  <div class="rounded-[28px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
+<div class="mx-auto max-w-2xl space-y-8">
+  <div class="rounded-[28px] border border-slate-200/60 bg-gradient-to-b from-white to-sky-50/40 px-6 py-5 shadow-sm">
     <div class="text-sm text-slate-400">Instellingen</div>
     <h1 class="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Instellingen</h1>
   </div>
 
   {% if saved in ["1", "account", "pricing", "integrations"] %}
-    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-700 shadow-sm">
       {% if saved == "account" %}
         Account opgeslagen.
       {% elif saved == "pricing" %}
@@ -21,15 +21,15 @@
     </div>
   {% endif %}
 
-  <form method="post" action="/app/settings" enctype="multipart/form-data" class="rounded-[24px] border border-slate-200/70 bg-white p-6 shadow-sm">
+  <form method="post" action="/app/settings" enctype="multipart/form-data" class="rounded-[24px] border border-slate-200/60 bg-white/90 backdrop-blur p-6 shadow-sm space-y-6">
     <input type="hidden" name="section" value="account" />
-    <div class="space-y-8">
+    <div class="space-y-6">
       <h2 class="text-base font-semibold text-slate-900">Account</h2>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Bedrijfsnaam</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-600">Bedrijfsnaam</label>
         <input
-          class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          class="h-10 w-full rounded-xl border border-slate-200/70 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           name="company_name"
           type="text"
           value="{{ company_name or account_name }}"
@@ -37,7 +37,7 @@
       </div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Logo</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-600">Logo</label>
         {% set existing_logo_url = (user.logo_url if user and user.logo_url else "") %}
         <div class="mb-2 {% if not existing_logo_url %}hidden{% endif %}" id="logo-preview-wrap">
           <img
@@ -48,7 +48,7 @@
           />
         </div>
         <input
-          class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          class="h-10 w-full rounded-xl border border-slate-200/70 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           id="logo-file-input"
           name="logo_file"
           type="file"
@@ -57,9 +57,9 @@
       </div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-600">Email</label>
         <input
-          class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+          class="h-10 w-full rounded-xl border border-slate-200/70 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           name="account_email"
           type="email"
           value="{{ account_email }}"
@@ -70,33 +70,33 @@
     <div class="mt-6 flex justify-end gap-2">
       <a
         href="/auth/login"
-        class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+        class="inline-flex h-10 items-center justify-center rounded-xl border border-sky-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-sky-50 hover:text-slate-900"
       >
         Wachtwoord wijzigen
       </a>
       <button
         type="submit"
-        class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
+        class="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 px-4 text-sm font-medium text-white shadow-sm transition hover:from-sky-600 hover:to-blue-600"
       >
         Opslaan account
       </button>
     </div>
   </form>
 
-  <form method="post" action="/app/settings" class="rounded-[24px] border border-slate-200/70 bg-white p-6 shadow-sm">
+  <form method="post" action="/app/settings" class="rounded-[24px] border border-slate-200/60 bg-white/90 backdrop-blur p-6 shadow-sm space-y-6">
     <input type="hidden" name="section" value="pricing" />
-    <div class="space-y-8">
+    <div class="space-y-6">
       <h2 class="text-base font-semibold text-slate-900">Prijzen</h2>
-      <p class="-mt-4 text-sm text-slate-500">
+      <p class="-mt-2 text-sm text-slate-500">
         Deze instellingen worden gebruikt voor het automatisch berekenen van offertes.
       </p>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Prijs per m²</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-600">Prijs per m²</label>
         <div class="relative">
           <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">€</span>
           <input
-            class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            class="h-10 w-full rounded-xl border border-slate-200/70 bg-white pl-8 pr-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             name="price_per_m2"
             type="text"
             value="{{ price_per_m2 }}"
@@ -106,11 +106,11 @@
       </div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Minimum prijs</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-600">Minimum prijs</label>
         <div class="relative">
           <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">€</span>
           <input
-            class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            class="h-10 w-full rounded-xl border border-slate-200/70 bg-white pl-8 pr-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             name="minimum_price"
             type="text"
             value="{{ minimum_price }}"
@@ -120,11 +120,11 @@
       </div>
 
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-slate-700">Voorrijkosten</label>
+        <label class="mb-1.5 block text-sm font-medium text-slate-600">Voorrijkosten</label>
         <div class="relative">
           <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">€</span>
           <input
-            class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            class="h-10 w-full rounded-xl border border-slate-200/70 bg-white pl-8 pr-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             name="travel_cost"
             type="text"
             value="{{ travel_cost }}"
@@ -137,16 +137,16 @@
     <div class="mt-6 flex justify-end">
       <button
         type="submit"
-        class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
+        class="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 px-4 text-sm font-medium text-white shadow-sm transition hover:from-sky-600 hover:to-blue-600"
       >
         Opslaan prijzen
       </button>
     </div>
   </form>
 
-  <div class="rounded-[24px] border border-slate-200/70 bg-white p-6 shadow-sm space-y-4">
+  <div class="rounded-[24px] border border-slate-200/60 bg-white/90 backdrop-blur p-6 shadow-sm space-y-4">
     <h2 class="text-base font-semibold text-slate-900">Integraties</h2>
-    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+    <div class="rounded-xl border border-slate-200/70 bg-sky-50/40 px-4 py-3">
       <div class="flex items-center justify-between gap-4">
         <div>
           <div class="text-sm font-medium text-slate-900">Google Calendar</div>
@@ -169,7 +169,7 @@
         {% else %}
           <a
             href="/integrations/google-calendar/connect"
-            class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-500 px-3 text-xs font-medium text-white transition hover:bg-sky-600"
+            class="inline-flex h-9 items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 px-3 text-xs font-medium text-white transition hover:from-sky-600 hover:to-blue-600"
           >
             Verbind Google Calendar
           </a>

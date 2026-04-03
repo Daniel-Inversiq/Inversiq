@@ -1,25 +1,25 @@
 {% extends "app/layout.html" %}
 {% block content %}
 
-<div class="flex min-h-[80vh] items-center justify-center px-4 py-12">
+<div class="flex min-h-[80vh] items-center justify-center bg-gradient-to-b from-sky-50 via-white to-white px-4 py-12">
   <div class="w-full max-w-md">
 
     <!-- Logo / brand -->
-    <div class="mb-8 text-center">
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm">
+    <div class="mb-10 text-center">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-sm">
         <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
         </svg>
       </div>
-      <div class="mt-4">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Paintly</p>
+      <div class="mt-5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-600">Paintly</p>
         <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Account aanmaken</h1>
         <p class="mt-1.5 text-sm text-slate-500">Ontvang sneller klantaanvragen via je intake link</p>
       </div>
     </div>
 
     <!-- Card -->
-    <div class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-hidden rounded-[28px] border border-slate-200/60 bg-white/90 backdrop-blur shadow-sm">
       <div class="px-8 py-8">
         <form method="post" action="/auth/register" class="space-y-5">
 
@@ -39,7 +39,7 @@
                 name="company_name"
                 type="text"
                 placeholder="Bijv. Jansen Schilderwerken (optioneel)"
-                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               >
             </div>
           </div>
@@ -61,7 +61,7 @@
                 type="email"
                 required
                 placeholder="jij@bedrijf.nl"
-                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               >
             </div>
           </div>
@@ -82,7 +82,7 @@
                 name="phone"
                 type="text"
                 placeholder="+31 6 12345678"
-                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               >
             </div>
           </div>
@@ -103,7 +103,7 @@
                 step="0.01"
                 min="0.01"
                 placeholder="40 (optioneel)"
-                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               >
             </div>
           </div>
@@ -125,7 +125,7 @@
                 type="password"
                 required
                 placeholder="••••••••"
-                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               >
             </div>
             <p class="mt-1.5 text-xs text-slate-500">Moet minimaal 8 tekens bevatten</p>
@@ -134,7 +134,7 @@
           <!-- Submit -->
           <button
             type="submit"
-            class="h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+            class="h-11 w-full rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:from-sky-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2"
           >
             Account aanmaken
           </button>
@@ -153,7 +153,7 @@
         <!-- Login Link -->
         <p class="text-center text-sm text-slate-600">
           Heb je al een account?
-          <a href="/auth/login" class="font-semibold text-slate-900 transition hover:text-slate-700">
+          <a href="/auth/login" class="font-semibold text-sky-600 transition hover:text-sky-700">
             Log in
           </a>
         </p>

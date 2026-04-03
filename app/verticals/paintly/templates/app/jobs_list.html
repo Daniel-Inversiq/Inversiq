@@ -1,20 +1,22 @@
 {% extends "app/layout.html" %}
 {% block content %}
 
-<div class="space-y-6">
+<div class="space-y-5">
 
   <!-- Header -->
-  <div class="rounded-[28px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
+  <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-sm lg:px-6 lg:py-4">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div>
-        <div class="text-sm text-slate-400">Klussen</div>
-        <h1 class="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Klusoverzicht</h1>
-        <div class="mt-2 text-sm text-slate-500">Planning en overzicht van alle klusstatussen</div>
+        <div class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Klussen
+        </div>
+        <h1 class="mt-2 text-[26px] font-semibold tracking-tight text-slate-900">Klusoverzicht</h1>
+        <div class="mt-1.5 text-sm text-slate-500">Planning en overzicht van alle klusstatussen</div>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
         <a
-          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
           href="/app/calendar"
         >
           <svg class="mr-2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +26,7 @@
         </a>
 
         <a
-          class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
+          class="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
           href="/app/leads"
         >
           <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,19 +39,19 @@
   </div>
 
   <!-- Filters -->
-  <div class="rounded-[26px] border border-slate-200/70 bg-white p-4 shadow-sm">
+  <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
     <div class="flex flex-wrap gap-2">
       {% set total_count = counts["CANCELLED"] + counts["DONE"] + counts["IN_PROGRESS"] + counts["NEW"] + counts["SCHEDULED"] %}
 
       <a href="/app/jobs"
-         class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition
+         class="inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition
           {% if not active_status %}
-            bg-slate-900 text-white
+            bg-slate-900 text-white shadow-sm
           {% else %}
-            bg-slate-100 text-slate-700 hover:bg-slate-200/70
+            bg-slate-100 text-slate-700 hover:bg-slate-200
           {% endif %}">
         Alles
-        <span class="ml-2 rounded-full px-2 py-0.5 text-xs {% if not active_status %}bg-white/20 text-white{% else %}bg-white text-slate-600{% endif %}">
+        <span class="ml-2 rounded-full px-2 py-0.5 text-xs {% if not active_status %}bg-white/20 text-white{% else %}bg-white text-slate-600 border border-slate-200{% endif %}">
           {{ total_count }}
         </span>
       </a>
@@ -71,15 +73,15 @@
         } %}
 
         <a href="/app/jobs?status={{ s }}"
-           class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition
+           class="inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition
             {% if active_status == s %}
-              bg-slate-900 text-white
+              bg-slate-900 text-white shadow-sm
             {% else %}
-              bg-slate-100 text-slate-700 hover:bg-slate-200/70
+              bg-slate-100 text-slate-700 hover:bg-slate-200
             {% endif %}">
           <span class="mr-2 h-2 w-2 rounded-full {{ status_dots[s] }}"></span>
           {{ status_labels[s] }}
-          <span class="ml-2 rounded-full px-2 py-0.5 text-xs {% if active_status == s %}bg-white/20 text-white{% else %}bg-white text-slate-600{% endif %}">
+          <span class="ml-2 rounded-full px-2 py-0.5 text-xs {% if active_status == s %}bg-white/20 text-white{% else %}bg-white text-slate-600 border border-slate-200{% endif %}">
             {{ counts[s] }}
           </span>
         </a>
@@ -88,8 +90,8 @@
   </div>
 
   <!-- Table card -->
-  <div class="overflow-hidden rounded-[26px] border border-slate-200/70 bg-white shadow-sm">
-    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+  <div class="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,12 +108,12 @@
     <div class="overflow-x-auto">
       <table class="min-w-full">
         <thead>
-          <tr class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400">
-            <th class="px-5 py-4 text-left font-medium">Klus</th>
-            <th class="px-5 py-4 text-left font-medium">Status</th>
-            <th class="px-5 py-4 text-left font-medium">Klant</th>
-            <th class="px-5 py-4 text-left font-medium">Wanneer</th>
-            <th class="px-5 py-4 text-right font-medium">Actie</th>
+          <tr class="border-b border-slate-200 text-xs uppercase tracking-[0.14em] text-slate-400">
+            <th class="px-5 py-4 text-left font-semibold">Klus</th>
+            <th class="px-5 py-4 text-left font-semibold">Status</th>
+            <th class="px-5 py-4 text-left font-semibold">Klant</th>
+            <th class="px-5 py-4 text-left font-semibold">Wanneer</th>
+            <th class="px-5 py-4 text-right font-semibold">Actie</th>
           </tr>
         </thead>
 
@@ -127,21 +129,21 @@
             } %}
 
             {% if st == 'DONE' %}
-              {% set badge_color = 'bg-emerald-50 text-emerald-600' %}
+              {% set badge_color = 'border border-emerald-200 bg-emerald-50 text-emerald-600' %}
             {% elif st == 'IN_PROGRESS' %}
-              {% set badge_color = 'bg-violet-50 text-violet-600' %}
+              {% set badge_color = 'border border-violet-200 bg-violet-50 text-violet-600' %}
             {% elif st == 'SCHEDULED' %}
-              {% set badge_color = 'bg-sky-50 text-sky-600' %}
+              {% set badge_color = 'border border-sky-200 bg-sky-50 text-sky-600' %}
             {% elif st == 'CANCELLED' %}
-              {% set badge_color = 'bg-rose-50 text-rose-600' %}
+              {% set badge_color = 'border border-rose-200 bg-rose-50 text-rose-600' %}
             {% else %}
-              {% set badge_color = 'bg-amber-50 text-amber-600' %}
+              {% set badge_color = 'border border-amber-200 bg-amber-50 text-amber-600' %}
             {% endif %}
 
-            <tr class="border-b border-slate-100 last:border-0 transition hover:bg-slate-50/70">
+            <tr class="border-b border-slate-200 last:border-0 transition hover:bg-slate-50">
               <!-- Job -->
               <td class="px-5 py-4 align-top">
-                <a href="/app/jobs/{{ j.id }}" class="font-medium text-slate-800 transition hover:text-sky-600">
+                <a href="/app/jobs/{{ j.id }}" class="font-semibold text-slate-800 transition hover:text-slate-900">
                   #{{ j.id }}
                 </a>
                 <div class="mt-1 text-xs text-slate-400">Offerte #{{ (j.lead_id|string)[-6:]|upper }}</div>
@@ -149,14 +151,14 @@
 
               <!-- Status -->
               <td class="px-5 py-4 align-top">
-                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {{ badge_color }}">
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ badge_color }}">
                   {{ status_labels.get(st, 'Nieuw') }}
                 </span>
               </td>
 
               <!-- Customer -->
               <td class="px-5 py-4 align-top">
-                <div class="text-sm font-medium text-slate-900">{{ j.customer or "—" }}</div>
+                <div class="text-sm font-semibold text-slate-900">{{ j.customer or "—" }}</div>
                 {% if j.email %}
                   <div class="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
                     <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +182,7 @@
                 {% elif j.status == "SCHEDULED" and j.scheduled_at %}
                   <div class="flex flex-col gap-1">
                     {% if j.when_label %}
-                      <div class="text-sm font-medium text-slate-900">{{ j.when_label }}</div>
+                      <div class="text-sm font-semibold text-slate-900">{{ j.when_label }}</div>
                     {% endif %}
                     <div class="flex items-center gap-1.5 text-sm text-slate-600">
                       <svg class="h-4 w-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +222,7 @@
 
                 {% elif j.scheduled_at %}
                   <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5 text-sm font-medium text-slate-900">
+                    <div class="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
                       <svg class="h-4 w-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                       </svg>
@@ -239,7 +241,7 @@
               <!-- Action -->
               <td class="px-5 py-4 align-top text-right">
                 <a
-                  class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                  class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                   href="/app/leads/{{ j.lead_id }}"
                 >
                   Bekijk offerte
@@ -256,7 +258,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                   </div>
-                  <p class="text-sm font-medium text-slate-900">Geen klussen gevonden</p>
+                  <p class="text-sm font-semibold text-slate-900">Geen klussen gevonden</p>
                   <p class="mt-1 text-xs text-slate-500">Probeer je filters aan te passen</p>
                 </div>
               </td>

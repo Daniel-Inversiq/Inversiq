@@ -1,7 +1,7 @@
 {% extends "app/layout.html" %}
 {% block content %}
 
-<div class="mx-auto max-w-7xl px-4 py-5 lg:px-6 lg:py-6 space-y-6">
+<div class="mx-auto max-w-7xl space-y-5 px-4 py-5 lg:px-6 lg:py-6">
 
   {% set sent = request.query_params.get('sent') %}
   {% set send_error = request.query_params.get('send_error') %}
@@ -34,13 +34,13 @@
     'NEW': 'Nieuw'
   } %}
   {% if st in ['ACCEPTED','DONE','COMPLETED'] %}
-    {% set lead_status_badge = 'bg-emerald-50 text-emerald-700' %}
+    {% set lead_status_badge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
   {% elif st in ['SENT','VIEWED'] %}
-    {% set lead_status_badge = 'bg-indigo-50 text-indigo-700' %}
+    {% set lead_status_badge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
   {% elif st in ['REJECTED','DECLINED','CANCELLED'] %}
-    {% set lead_status_badge = 'bg-rose-50 text-rose-700' %}
+    {% set lead_status_badge = 'border border-rose-200 bg-rose-50 text-rose-700' %}
   {% else %}
-    {% set lead_status_badge = 'bg-slate-100 text-slate-600' %}
+    {% set lead_status_badge = 'border border-slate-200 bg-slate-50 text-slate-700' %}
   {% endif %}
 
   {% set address_parts = [] %}
@@ -62,23 +62,28 @@
   {% set header_work_summary = (job_type ~ (' • ' ~ square_meters ~ ' m²' if square_meters else '')) if job_type else ((square_meters ~ ' m²') if square_meters else 'Werksamenvatting niet ingevuld') %}
 
   <!-- Header -->
-  <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-    <div class="border-b border-slate-100 bg-gradient-to-b from-slate-50/90 to-white px-5 py-5 sm:px-6">
+  <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-5 py-6 sm:px-6">
       <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div class="min-w-0">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Offerte</p>
-          <div class="mt-1 flex flex-wrap items-center gap-2.5">
-            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Offerte #{{ (lead.id|string)[-6:]|upper }}</h1>
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ lead_status_badge }}">
+        <div class="min-w-0 max-w-3xl">
+          <div class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Offerte detail
+          </div>
+
+          <div class="mt-4 flex flex-wrap items-center gap-2.5">
+            <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[30px]">Offerte #{{ (lead.id|string)[-6:]|upper }}</h1>
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ lead_status_badge }}">
               {{ status_labels.get(st, 'Nieuw') }}
             </span>
           </div>
-          <div class="mt-2 text-sm text-slate-700">
-            <span class="font-medium text-slate-900">{{ lead.name or 'Onbekende klant' }}</span>
+
+          <div class="mt-2 text-sm text-slate-600">
+            <span class="font-semibold text-slate-900">{{ lead.name or 'Onbekende klant' }}</span>
             <span class="mx-1.5 text-slate-300">•</span>
             <span>{{ header_work_summary }}</span>
           </div>
-          <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums sm:text-4xl">
+
+          <div class="mt-5 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums sm:text-4xl">
             {% if ctx_show_prices and effective_total_display %}
               {{ effective_total_display }}
             {% elif ctx_show_prices and lead.final_price is not none %}
@@ -89,26 +94,28 @@
               Prijs: nader te bepalen
             {% endif %}
           </div>
+
           {% if not ctx_show_prices %}
-            <div class="mt-1 text-sm text-slate-500">
+            <div class="mt-2 text-sm text-slate-500">
               Wordt nog gecontroleerd voor definitieve prijs
             </div>
           {% endif %}
         </div>
-        <div class="flex flex-shrink-0 flex-wrap items-center gap-2">
+
+        <div class="flex flex-shrink-0 flex-wrap items-center gap-2.5">
         {% if google_calendar_connected %}
         <button type="button" onclick="openQuoteBezichtigingModal()"
-                class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-500 px-3 text-xs font-medium text-white shadow-sm transition hover:bg-sky-600">
+                class="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
           Plan bezichtiging
         </button>
         {% else %}
-        <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+        <a class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
            href="/app/settings">
           Plan bezichtiging
         </a>
         {% endif %}
         {% if quote_ui and quote_ui.can_view %}
-          <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          <a class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
              href="/app/leads/{{ lead.id }}/estimate" target="_blank">
             Bekijk offerte
           </a>
@@ -116,23 +123,23 @@
         {% set ent = (entitlements.export_pdf if entitlements is defined and entitlements else None) %}
         {% if quote_ui and quote_ui.can_download_pdf %}
           {% if ent and ent.allowed %}
-            <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            <a class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                href="/app/leads/{{ lead.id }}/export-pdf" target="_blank">
               PDF downloaden
             </a>
           {% else %}
-            <a class="inline-flex h-9 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-400 cursor-not-allowed"
+            <a class="inline-flex h-10 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-400 cursor-not-allowed"
                href="{{ (ent.upgrade_url if ent and ent.upgrade_url else '/app/billing?upgrade=1&feature=PDF_EXPORT') }}">
               PDF export niet beschikbaar
             </a>
           {% endif %}
         {% endif %}
         {% if quote_ui and quote_ui.can_copy_link and lead.public_token %}
-          <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          <a class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
              href="/e/{{ lead.public_token }}" target="_blank">
             Bekijk klantlink
           </a>
-          <button class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          <button class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                   type="button"
                   data-copy-url="{{ request.base_url }}e/{{ lead.public_token }}"
                   x-data="{ copied: false }"
@@ -142,7 +149,7 @@
           </button>
         {% endif %}
         {% if quote_ui and quote_ui.can_edit %}
-          <a class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          <a class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
              href="/app/leads/{{ lead.id }}/edit-estimate">
             Offerte bewerken
           </a>
@@ -160,7 +167,7 @@
     aria-atomic="true"
   >
     <div
-      class="pointer-events-auto flex gap-3 rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-xl shadow-slate-900/15 ring-1 ring-slate-900/5"
+      class="pointer-events-auto flex gap-3 rounded-[22px] border border-emerald-200/90 bg-white p-4 shadow-lg ring-1 ring-slate-900/5"
     >
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -184,7 +191,7 @@
 
   <!-- Alerts -->
   {% if sent == '1' %}
-    <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3">
+    <div class="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-3.5 shadow-sm">
       <div class="flex items-start gap-3">
         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +207,7 @@
   {% endif %}
 
   {% if send_error == 'postmark_pending' %}
-    <div class="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3">
+    <div class="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3.5 shadow-sm">
       <div class="flex items-start gap-3">
         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +229,7 @@
   {% endif %}
 
   {% if send_error and send_error != 'postmark_pending' %}
-    <div class="rounded-[24px] border border-rose-200 bg-rose-50 px-4 py-3">
+    <div class="rounded-[24px] border border-rose-200 bg-rose-50 px-4 py-3.5 shadow-sm">
       <div class="flex items-start gap-3">
         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,21 +244,22 @@
     </div>
   {% endif %}
 
-  <div class="grid grid-cols-1 gap-7 lg:grid-cols-12">
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
 
     <!-- Left column -->
-    <div class="space-y-6 lg:col-span-7">
+    <div class="space-y-5 lg:col-span-7">
 
       <!-- Lead card -->
-      <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-        <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
-          <h2 class="text-sm font-semibold text-slate-900">Project &amp; klant</h2>
-          <p class="mt-0.5 text-xs text-slate-500">Kerncijfers en gegevens uit de aanvraag</p>
+      <div class="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-5 py-5 sm:px-6">
+          <h2 class="text-lg font-semibold tracking-tight text-slate-900">Project &amp; klant</h2>
+          <p class="mt-1 text-sm text-slate-500">Kerncijfers en gegevens uit de aanvraag</p>
+
           <!-- Summary stat row -->
-          <div class="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl bg-slate-50/90 px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">Totaal</div>
-              <div class="mt-0.5 text-base font-semibold tabular-nums text-slate-900">
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Totaal</div>
+              <div class="mt-1.5 text-base font-semibold tabular-nums text-slate-900">
                 {% if effective_total_display %}
                   {{ effective_total_display }}
                 {% elif lead.final_price is not none %}
@@ -263,32 +271,32 @@
                 {% endif %}
               </div>
             </div>
-            <div class="rounded-xl bg-slate-50/90 px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">Oppervlakte</div>
-              <div class="mt-0.5 text-base font-semibold tabular-nums text-slate-900">
+            <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Oppervlakte</div>
+              <div class="mt-1.5 text-base font-semibold tabular-nums text-slate-900">
                 {% if square_meters %}{{ square_meters }} m²{% else %}—{% endif %}
               </div>
             </div>
-            <div class="rounded-xl bg-slate-50/90 px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">Soort werk</div>
-              <div class="mt-0.5 text-base font-semibold text-slate-900">
+            <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Soort werk</div>
+              <div class="mt-1.5 text-base font-semibold text-slate-900">
                 {{ job_type or "—" }}
               </div>
             </div>
-            <div class="rounded-xl bg-slate-50/90 px-3 py-2.5">
-              <div class="text-[11px] font-medium text-slate-500">Controle</div>
+            <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Controle</div>
               {% set q = quote_ui or {} %}
               {% set qs = q.quote_status or 'none' %}
               {% if qs == 'review' %}
-                <div class="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                <div class="mt-1.5 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
                   Even nalopen
                 </div>
               {% elif qs in ['generated','sent','accepted'] %}
-                <div class="mt-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+                <div class="mt-1.5 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
                   Gecontroleerd
                 </div>
               {% else %}
-                <div class="mt-0.5 text-base font-semibold text-slate-400">—</div>
+                <div class="mt-1.5 text-base font-semibold text-slate-400">—</div>
               {% endif %}
             </div>
           </div>
@@ -296,43 +304,43 @@
 
         <div class="space-y-6 p-5 sm:p-6">
           <div>
-            <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Contact</h3>
+            <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Contact</h3>
             <div class="mt-3 grid gap-4 sm:grid-cols-3">
               <div>
                 <div class="text-xs text-slate-500">Naam</div>
-                <div class="mt-1 text-sm font-medium text-slate-900">{{ lead.name or "—" }}</div>
+                <div class="mt-1.5 text-sm font-semibold text-slate-900">{{ lead.name or "—" }}</div>
               </div>
               <div class="sm:col-span-2">
                 <div class="text-xs text-slate-500">E-mail</div>
-                <div class="mt-1 break-all text-sm font-medium text-slate-900">{{ lead.email or "—" }}</div>
+                <div class="mt-1.5 break-all text-sm font-semibold text-slate-900">{{ lead.email or "—" }}</div>
               </div>
               <div>
                 <div class="text-xs text-slate-500">Telefoon</div>
-                <div class="mt-1 text-sm font-medium text-slate-900">{{ lead.phone or "—" }}</div>
+                <div class="mt-1.5 text-sm font-semibold text-slate-900">{{ lead.phone or "—" }}</div>
               </div>
             </div>
           </div>
 
-          <div class="border-t border-slate-100 pt-6">
-            <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Locatie &amp; werk</h3>
+          <div class="border-t border-slate-200 pt-6">
+            <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Locatie &amp; werk</h3>
             <div class="mt-3 grid gap-4 sm:grid-cols-2">
               <div class="sm:col-span-2">
                 <div class="text-xs text-slate-500">Adres</div>
-                <div class="mt-1 text-sm font-medium text-slate-900">{{ full_address or "—" }}</div>
+                <div class="mt-1.5 text-sm font-semibold text-slate-900">{{ full_address or "—" }}</div>
               </div>
               <div>
                 <div class="text-xs text-slate-500">Oppervlakte</div>
-                <div class="mt-1 text-sm font-medium text-slate-900">{% if square_meters %}{{ square_meters }} m²{% else %}—{% endif %}</div>
+                <div class="mt-1.5 text-sm font-semibold text-slate-900">{% if square_meters %}{{ square_meters }} m²{% else %}—{% endif %}</div>
               </div>
               <div>
                 <div class="text-xs text-slate-500">Soort werk</div>
-                <div class="mt-1 text-sm font-medium text-slate-900">{{ job_type or "—" }}</div>
+                <div class="mt-1.5 text-sm font-semibold text-slate-900">{{ job_type or "—" }}</div>
               </div>
             </div>
           </div>
 
-          <div class="border-t border-slate-100 pt-6">
-            <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Wat wil de klant?</h3>
+          <div class="border-t border-slate-200 pt-6">
+            <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Wat wil de klant?</h3>
             {% set raw_notes = lead.notes or "" %}
             {% set lines = raw_notes.split('\n') %}
             {% set first_line = (lines[0] if lines else '') %}
@@ -340,28 +348,28 @@
               {% set _ = lines.pop(0) %}
             {% endif %}
             {% set clean_notes = (lines|join('\n'))|trim %}
-            <div class="mt-2 text-sm leading-relaxed text-slate-800 whitespace-pre-line">
+            <div class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800 whitespace-pre-line">
               {{ clean_notes or "Geen toelichting bij de aanvraag." }}
             </div>
           </div>
 
           {% if estimate_overrides %}
-          <div class="border-t border-slate-100 pt-5">
-            <div class="mb-2 flex items-center justify-between">
-              <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Handmatige offerte-aanpassingen</div>
+          <div class="border-t border-slate-200 pt-5">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Handmatige offerte-aanpassingen</div>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-3">
               <div>
-                <div class="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Publieke notities</div>
-                <div class="mt-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700 whitespace-pre-line">
+                <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Publieke notities</div>
+                <div class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-700 whitespace-pre-line">
                   {{ estimate_overrides.public_notes or "Geen extra notities" }}
                 </div>
               </div>
 
               <div>
-                <div class="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Korting (%)</div>
-                <div class="mt-2 text-sm font-medium text-slate-900">
+                <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Korting (%)</div>
+                <div class="mt-2 text-sm font-semibold text-slate-900">
                   {% if estimate_overrides.discount_percent is not none %}
                     {{ estimate_overrides.discount_percent }}%
                   {% else %}
@@ -371,8 +379,8 @@
               </div>
 
               <div>
-                <div class="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Handmatig totaal</div>
-                <div class="mt-2 text-sm font-medium text-slate-900">
+                <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Handmatig totaal</div>
+                <div class="mt-2 text-sm font-semibold text-slate-900">
                   {% if estimate_overrides.manual_total is not none %}
                     € {{ "%.2f"|format(estimate_overrides.manual_total) }}
                   {% else %}
@@ -394,8 +402,8 @@
 
       <!-- Job card -->
       {% if job %}
-        <div id="job" class="overflow-hidden rounded-[26px] border border-slate-200/70 bg-white shadow-sm">
-          <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div id="job" class="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,18 +425,18 @@
               'NEW': 'Nieuw'
             } %}
             {% if jst == 'DONE' %}
-              {% set jbadge = 'bg-emerald-50 text-emerald-600' %}
+              {% set jbadge = 'border border-emerald-200 bg-emerald-50 text-emerald-600' %}
             {% elif jst == 'IN_PROGRESS' %}
-              {% set jbadge = 'bg-violet-50 text-violet-600' %}
+              {% set jbadge = 'border border-violet-200 bg-violet-50 text-violet-600' %}
             {% elif jst == 'SCHEDULED' %}
-              {% set jbadge = 'bg-sky-50 text-sky-600' %}
+              {% set jbadge = 'border border-sky-200 bg-sky-50 text-sky-600' %}
             {% elif jst == 'CANCELLED' %}
-              {% set jbadge = 'bg-rose-50 text-rose-600' %}
+              {% set jbadge = 'border border-rose-200 bg-rose-50 text-rose-600' %}
             {% else %}
-              {% set jbadge = 'bg-slate-100 text-slate-600' %}
+              {% set jbadge = 'border border-slate-200 bg-slate-50 text-slate-700' %}
             {% endif %}
 
-            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {{ jbadge }}">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ jbadge }}">
               {{ job_status_labels.get(jst, 'Nieuw') }}
             </span>
           </div>
@@ -442,7 +450,7 @@
                   </svg>
                 </div>
                 <div class="flex-1">
-                  <div class="text-sm font-medium text-slate-900">Ingepland</div>
+                  <div class="text-sm font-semibold text-slate-900">Ingepland</div>
                   <div class="text-xs text-slate-500">
                     {% if job.scheduled_at %}
                       {{ scheduled_display }} <span class="text-slate-400">({{ tz_name }})</span>
@@ -462,7 +470,7 @@
                     </svg>
                   </div>
                   <div class="flex-1">
-                    <div class="text-sm font-medium text-slate-900">Gestart</div>
+                    <div class="text-sm font-semibold text-slate-900">Gestart</div>
                     <div class="text-xs text-slate-500">{{ started_display }} <span class="text-slate-400">({{ tz_name }})</span></div>
                   </div>
                 </div>
@@ -476,19 +484,19 @@
                     </svg>
                   </div>
                   <div class="flex-1">
-                    <div class="text-sm font-medium text-slate-900">Afgerond</div>
+                    <div class="text-sm font-semibold text-slate-900">Afgerond</div>
                     <div class="text-xs text-slate-500">{{ done_display }} <span class="text-slate-400">({{ tz_name }})</span></div>
                   </div>
                 </div>
               {% endif %}
             </div>
 
-            <div class="border-t border-slate-100 pt-5">
-              <div class="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Status bijwerken</div>
+            <div class="border-t border-slate-200 pt-5">
+              <div class="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Status bijwerken</div>
               <div class="flex flex-wrap items-center gap-2">
                 {% if job.status == "SCHEDULED" %}
                   <form method="post" action="/app/jobs/{{ job.id }}/start" class="m-0">
-                    <button class="inline-flex h-9 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-violet-700" type="submit">
+                    <button class="inline-flex h-10 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700" type="submit">
                       <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -500,7 +508,7 @@
 
                 {% if job.status == "IN_PROGRESS" %}
                   <form method="post" action="/app/jobs/{{ job.id }}/done" class="m-0">
-                    <button class="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700" type="submit">
+                    <button class="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700" type="submit">
                       <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 13l4 4L19 7"/>
                       </svg>
@@ -509,9 +517,9 @@
                   </form>
                 {% endif %}
 
-                <form method="post" action="/app/jobs/{{ job.id }}/status" class="flex flex-wrap items-center gap-2 m-0">
+                <form method="post" action="/app/jobs/{{ job.id }}/status" class="m-0 flex flex-wrap items-center gap-2">
                   <select name="status"
-                          class="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100">
+                          class="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100">
                     {% for s in ["NEW","SCHEDULED","IN_PROGRESS","DONE","CANCELLED"] %}
                       {% set status_display = {
                         'NEW': 'Nieuw',
@@ -523,7 +531,7 @@
                       <option value="{{ s }}" {% if job.status == s %}selected{% endif %}>{{ status_display[s] }}</option>
                     {% endfor %}
                   </select>
-                  <button class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900" type="submit">
+                  <button class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900" type="submit">
                     Bijwerken
                   </button>
                 </form>
@@ -546,87 +554,91 @@
            hx-swap="none"></div>
 
       <!-- Primaire werkzone -->
-      <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-        <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-6">
+      <div class="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
           <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Wat nu?</p>
           <p class="mt-1 max-w-md text-xs leading-relaxed text-slate-600">Status en acties voor deze offerte.</p>
         </div>
 
         <div class="px-5 pt-5 sm:px-6">
-          <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Huidige status</h3>
+          <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Huidige status</h3>
           <div id="quote-status" class="mt-2.5">
             {% include "quotes/partials/status_badge.html" %}
           </div>
         </div>
 
-        <div class="border-t border-slate-100"></div>
+        <div class="mt-5 border-t border-slate-200"></div>
 
         <div class="px-5 py-4.5 sm:px-6">
-          <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Nu doen</h3>
+          <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Nu doen</h3>
           <div id="quote-actions" class="mt-2.5">
             {% include "quotes/partials/quote_actions.html" %}
           </div>
         </div>
 
-        <div class="border-t border-slate-100"></div>
+        <div class="border-t border-slate-200"></div>
 
         {% include "quotes/partials/internal_notes.html" %}
       </div>
 
       {% if st == "ACCEPTED" %}
-        <div class="rounded-md border border-slate-200/60 bg-slate-50/20 px-2.5 py-2">
-          <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Agenda</div>
-          {% if lead_scheduled_start_display and lead_scheduled_end_display %}
-            <div class="mt-2 text-xs text-slate-700">
-              <span class="font-medium text-slate-800">{{ lead_scheduled_start_display }}</span>
-              – <span class="font-medium text-slate-800">{{ lead_scheduled_end_display }}</span>
-              <span class="text-slate-500">({{ tz_name }})</span>
-            </div>
-          {% endif %}
-          <div id="agenda-feedback" class="mt-2"></div>
-          <div class="mt-2.5 flex flex-wrap gap-2">
-            {% if google_calendar_connected %}
-              <button
-                class="inline-flex h-8 items-center justify-center rounded-lg bg-sky-600 px-3 text-xs font-medium text-white transition hover:bg-sky-700"
-                hx-post="/quotes/{{ lead.id }}/calendar/google/partial"
-                hx-target="#agenda-feedback"
-                hx-swap="innerHTML"
-                type="button"
-              >
-                Naar Google Agenda
-              </button>
-            {% else %}
-              <a
-                class="inline-flex h-8 items-center justify-center rounded-lg bg-sky-600 px-3 text-xs font-medium text-white transition hover:bg-sky-700"
-                href="/integrations/google-calendar/connect"
-              >
-                Google Agenda koppelen
-              </a>
+        <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+          <div class="px-4 py-4">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Agenda</div>
+            {% if lead_scheduled_start_display and lead_scheduled_end_display %}
+              <div class="mt-2 text-xs text-slate-700">
+                <span class="font-semibold text-slate-800">{{ lead_scheduled_start_display }}</span>
+                – <span class="font-semibold text-slate-800">{{ lead_scheduled_end_display }}</span>
+                <span class="text-slate-500">({{ tz_name }})</span>
+              </div>
             {% endif %}
-            <a
-              class="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
-              href="/quotes/{{ lead.id }}/calendar.ics"
-            >
-              .ics downloaden
-            </a>
+            <div id="agenda-feedback" class="mt-2"></div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              {% if google_calendar_connected %}
+                <button
+                  class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                  hx-post="/quotes/{{ lead.id }}/calendar/google/partial"
+                  hx-target="#agenda-feedback"
+                  hx-swap="innerHTML"
+                  type="button"
+                >
+                  Naar Google Agenda
+                </button>
+              {% else %}
+                <a
+                  class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                  href="/integrations/google-calendar/connect"
+                >
+                  Google Agenda koppelen
+                </a>
+              {% endif %}
+              <a
+                class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                href="/quotes/{{ lead.id }}/calendar.ics"
+              >
+                .ics downloaden
+              </a>
+            </div>
           </div>
         </div>
       {% endif %}
 
       {% if q.can_copy_link and lead.public_token %}
-        <div class="rounded-md border border-slate-200/60 bg-slate-50/20 px-2.5 py-2">
-          <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Link voor de klant</div>
-          <code class="mt-1.5 block truncate rounded-md border border-slate-200/80 bg-white px-2 py-1 text-[11px] font-mono text-slate-600">/e/{{ lead.public_token }}</code>
-          <div class="mt-2 flex flex-wrap items-center gap-2">
-            <button class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
-                    type="button"
-                    data-copy-url="{{ request.base_url }}e/{{ lead.public_token }}"
-                    x-data="{ copied: false }"
-                    @click="window.paintlyCopy($el.dataset.copyUrl).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
-              <span x-show="!copied">Link kopiëren</span>
-              <span x-show="copied" class="text-emerald-600" x-cloak>Gekopieerd</span>
-            </button>
-            <span class="text-[11px] text-slate-500">Deel met de klant om te bekijken of te bevestigen.</span>
+        <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+          <div class="px-4 py-4">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Link voor de klant</div>
+            <code class="mt-2 block truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-600">/e/{{ lead.public_token }}</code>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <button class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      type="button"
+                      data-copy-url="{{ request.base_url }}e/{{ lead.public_token }}"
+                      x-data="{ copied: false }"
+                      @click="window.paintlyCopy($el.dataset.copyUrl).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                <span x-show="!copied">Link kopiëren</span>
+                <span x-show="copied" class="text-emerald-600" x-cloak>Gekopieerd</span>
+              </button>
+              <span class="text-[11px] text-slate-500">Deel met de klant om te bekijken of te bevestigen.</span>
+            </div>
           </div>
         </div>
       {% endif %}
@@ -635,15 +647,15 @@
         {% include "quotes/partials/timeline_block.html" %}
       </div>
 
-      <div class="rounded-md border border-dashed border-slate-200/80 bg-slate-50/10 px-2.5 py-2">
-        <div class="mb-1 flex items-center justify-between gap-2">
-          <span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Foto’s van de klant</span>
+      <div class="overflow-hidden rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-4">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Foto’s van de klant</span>
           <span class="text-[10px] text-slate-400">{{ (photo_previews|length) if photo_previews else 0 }}</span>
         </div>
         {% if photo_previews and photo_previews|length > 0 %}
-          <div class="flex flex-wrap gap-1">
+          <div class="flex flex-wrap gap-2">
             {% for p in photo_previews %}
-              <a href="{{ p.url }}" target="_blank" class="group block h-10 w-10 shrink-0 overflow-hidden rounded-sm border border-slate-200/70 bg-white">
+              <a href="{{ p.url }}" target="_blank" class="group block h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 <img src="{{ p.url }}" alt="{{ p.name or 'Foto' }}" class="h-full w-full object-cover transition group-hover:opacity-90" />
               </a>
             {% endfor %}
@@ -654,10 +666,10 @@
       </div>
 
       {% if job and job.status in ["NEW","SCHEDULED"] %}
-        <div class="overflow-hidden rounded-[26px] border border-slate-200/70 bg-white shadow-sm">
-          <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div class="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-500">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -679,49 +691,49 @@
           <div class="space-y-4 p-5">
             <form id="scheduleForm" method="post" action="/app/jobs/{{ job.id }}/schedule" class="space-y-4">
               <div>
-                <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Datum & tijd</label>
+                <label class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Datum & tijd</label>
                 <div class="flex gap-2">
                   <input id="dtInput" type="datetime-local" name="scheduled_at_local" value="{{ scheduled_input_value }}" required
-                         class="flex-1 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
-                  <button class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600" type="submit">
+                         class="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
+                  <button class="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800" type="submit">
                     {% if job.scheduled_at %}Bijwerken{% else %}Inplannen{% endif %}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Snel selecteren</label>
+                <label class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Snel selecteren</label>
                 <div class="flex flex-wrap gap-2">
-                  <button type="button" onclick="setDayOffset(0)" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">Vandaag</button>
-                  <button type="button" onclick="setDayOffset(1)" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">Morgen</button>
-                  <button type="button" onclick="setDayOffset(2)" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">Overmorgen</button>
+                  <button type="button" onclick="setDayOffset(0)" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">Vandaag</button>
+                  <button type="button" onclick="setDayOffset(1)" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">Morgen</button>
+                  <button type="button" onclick="setDayOffset(2)" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">Overmorgen</button>
                 </div>
               </div>
 
               <div>
-                <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Gebruikelijke tijden</label>
+                <label class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Gebruikelijke tijden</label>
                 <div class="grid grid-cols-2 gap-2">
-                  <button type="button" onclick="setTime('09:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">09:00</button>
-                  <button type="button" onclick="setTime('11:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">11:00</button>
-                  <button type="button" onclick="setTime('13:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">13:00</button>
-                  <button type="button" onclick="setTime('15:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">15:00</button>
+                  <button type="button" onclick="setTime('09:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">09:00</button>
+                  <button type="button" onclick="setTime('11:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">11:00</button>
+                  <button type="button" onclick="setTime('13:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">13:00</button>
+                  <button type="button" onclick="setTime('15:00')" class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">15:00</button>
                 </div>
               </div>
 
-              <div class="border-t border-slate-100 pt-4">
-                <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Direct inplannen</label>
+              <div class="border-t border-slate-200 pt-4">
+                <label class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Direct inplannen</label>
                 <div class="grid grid-cols-2 gap-2">
-                  <button type="button" onclick="quickSchedule(0,'09:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-50 px-3 text-xs font-medium text-sky-600 transition hover:bg-sky-100">Vandaag 9:00</button>
-                  <button type="button" onclick="quickSchedule(0,'13:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-50 px-3 text-xs font-medium text-sky-600 transition hover:bg-sky-100">Vandaag 13:00</button>
-                  <button type="button" onclick="quickSchedule(1,'09:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-50 px-3 text-xs font-medium text-sky-600 transition hover:bg-sky-100">Morgen 9:00</button>
-                  <button type="button" onclick="quickSchedule(1,'13:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-sky-50 px-3 text-xs font-medium text-sky-600 transition hover:bg-sky-100">Morgen 13:00</button>
+                  <button type="button" onclick="quickSchedule(0,'09:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-200">Vandaag 9:00</button>
+                  <button type="button" onclick="quickSchedule(0,'13:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-200">Vandaag 13:00</button>
+                  <button type="button" onclick="quickSchedule(1,'09:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-200">Morgen 9:00</button>
+                  <button type="button" onclick="quickSchedule(1,'13:00')" class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-200">Morgen 13:00</button>
                 </div>
               </div>
             </form>
 
             {% if job.scheduled_at %}
-              <form id="unscheduleForm" method="post" action="/app/jobs/{{ job.id }}/unschedule" class="border-t border-slate-100 pt-4">
-                <button type="submit" class="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+              <form id="unscheduleForm" method="post" action="/app/jobs/{{ job.id }}/unschedule" class="border-t border-slate-200 pt-4">
+                <button type="submit" class="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
                   <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -745,11 +757,11 @@
   aria-labelledby="quote-bez-modal-title"
 >
   <div class="fixed inset-0 z-0" aria-hidden="true" onclick="closeQuoteBezichtigingModal()"></div>
-  <div class="relative z-10 mt-0 w-full max-w-lg rounded-[24px] border border-slate-200/80 bg-white shadow-xl" onclick="event.stopPropagation()">
-    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+  <div class="relative z-10 mt-0 w-full max-w-lg rounded-[24px] border border-slate-200 bg-white shadow-xl" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
       <h3 id="quote-bez-modal-title" class="text-base font-semibold text-slate-900">Bezichtiging plannen</h3>
       <button type="button" onclick="closeQuoteBezichtigingModal()"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
               aria-label="Sluiten">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
@@ -769,19 +781,19 @@
       <div class="space-y-2">
         <label class="block text-xs font-medium text-slate-700" for="quote-bez-title">Titel</label>
         <input id="quote-bez-title" type="text"
-               class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+               class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
                value="{{ quote_bez_title|e }}" />
       </div>
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
           <label class="block text-xs font-medium text-slate-700" for="quote-bez-start">Start</label>
           <input id="quote-bez-start" type="datetime-local"
-                 class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
+                 class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-700" for="quote-bez-end">Einde</label>
           <input id="quote-bez-end" type="datetime-local"
-                 class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
+                 class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100" />
         </div>
       </div>
       <div>
@@ -793,17 +805,17 @@
       <div>
         <label class="block text-xs font-medium text-slate-700" for="quote-bez-email">E-mail deelnemer (optioneel)</label>
         <input id="quote-bez-email" type="email" inputmode="email" autocomplete="email"
-               class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+               class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
                placeholder="naam@voorbeeld.nl"
                value="{{ (lead.email or '')|e }}" />
       </div>
-      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
+      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-4">
         <button type="button" onclick="closeQuoteBezichtigingModal()"
-                class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
           Annuleren
         </button>
         <button type="button" onclick="scheduleQuoteBezichtiging()"
-                class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600">
+                class="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
           Toevoegen aan agenda
         </button>
       </div>

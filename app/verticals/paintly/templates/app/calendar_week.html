@@ -4,19 +4,21 @@
 {% set cal_nav_qs = calendar_nav_qs if calendar_nav_qs is defined and calendar_nav_qs else '' %}
 {% set cal_nav_amp = ('&' + cal_nav_qs) if cal_nav_qs else '' %}
 
-<div class="space-y-6">
+<div class="space-y-5">
 
   <!-- Header -->
-  <div class="rounded-[28px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
+  <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-sm lg:px-6 lg:py-4">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div>
-        <div class="text-sm text-slate-400">Agenda</div>
-        <h1 class="mt-1 text-[28px] font-semibold tracking-tight text-slate-900">Weekoverzicht</h1>
+        <div class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Agenda
+        </div>
+        <h1 class="mt-2 text-[26px] font-semibold tracking-tight text-slate-900">Weekoverzicht</h1>
 
         <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <span class="font-medium text-slate-900">{{ week_label }}</span>
+          <span class="font-semibold text-slate-900">{{ week_label }}</span>
           <span class="text-slate-300">·</span>
-          <span class="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-600">
+          <span class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
             Vandaag · {{ now_chip }}
           </span>
         </div>
@@ -24,7 +26,7 @@
 
       <div class="flex flex-wrap items-center gap-2">
         <a
-          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
           href="/app/calendar?week={{ prev_week }}{{ cal_nav_amp }}"
         >
           <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,14 +36,14 @@
         </a>
 
         <a
-          class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
+          class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
           href="/app/calendar{% if cal_nav_qs %}?{{ cal_nav_qs }}{% endif %}"
         >
           Deze week
         </a>
 
         <a
-          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
           href="/app/calendar?week={{ next_week }}{{ cal_nav_amp }}"
         >
           Volgende
@@ -53,7 +55,7 @@
         <div class="mx-1 hidden h-6 w-px bg-slate-200 sm:block"></div>
 
         <a
-          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
           href="/app/jobs"
         >
           Alle klussen
@@ -63,7 +65,7 @@
   </div>
 
   {% if google_calendar_connected %}
-  <div class="rounded-[24px] border border-slate-200/70 bg-white p-5 shadow-sm">
+  <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0 flex-1 space-y-3">
         <div class="flex items-start gap-3">
@@ -97,7 +99,7 @@
       <button
         type="button"
         onclick="openPaintlyApptModal()"
-        class="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600 sm:w-auto"
+        class="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 sm:w-auto"
       >
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -107,9 +109,9 @@
     </div>
   </div>
 
-  <div class="rounded-[24px] border border-slate-200/70 bg-white p-5 shadow-sm">
+  <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
     <div class="mb-3 flex items-center gap-3">
-      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 10h16M4 14h10M4 18h16"/>
         </svg>
@@ -128,7 +130,7 @@
           <li class="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span class="text-sm font-medium text-slate-900">{{ ev.title|e }}</span>
+                <span class="text-sm font-semibold text-slate-900">{{ ev.title|e }}</span>
                 {% if ev.html_link %}
                   <a
                     href="{{ ev.html_link|e }}"
@@ -162,7 +164,7 @@
     aria-labelledby="appt-modal-title"
   >
     <div class="fixed inset-0 z-0" aria-hidden="true" onclick="closePaintlyApptModal()"></div>
-    <div class="relative z-10 mt-0 w-full max-w-lg rounded-[24px] border border-slate-200/80 bg-white shadow-xl" onclick="event.stopPropagation()">
+    <div class="relative z-10 mt-0 w-full max-w-lg rounded-[24px] border border-slate-200 bg-white shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
         <h3 id="appt-modal-title" class="text-base font-semibold text-slate-900">
           {% if bezichtiging_prefill %}Bezichtiging{% else %}Afspraak{% endif %}
@@ -170,7 +172,7 @@
         <button
           type="button"
           onclick="closePaintlyApptModal()"
-          class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
           aria-label="Sluiten"
         >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -194,7 +196,7 @@
           <input
             id="appt-title"
             type="text"
-            class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             value="{% if bezichtiging_prefill %}{{ bezichtiging_prefill.title|e }}{% else %}Afspraak{% endif %}"
           />
         </div>
@@ -204,7 +206,7 @@
             <input
               id="appt-start"
               type="datetime-local"
-              class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+              class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
           <div>
@@ -212,7 +214,7 @@
             <input
               id="appt-end"
               type="datetime-local"
-              class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+              class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
         </div>
@@ -221,7 +223,7 @@
           <textarea
             id="appt-desc"
             rows="{% if bezichtiging_prefill %}5{% else %}2{% endif %}"
-            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             placeholder="{% if not bezichtiging_prefill %}Notities voor de afspraak{% endif %}"
           >{% if bezichtiging_prefill %}{{ bezichtiging_prefill.description|e }}{% endif %}</textarea>
         </div>
@@ -232,7 +234,7 @@
             type="email"
             inputmode="email"
             autocomplete="email"
-            class="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             placeholder="naam@voorbeeld.nl"
             {% if bezichtiging_prefill and bezichtiging_prefill.email %}value="{{ bezichtiging_prefill.email|e }}"{% endif %}
           />
@@ -241,14 +243,14 @@
           <button
             type="button"
             onclick="closePaintlyApptModal()"
-            class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Annuleren
           </button>
           <button
             type="button"
             onclick="schedulePaintlyAppointment()"
-            class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-sky-600"
+            class="inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
           >
             Toevoegen aan agenda
           </button>
@@ -265,7 +267,7 @@
     aria-atomic="true"
   >
     <div
-      class="pointer-events-auto flex gap-3 rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-xl shadow-slate-900/15 ring-1 ring-slate-900/5"
+      class="pointer-events-auto flex gap-3 rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-lg ring-1 ring-slate-900/5"
     >
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -289,8 +291,8 @@
     </div>
   </div>
   {% else %}
-  <div class="rounded-[24px] border border-slate-200/70 bg-white px-6 py-5 shadow-sm">
-    <div class="text-sm font-medium text-slate-900">
+  <div class="rounded-[24px] border border-slate-200 bg-white px-6 py-5 shadow-sm">
+    <div class="text-sm font-semibold text-slate-900">
       {% if bezichtiging_prefill %}Bezichtiging plannen{% else %}Afspraak plannen{% endif %}
     </div>
     <p class="mt-1 text-sm text-slate-500">
@@ -309,11 +311,11 @@
   {% endif %}
 
   <!-- Main layout -->
-  <div class="grid gap-6 xl:grid-cols-[340px_1fr]">
+  <div class="grid gap-5 xl:grid-cols-[340px_1fr]">
 
     <!-- Left panel -->
-    <aside class="flex flex-col rounded-[26px] border border-slate-200/70 bg-white shadow-sm">
-      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+    <aside class="flex flex-col rounded-[26px] border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -326,7 +328,7 @@
           </div>
         </div>
 
-        <span class="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700">
+        <span class="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-2 text-xs font-semibold text-slate-700">
           {{ unscheduled|length }}
         </span>
       </div>
@@ -337,13 +339,13 @@
             <svg class="mb-2 h-8 w-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p class="text-sm font-medium text-slate-600">Alles bijgewerkt</p>
+            <p class="text-sm font-semibold text-slate-600">Alles bijgewerkt</p>
             <p class="mt-1 text-xs text-slate-400">Geen openstaande aanvragen</p>
           </div>
         {% else %}
           <div class="space-y-3">
             {% for u in unscheduled %}
-              <div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
                 <a href="/app/leads/{{ u.lead_id }}#job" class="block">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0 flex-1">
@@ -360,7 +362,7 @@
                     </div>
                     </div>
 
-                    <span class="inline-flex shrink-0 items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600">
+                    <span class="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600">
                       Nieuw
                     </span>
                   </div>
@@ -372,7 +374,7 @@
                     <input type="hidden" name="hhmm" value="09:00">
                     <input type="hidden" name="return_to" value="/app/calendar">
                     <button
-                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                       type="submit"
                     >
                       Vandaag 9:00
@@ -384,7 +386,7 @@
                     <input type="hidden" name="hhmm" value="13:00">
                     <input type="hidden" name="return_to" value="/app/calendar">
                     <button
-                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                       type="submit"
                     >
                       Vandaag 13:00
@@ -396,7 +398,7 @@
                     <input type="hidden" name="hhmm" value="09:00">
                     <input type="hidden" name="return_to" value="/app/calendar">
                     <button
-                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                       type="submit"
                     >
                       Morgen 9:00
@@ -408,7 +410,7 @@
                     <input type="hidden" name="hhmm" value="13:00">
                     <input type="hidden" name="return_to" value="/app/calendar">
                     <button
-                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                      class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                       type="submit"
                     >
                       Morgen 13:00
@@ -423,8 +425,8 @@
     </aside>
 
     <!-- Week grid -->
-    <section class="flex flex-col overflow-hidden rounded-[26px] border border-slate-200/70 bg-white shadow-sm">
-      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+    <section class="flex flex-col overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-500">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,9 +453,9 @@
               'Sunday': 'Zondag'
             } %}
             {% set mapped_day_title = day_labels.get(day.title, day.title) %}
-            <div class="flex flex-col overflow-hidden rounded-[22px] border {% if day.is_today %}border-sky-200 bg-sky-50/40{% else %}border-slate-200/80 bg-slate-50/30{% endif %}">
+            <div class="flex flex-col overflow-hidden rounded-[22px] border {% if day.is_today %}border-sky-200 bg-sky-50/30{% else %}border-slate-200 bg-slate-50/40{% endif %}">
               <!-- Day header -->
-              <div class="border-b px-4 py-3.5 {% if day.is_today %}border-sky-200 bg-sky-100/50{% else %}border-slate-200/70 bg-white/70{% endif %}">
+              <div class="border-b px-4 py-3.5 {% if day.is_today %}border-sky-200 bg-sky-50{% else %}border-slate-200 bg-white{% endif %}">
                 <div class="flex items-center justify-between gap-2">
                   <div class="text-sm font-semibold {% if day.is_today %}text-sky-900{% else %}text-slate-800{% endif %}">
                     {{ mapped_day_title }}
@@ -472,9 +474,9 @@
               </div>
 
               <!-- Day content -->
-              <div class="flex-1 space-y-3.5 p-4 max-h-[68vh] overflow-y-auto">
+              <div class="max-h-[68vh] flex-1 space-y-3.5 overflow-y-auto p-4">
                 {% if day["items"]|length == 0 %}
-                  <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/80 py-9 text-center">
+                  <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-9 text-center">
                     <svg class="mb-2 h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 12H4"/>
                     </svg>
@@ -484,24 +486,24 @@
                   {% for it in day["items"] %}
                     {% set st = (it.status or '').upper() %}
                     {% if st == 'DONE' %}
-                      {% set badge_color = 'bg-emerald-50 text-emerald-600' %}
+                      {% set badge_color = 'border border-emerald-200 bg-emerald-50 text-emerald-600' %}
                       {% set status_text = 'Afgerond' %}
                     {% elif st == 'IN_PROGRESS' %}
-                      {% set badge_color = 'bg-violet-50 text-violet-600' %}
+                      {% set badge_color = 'border border-violet-200 bg-violet-50 text-violet-600' %}
                       {% set status_text = 'Bezig' %}
                     {% elif st == 'SCHEDULED' %}
-                      {% set badge_color = 'bg-sky-50 text-sky-600' %}
+                      {% set badge_color = 'border border-sky-200 bg-sky-50 text-sky-600' %}
                       {% set status_text = 'Ingepland' %}
                     {% elif st == 'CANCELLED' %}
-                      {% set badge_color = 'bg-rose-50 text-rose-600' %}
+                      {% set badge_color = 'border border-rose-200 bg-rose-50 text-rose-600' %}
                       {% set status_text = 'Geannuleerd' %}
                     {% else %}
-                      {% set badge_color = 'bg-slate-100 text-slate-600' %}
+                      {% set badge_color = 'border border-sky-100 bg-sky-50/70 text-slate-700' %}
                       {% set status_text = st|replace('_', ' ')|title %}
                     {% endif %}
 
                     <a href="/app/leads/{{ it.lead_id }}#job" class="block">
-                      <div class="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+                      <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
                         <div class="flex items-center justify-between gap-2">
                           <div class="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                             <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -515,12 +517,12 @@
                           </span>
                         </div>
 
-                        <div class="mt-2 text-sm font-semibold text-slate-900 truncate">
+                        <div class="mt-2 truncate text-sm font-semibold text-slate-900">
                           {{ it.customer }}
                         </div>
 
                         {% if it.notes %}
-                          <div class="mt-1 text-xs text-slate-500 truncate">{{ it.notes }}</div>
+                          <div class="mt-1 truncate text-xs text-slate-500">{{ it.notes }}</div>
                         {% endif %}
 
                       <div class="mt-3 flex items-center gap-2 text-[11px] text-slate-400">

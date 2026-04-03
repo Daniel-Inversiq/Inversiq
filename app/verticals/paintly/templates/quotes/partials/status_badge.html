@@ -8,38 +8,38 @@
   'accepted': t('lead_detail.quote_status.accepted')
 } %}
 {% if qs == 'accepted' %}
-  {% set qbadge = 'bg-emerald-50 text-emerald-700' %}
+  {% set qbadge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
 {% elif qs == 'review' %}
-  {% set qbadge = 'bg-amber-50 text-amber-700' %}
+  {% set qbadge = 'border border-amber-200 bg-amber-50 text-amber-700' %}
 {% elif qs == 'sent' %}
-  {% set qbadge = 'bg-indigo-50 text-indigo-700' %}
+  {% set qbadge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
 {% elif qs == 'generated' %}
-  {% set qbadge = 'bg-sky-50 text-sky-700' %}
+  {% set qbadge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
 {% else %}
-  {% set qbadge = 'bg-slate-100 text-slate-700' %}
+  {% set qbadge = 'border border-sky-100 bg-sky-50/70 text-slate-700' %}
 {% endif %}
 {% set lead_badge = lead_status_badge %}
 {% if st in ['SENT', 'VIEWED'] %}
-  {% set lead_badge = 'bg-indigo-50 text-indigo-700' %}
+  {% set lead_badge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
 {% endif %}
 
-<div class="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2.5">
+<div class="rounded-2xl border border-sky-100/80 bg-sky-50/40 px-3.5 py-3">
   <div class="flex flex-wrap items-center gap-2.5">
     <span class="text-[11px] font-medium text-slate-500">{{ t('lead_detail.meta_label') }}</span>
-    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ qbadge }}">
+    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ qbadge }}">
       {{ quote_labels.get(qs, t('lead_detail.quote_status.none')) }}
     </span>
     <span class="text-slate-300">•</span>
     <span class="text-[11px] font-medium text-slate-500">{{ t('lead_detail.badges.request') }}</span>
-    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ lead_badge }}">
+    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ lead_badge }}">
       {{ status_labels.get(st, t('lead_detail.status.new')) }}
     </span>
   </div>
 </div>
 
 {% if sent_display %}
-  <div class="mt-2.5 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 text-xs text-slate-600">
+  <div class="mt-2.5 rounded-2xl border border-sky-100/80 bg-white px-3.5 py-2.5 text-xs text-slate-600 shadow-sm">
     <span class="text-[11px] font-medium text-slate-500">{{ t('lead_detail.badges.last_sent') }}</span>
-    <span class="mt-0.5 block font-medium text-slate-800">{{ sent_display }} <span class="font-normal text-slate-500">({{ tz_name }})</span></span>
+    <span class="mt-1 block font-medium text-slate-800">{{ sent_display }} <span class="font-normal text-slate-500">({{ tz_name }})</span></span>
   </div>
 {% endif %}

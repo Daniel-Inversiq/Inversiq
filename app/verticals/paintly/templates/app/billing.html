@@ -3,8 +3,8 @@
 
 <div class="mx-auto max-w-6xl pb-10">
   <!-- Compacte header -->
-  <header class="border-b border-slate-200/80 pb-6">
-    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+  <header class="overflow-hidden rounded-[24px] border border-slate-200 bg-white px-5 py-5 shadow-sm">
+    <p class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
       Abonnement
     </p>
     <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[26px]">
@@ -28,7 +28,7 @@
   {% endif %}
 
   <!-- Compacte status / trial -->
-  <section class="mt-6 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm sm:px-5">
+  <section class="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div class="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-700">
         <div class="flex items-baseline gap-2">
@@ -63,7 +63,7 @@
             Actief
           </span>
         {% else %}
-          <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ring-1 ring-inset ring-slate-200/80">
+          <span class="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ring-1 ring-inset ring-slate-200">
             Geen abonnement
           </span>
         {% endif %}
@@ -79,9 +79,9 @@
   </section>
 
   <!-- Pricing cards -->
-  <section class="mt-10" aria-labelledby="pricing-heading">
+  <section class="mt-8" aria-labelledby="pricing-heading">
     <h3 id="pricing-heading" class="sr-only">Beschikbare plannen</h3>
-    <div class="grid gap-6 lg:grid-cols-3 lg:items-stretch lg:gap-5">
+    <div class="grid gap-5 lg:grid-cols-3 lg:items-stretch">
       {% for plan in plans %}
         {% set is_current = (plan.code == current_plan_code) %}
         {% set is_pro = plan.is_recommended %}
@@ -89,22 +89,22 @@
         <article
           class="relative flex flex-col rounded-2xl border bg-white transition
             {% if is_pro %}
-              z-10 border-sky-400/90 shadow-[0_18px_50px_-12px_rgba(14,165,233,0.28)] ring-1 ring-sky-500/20 lg:-mt-1 lg:scale-[1.02]
+              z-10 border-sky-300 ring-1 ring-sky-100 shadow-sm lg:-mt-1
             {% elif is_current %}
-              border-sky-300/80 shadow-md ring-1 ring-sky-100
+              border-sky-200 ring-1 ring-sky-100 shadow-sm
             {% else %}
-              border-slate-200/80 shadow-sm hover:border-slate-300 hover:shadow-md
+              border-slate-200 shadow-sm hover:border-slate-300
             {% endif %}"
         >
           {% if is_pro %}
             <div class="absolute -top-3 left-1/2 z-20 -translate-x-1/2">
-              <span class="inline-flex items-center rounded-full bg-gradient-to-r from-sky-500 to-sky-600 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm">
+              <span class="inline-flex items-center rounded-full bg-sky-500 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm">
                 Meest gekozen
               </span>
             </div>
           {% endif %}
 
-          <div class="flex flex-1 flex-col px-5 pb-5 pt-8 {% if is_pro %}pt-9{% endif %}">
+          <div class="flex flex-1 flex-col px-5 pb-5 pt-7 {% if is_pro %}pt-8{% endif %}">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h4 class="text-lg font-semibold text-slate-900">{{ plan.name }}</h4>
@@ -117,7 +117,7 @@
               {% endif %}
             </div>
 
-            <div class="mt-6 border-t border-slate-100 pt-5">
+            <div class="mt-5 border-t border-slate-100 pt-4">
               <div class="flex items-end gap-1.5">
                 <span class="text-4xl font-semibold tracking-tight text-slate-900">{{ plan.price_display }}</span>
                 <span class="pb-1 text-sm font-medium text-slate-500">{{ plan.price_period }}</span>
@@ -125,7 +125,7 @@
               <p class="mt-1 text-xs text-slate-500">{{ plan.quote_limit_label }}</p>
             </div>
 
-            <div class="my-6 h-px w-full bg-slate-100" aria-hidden="true"></div>
+            <div class="my-5 h-px w-full bg-slate-100" aria-hidden="true"></div>
 
             <ul class="flex-1 space-y-2.5 text-sm text-slate-700">
               {% for feat in plan.features %}
@@ -140,7 +140,7 @@
               {% endfor %}
             </ul>
 
-            <div class="mt-8">
+            <div class="mt-7">
               {% if is_current %}
                 <button
                   type="button"
@@ -153,12 +153,7 @@
                 <button
                   type="button"
                   onclick="upgradePlan('{{ plan.code }}')"
-                  class="inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition
-                    {% if is_pro %}
-                      bg-sky-600 hover:bg-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500
-                    {% else %}
-                      bg-slate-900 hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400
-                    {% endif %}"
+                  class="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
                 >
                   {{ plan.cta_label }}
                 </button>

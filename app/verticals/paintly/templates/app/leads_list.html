@@ -17,84 +17,66 @@
   {% endif %}
 {% endfor %}
 
-<div class="space-y-6">
+<div class="space-y-4">
   {% include "app/partials/intake_link_card.html" %}
 
-  <section class="rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-sm">
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Werkoverzicht offertes</p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Vandaag te regelen</h1>
-        <p class="mt-2 max-w-2xl text-sm text-slate-600">
-          Zie in een oogopslag welke offertes aandacht vragen, welke opvolging gepland staat en welke direct actie nodig hebben.
-        </p>
+  <!-- HERO -->
+  <section class="overflow-hidden rounded-[24px] border border-slate-200 bg-white px-5 py-5 shadow-sm lg:px-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Offertes
+        </div>
+
+        <div class="mt-2">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Werkoverzicht</p>
+          <h1 class="mt-1 text-[26px] font-semibold tracking-tight text-slate-900">Vandaag te regelen</h1>
+          <p class="mt-1 text-sm text-slate-500">
+            Zie direct wat aandacht nodig heeft en waar je moet opvolgen.
+          </p>
+        </div>
       </div>
-      {% if tenant is defined and tenant and tenant.slug %}
+
+      {% if tenant and tenant.slug %}
         <a
-          class="inline-flex h-11 items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
           href="/intake/{{ tenant.slug }}"
+          class="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white transition hover:bg-slate-800"
         >
-          <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m8-8H4"/>
-          </svg>
           Nieuwe offerte
         </a>
-      {% else %}
-        <button
-          type="button"
-          class="inline-flex h-11 cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 px-4 text-sm font-semibold text-slate-500"
-          disabled
-        >
-          <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m8-8H4"/>
-          </svg>
-          Nieuwe offerte
-        </button>
       {% endif %}
     </div>
   </section>
 
-  {% set direct_has_attention = counts.te_laat > 0 %}
-  {% set open_has_attention = counts.verstuurd > 0 %}
-  {% set won_has_attention = counts.geaccepteerd > 0 %}
+  <!-- KPI CARDS -->
+  <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <article class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">In beeld</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ counts.totaal }}</p>
+      <p class="text-xs text-slate-500">Offertes</p>
+    </article>
 
-  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <article class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <p class="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
-        <span class="h-2 w-2 rounded-full bg-slate-300"></span>
-        In beeld
-      </p>
-      <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{{ counts.totaal }}</p>
-      <p class="mt-1 text-xs text-slate-500">Offertes in dit overzicht</p>
+    <article class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Direct opvolgen</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ counts.te_laat }}</p>
+      <p class="text-xs text-slate-500">Te laat</p>
     </article>
-    <article class="rounded-2xl border bg-white p-5 shadow-sm {{ 'border-rose-200/80' if direct_has_attention else 'border-slate-200/80' }}">
-      <p class="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] {{ 'text-rose-600' if direct_has_attention else 'text-slate-500' }}">
-        <span class="h-2 w-2 rounded-full {{ 'bg-rose-400' if direct_has_attention else 'bg-slate-300' }}"></span>
-        Direct opvolgen
-      </p>
-      <p class="mt-2 text-3xl font-semibold tracking-tight {{ 'text-rose-700' if direct_has_attention else 'text-slate-900' }}">{{ counts.te_laat }}</p>
-      <p class="mt-1 text-xs {{ 'text-rose-600' if direct_has_attention else 'text-slate-500' }}">Te laat voor follow-up</p>
+
+    <article class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Nog open</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ counts.verstuurd }}</p>
+      <p class="text-xs text-slate-500">Verstuurd / bekeken</p>
     </article>
-    <article class="rounded-2xl border bg-white p-5 shadow-sm {{ 'border-amber-200/80' if open_has_attention else 'border-slate-200/80' }}">
-      <p class="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] {{ 'text-amber-700' if open_has_attention else 'text-slate-500' }}">
-        <span class="h-2 w-2 rounded-full {{ 'bg-amber-400' if open_has_attention else 'bg-slate-300' }}"></span>
-        Nog open
-      </p>
-      <p class="mt-2 text-3xl font-semibold tracking-tight {{ 'text-amber-800' if open_has_attention else 'text-slate-900' }}">{{ counts.verstuurd }}</p>
-      <p class="mt-1 text-xs {{ 'text-amber-700' if open_has_attention else 'text-slate-500' }}">Verstuurd of bekeken</p>
-    </article>
-    <article class="rounded-2xl border bg-white p-5 shadow-sm {{ 'border-emerald-200/80' if won_has_attention else 'border-slate-200/80' }}">
-      <p class="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] {{ 'text-emerald-700' if won_has_attention else 'text-slate-500' }}">
-        <span class="h-2 w-2 rounded-full {{ 'bg-emerald-400' if won_has_attention else 'bg-slate-300' }}"></span>
-        Binnen
-      </p>
-      <p class="mt-2 text-3xl font-semibold tracking-tight {{ 'text-emerald-800' if won_has_attention else 'text-slate-900' }}">{{ counts.geaccepteerd }}</p>
-      <p class="mt-1 text-xs {{ 'text-emerald-700' if won_has_attention else 'text-slate-500' }}">Geaccepteerde offertes</p>
+
+    <article class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Binnen</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900">{{ counts.geaccepteerd }}</p>
+      <p class="text-xs text-slate-500">Geaccepteerd</p>
     </article>
   </section>
 
-  <section
-    class="rounded-[26px] border border-slate-200/80 bg-white shadow-sm"
+  <!-- TABLE -->
+  <section class="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm"
     x-data="{
       q: '',
       status: 'alles',
@@ -107,69 +89,47 @@
       }
     }"
   >
-    <div class="border-b border-slate-100 px-5 py-5">
-      <div class="flex flex-col gap-2">
-        <h2 class="text-base font-semibold text-slate-900">Je offertes</h2>
-        <p class="text-sm text-slate-500">Filter op stand en urgentie om sneller door te pakken.</p>
-      </div>
-      <div class="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
-        <label class="block">
-          <span class="sr-only">Zoeken</span>
-          <input
-            type="search"
-            x-model.debounce.150ms="q"
-            placeholder="Zoek op klant, stand of vervolgstap"
-            class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-          />
-        </label>
-        <label class="block">
-          <span class="sr-only">Status</span>
-          <select
-            x-model="status"
-            class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-          >
-            <option value="alles">Alle standen</option>
-            <option value="new">Nieuw</option>
-            <option value="draft">Concept</option>
-            <option value="sent">Verstuurd</option>
-            <option value="viewed">Bekeken</option>
-            <option value="accepted">Geaccepteerd</option>
-            <option value="rejected">Afgewezen</option>
-            <option value="cancelled">Geannuleerd</option>
-          </select>
-        </label>
-        <label class="block">
-          <span class="sr-only">Urgentie</span>
-          <select
-            x-model="urgentie"
-            class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-          >
-            <option value="alles">Alle urgentie</option>
-            <option value="te laat">Te laat</option>
-            <option value="vandaag">Vandaag</option>
-            <option value="komt eraan">Komt eraan</option>
-          </select>
-        </label>
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            @click="q = ''; status = 'alles'; urgentie = 'alles'"
-            class="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
-          >
-            Reset filters
-          </button>
-        </div>
+
+    <div class="border-b border-slate-200 px-5 py-5">
+      <h2 class="text-lg font-semibold text-slate-900">Je offertes</h2>
+      <p class="text-sm text-slate-500">Filter en pak sneller door</p>
+
+      <div class="mt-4 grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
+        <input
+          type="search"
+          x-model="q"
+          placeholder="Zoek..."
+          class="h-10 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+        >
+
+        <select x-model="status" class="h-10 rounded-xl border border-slate-200 px-3 text-sm">
+          <option value="alles">Alle standen</option>
+          <option value="sent">Verstuurd</option>
+          <option value="accepted">Geaccepteerd</option>
+        </select>
+
+        <select x-model="urgentie" class="h-10 rounded-xl border border-slate-200 px-3 text-sm">
+          <option value="alles">Alle urgentie</option>
+          <option value="te laat">Te laat</option>
+        </select>
+
+        <button
+          @click="q='';status='alles';urgentie='alles'"
+          class="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          Reset
+        </button>
       </div>
     </div>
 
     <div class="overflow-x-auto">
       <table class="min-w-full">
         <thead>
-          <tr class="border-b border-slate-100 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-            <th class="px-5 py-3.5 text-left font-semibold">Klant</th>
-            <th class="px-5 py-3.5 text-left font-semibold">Stand van offerte</th>
-            <th class="px-5 py-3.5 text-left font-semibold">Opvolging</th>
-            <th class="px-5 py-3.5 text-right font-semibold">Acties</th>
+          <tr class="border-b border-slate-200 text-xs text-slate-500">
+            <th class="px-5 py-3 text-left">Klant</th>
+            <th class="px-5 py-3 text-left">Status</th>
+            <th class="px-5 py-3 text-left">Opvolging</th>
+            <th class="px-5 py-3 text-right">Acties</th>
           </tr>
         </thead>
         {% include "leads/partials/table_body.html" %}

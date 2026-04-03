@@ -1,19 +1,20 @@
 <div id="internal-notes-block" class="px-5 pb-5 pt-4 sm:px-6">
   <div class="mb-4 flex items-start justify-between gap-2">
     <div>
-      <h3 class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{{ t('lead_detail.followup.title') }}</h3>
+      <h3 class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ t('lead_detail.followup.title') }}</h3>
       <p class="mt-1 text-xs text-slate-500">{{ t('lead_detail.followup.subtitle') }}</p>
     </div>
     {% if followup_summary and followup_summary.has_followup %}
       {% if followup_summary.is_overdue %}
-        <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">{{ t('lead_detail.followup.overdue') }}</span>
+        <span class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">{{ t('lead_detail.followup.overdue') }}</span>
       {% elif followup_summary.status_code == "today" %}
-        <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">{{ t('lead_detail.followup.today') }}</span>
+        <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">{{ t('lead_detail.followup.today') }}</span>
       {% else %}
-        <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">{{ t('lead_detail.followup.upcoming') }}</span>
+        <span class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">{{ t('lead_detail.followup.upcoming') }}</span>
       {% endif %}
     {% endif %}
   </div>
+
   <form class="space-y-3"
         hx-post="/app/tenants/{{ lead.tenant_id }}/quotes/{{ lead.id }}/partials/internal-notes"
         hx-target="#internal-notes-block"
@@ -26,26 +27,29 @@
              name="next_action"
              value="{{ followup_summary.next_action if followup_summary else '' }}"
              maxlength="240"
-             class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+             class="h-10 w-full rounded-xl border border-sky-100 bg-sky-50/30 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
              placeholder="{{ t('lead_detail.followup.next_step_placeholder') }}">
     </div>
+
     <div>
       <label class="mb-1.5 block text-[11px] font-medium text-slate-500">{{ t('lead_detail.followup.scheduled_for') }}</label>
       <input type="datetime-local"
              name="next_action_at"
              value="{{ followup_summary.next_action_at_input if followup_summary else '' }}"
-             class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+             class="h-10 w-full rounded-xl border border-sky-100 bg-sky-50/30 px-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
     </div>
+
     <div>
       <label class="mb-1.5 block text-[11px] font-medium text-slate-500">{{ t('lead_detail.followup.internal_note') }}</label>
       <textarea name="internal_notes"
                 rows="2"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                class="w-full rounded-xl border border-sky-100 bg-sky-50/30 px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                 placeholder="{{ t('lead_detail.followup.internal_note_placeholder') }}">{{ internal_notes }}</textarea>
     </div>
+
     <div class="flex flex-wrap items-center gap-3 pt-1">
       <button type="submit"
-              class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60">
+              class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#38bdf8,#0284c7)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:brightness-95 disabled:opacity-60">
         <span id="notes-indicator-{{ lead.id }}" class="htmx-indicator inline-flex h-4 w-4 items-center justify-center">
           <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

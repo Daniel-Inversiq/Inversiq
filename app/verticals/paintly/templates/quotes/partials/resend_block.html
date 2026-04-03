@@ -4,7 +4,7 @@
     <form class="m-0 flex w-full"
           method="post"
           action="/app/leads/{{ lead.id }}/send">
-      <button class="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+      <button class="inline-flex min-h-[2.75rem] w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#38bdf8,#0284c7)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.22)] transition hover:brightness-95 disabled:opacity-60"
               type="submit">
         <span id="send-indicator-{{ lead.id }}" class="htmx-indicator inline-flex h-4 w-4 items-center justify-center">
           <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
@@ -16,5 +16,4 @@
       </button>
     </form>
   {% endif %}
-
 </div>

@@ -7,70 +7,86 @@
   <link rel="icon" href="https://offers.getpaintly.com/static/v1/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
   <style>
     * { transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease; }
+
     .upload-zone {
-      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='18' ry='18' stroke='%23CBD5E1FF' stroke-width='2' stroke-dasharray='8%2c8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='18' ry='18' stroke='%23CBD5E1FF' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
     }
     .upload-zone:hover {
-      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='18' ry='18' stroke='%230EA5E9FF' stroke-width='2' stroke-dasharray='8%2c8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='18' ry='18' stroke='%230EA5E9FF' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
     }
+
     .field-error {
       border-color: #f43f5e !important;
       box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12) !important;
     }
+
     @keyframes ai-spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
   </style>
 </head>
-<body class="min-h-screen bg-[#eef4fb] text-slate-900 antialiased">
-  <div class="border-b border-slate-200/70 bg-white/90 backdrop-blur-sm">
-    <div class="mx-auto max-w-5xl px-4 py-5">
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-sm">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-xl font-semibold tracking-tight text-slate-900">Vraag je gratis offerte aan</h1>
-            <p class="mt-1 text-sm text-slate-500">Binnen een paar minuten geregeld</p>
-            {% if tenant is defined and tenant %}
-            <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
-              <span>Voor</span>
-              <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-600">
-                {{ (tenant.company_name if tenant else none) or (tenant.name if tenant else none) or "Paintly" }}
-              </span>
-            </div>
-            {% endif %}
-          </div>
+
+<body class="min-h-screen bg-gradient-to-b from-sky-50 via-white to-white text-slate-900 antialiased">
+
+<!-- HEADER -->
+<div class="border-b border-slate-200/60 bg-white/80 backdrop-blur">
+  <div class="mx-auto max-w-5xl px-4 py-5">
+    <div class="flex items-center justify-between gap-4">
+
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-sm">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4z"/>
+          </svg>
         </div>
-        <div class="hidden sm:flex items-center gap-2 text-xs">
-          <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700">Gratis en vrijblijvend</span>
-          <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">Hoe beter de foto's, hoe nauwkeuriger de prijs</span>
+
+        <div>
+          <h1 class="text-xl font-semibold tracking-tight text-slate-900">Vraag je gratis offerte aan</h1>
+          <p class="mt-1 text-sm text-slate-500">Binnen een paar minuten geregeld</p>
+
+          {% if tenant is defined and tenant %}
+          <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
+            <span>Voor</span>
+            <span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-600">
+              {{ (tenant.company_name if tenant else none) or (tenant.name if tenant else none) or "Paintly" }}
+            </span>
+          </div>
+          {% endif %}
         </div>
       </div>
+
+      <div class="hidden sm:flex items-center gap-2 text-xs">
+        <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700">Gratis en vrijblijvend</span>
+        <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">Hoe beter de foto's, hoe nauwkeuriger de prijs</span>
+      </div>
+
     </div>
   </div>
+</div>
 
-  <div class="mx-auto max-w-5xl px-4 py-6" x-data="{ step: 1 }">
-    <input type="hidden" id="currentStep" x-model.number="step" />
-    <div class="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
-      <div class="mb-2 flex items-center justify-between text-sm">
-        <span class="font-medium text-slate-700">Stap <span x-text="step"></span> van 4</span>
-        <span class="text-slate-500" x-text="['Contact', 'Werk', 'Foto\\'s', 'Controle'][step - 1]"></span>
-      </div>
-      <div class="h-2 rounded-full bg-slate-100">
-        <div class="h-2 rounded-full bg-sky-500 transition-all duration-300" :style="`width: ${(step / 4) * 100}%`"></div>
-      </div>
-    </div>
+<!-- MAIN -->
+<div class="mx-auto max-w-5xl px-4 py-6" x-data="{ step: 1 }">
 
-    <div id="msgErr" class="mb-4 hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"></div>
+<input type="hidden" id="currentStep" x-model.number="step" />
 
-    <form id="intakeForm" method="post" action="{{ submit_url }}" enctype="multipart/form-data" class="grid gap-5 lg:grid-cols-[1fr_260px]">
+<!-- PROGRESS -->
+<div class="mb-6 overflow-hidden rounded-2xl border border-slate-200/60 bg-white/90 backdrop-blur p-4 shadow-sm">
+  <div class="mb-2 flex items-center justify-between text-sm">
+    <span class="font-medium text-slate-700">Stap <span x-text="step"></span> van 4</span>
+    <span class="text-slate-500" x-text="['Contact', 'Werk', 'Foto\\'s', 'Controle'][step - 1]"></span>
+  </div>
+  <div class="h-2 rounded-full bg-slate-100">
+    <div class="h-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-500 transition-all duration-300" :style="`width: ${(step / 4) * 100}%`"></div>
+  </div>
+</div>
+
+<div id="msgErr" class="mb-4 hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"></div>
+
+<form id="intakeForm" method="post" action="{{ submit_url }}" enctype="multipart/form-data" class="grid gap-6 lg:grid-cols-[1fr_260px]">
       <input type="hidden" name="tenant_id" value="{{ tenant.id if tenant is defined and tenant else '' }}" />
       <input type="hidden" name="vertical" value="{{ vertical or 'paintly' }}" />
       <input type="hidden" name="area_unit" value="sqm" />
