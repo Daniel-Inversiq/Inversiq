@@ -1,0 +1,343 @@
+{
+  "common": {
+    "subscription": "Abonnement",
+    "manage_subscription": "Beheer abonnement",
+    "upgrade_to_pro": "Upgrade naar Pro"
+  },
+  "billing": {
+    "title": "Abonnement",
+    "heading": "Kies een abonnement dat bij je werk past",
+    "subheading": "Regel je offertes en klantcontact op een plek. Schaal op als je meer aanvragen krijgt.",
+    "errors": {
+      "inactive_subscription": "Je abonnement is niet actief. Kies een abonnement om offertes te versturen.",
+      "no_customer": "Er is nog geen Stripe-klant gekoppeld aan dit account."
+    },
+    "labels": {
+      "current_plan": "Huidig plan",
+      "status": "Status",
+      "trial": "Proefperiode",
+      "pricing_heading": "Beschikbare plannen",
+      "recommended": "Meest gekozen",
+      "current_plan_badge": "Huidig plan",
+      "trial_badge": "Proef",
+      "active_badge": "Actief",
+      "no_subscription_badge": "Geen abonnement",
+      "prices_ex_vat_prefix": "Prijzen zijn exclusief btw. Je kunt facturen en betaalmethoden beheren via",
+      "prices_ex_vat_suffix": "."
+    },
+    "status": {
+      "trialing": "Proefperiode actief",
+      "active": "Abonnement actief",
+      "inactive": "Nog geen actief abonnement",
+      "past_due": "Betaling vereist",
+      "canceled": "Opgezegd",
+      "unpaid": "Niet betaald"
+    },
+    "trial": {
+      "remaining_days": "Nog {days} dag",
+      "remaining_days_plural": "Nog {days} dagen",
+      "until_date": "tot {date}"
+    },
+    "cta": {
+      "manage_subscription": "Beheer abonnement",
+      "upgrade_to_pro": "Upgrade naar Pro",
+      "choose_starter": "Kies Starter",
+      "choose_pro": "Kies Pro",
+      "choose_business": "Kies Business"
+    },
+    "js": {
+      "upgrade_failed": "Kiezen van abonnement mislukt. Probeer het later opnieuw.",
+      "upgrade_failed_with_detail": "Kiezen van abonnement mislukt: {detail}",
+      "invalid_server_url": "Geen geldige URL ontvangen van de server.",
+      "upgrade_unexpected": "Er ging iets mis bij het kiezen van je abonnement.",
+      "portal_open_failed": "Kon abonnementsbeheer niet openen. Probeer het later opnieuw.",
+      "invalid_portal_url": "Geen geldige portal URL ontvangen van de server.",
+      "portal_unexpected": "Er ging iets mis bij het openen van abonnementsbeheer."
+    },
+    "plan": {
+      "starter": {
+        "name": "Starter",
+        "subtitle": "Voor zelfstandige schilders die snel professioneel willen starten.",
+        "limit_label": "Tot 25 offertes per maand",
+        "features": {
+          "f1": "Basis offertegeneratie voor dagelijkse aanvragen",
+          "f2": "Duidelijke offertes waarmee je sneller kunt opvolgen",
+          "f3": "Ideaal voor kleinere volumes"
+        }
+      },
+      "pro": {
+        "name": "Pro",
+        "subtitle": "Voor groeiende teams die meer conversie en minder handwerk willen.",
+        "limit_label": "Onbeperkt offertes",
+        "features": {
+          "f1": "Alles uit Starter",
+          "f2": "Branding, professionele lay-out en slimme prijsvoorstellen",
+          "f3": "Notificaties en planning met kalender voor strakke opvolging"
+        }
+      },
+      "business": {
+        "name": "Business",
+        "subtitle": "Voor teams die maximaal willen schalen met minimale operationele frictie.",
+        "limit_label": "Onbeperkt offertes",
+        "features": {
+          "f1": "Alles van Pro, inclusief white-label ervaring",
+          "f2": "Automatisering en prioriteitsverwerking",
+          "f3": "Prioritaire ondersteuning voor je team"
+        }
+      }
+    },
+    "price_period_monthly": "per maand",
+    "usage_unlimited": "Onbeperkt offertes",
+    "remaining_offers": "Nog {remaining} van de {limit} offertes over deze maand",
+    "limit_reached_warning": "Je hebt je limiet bereikt — upgrade naar Pro om door te gaan",
+    "limit_near_warning": "Je zit bijna aan je limiet — upgrade naar Pro voor onbeperkt offertes"
+  },
+  "errors": {
+    "offer_limit_title": "Maandlimiet bereikt",
+    "offer_limit_message": "Je hebt het maandelijkse limiet van {limit} offertes bereikt. Upgrade naar Pro om onbeperkt offertes te maken.",
+    "send_failed_title": "Kon offerte niet verzenden",
+    "send_failed_try_again": "Probeer het opnieuw"
+  },
+  "lead_detail": {
+    "meta_label": "Offerte",
+    "title": "Offerte #{id}",
+    "price_tbd": "Prijs: nader te bepalen",
+    "price_review_pending": "Wordt nog gecontroleerd voor definitieve prijs",
+    "customer_unknown": "Onbekende klant",
+    "work_summary_missing": "Werksamenvatting niet ingevuld",
+    "actions": {
+      "plan_visit": "Plan bezichtiging",
+      "view_quote": "Bekijk offerte",
+      "download_pdf": "PDF downloaden",
+      "pdf_unavailable": "PDF export niet beschikbaar",
+      "view_customer_link": "Bekijk klantlink",
+      "copy_link": "Link kopieren",
+      "copied": "Gekopieerd",
+      "edit_quote": "Offerte bewerken"
+    },
+    "status": {
+      "accepted": "Geaccepteerd",
+      "done": "Afgerond",
+      "completed": "Compleet",
+      "sent": "Verstuurd",
+      "viewed": "Bekeken",
+      "rejected": "Afgewezen",
+      "declined": "Afgewezen",
+      "cancelled": "Geannuleerd",
+      "new": "Nieuw",
+      "in_progress": "Bezig",
+      "scheduled": "Ingepland"
+    },
+    "quote_status": {
+      "none": "Nog niet opgesteld",
+      "generated": "Klaar om te verzenden",
+      "review": "Controle nodig",
+      "sent": "Verzonden naar klant",
+      "accepted": "Geaccepteerd",
+      "send_to_customer": "Stuur naar klant",
+      "resend_to_customer": "Opnieuw sturen naar klant"
+    },
+    "badges": {
+      "request": "Aanvraag",
+      "last_sent": "Laatst verzonden"
+    },
+    "alerts": {
+      "quote_sent_title": "Offerte verzonden",
+      "quote_sent_message": "De klant krijgt de e-mail zo binnen",
+      "postmark_pending_title": "E-mail verzending nog niet actief",
+      "postmark_pending_message": "Postmark is in afwachting van goedkeuring. Tijdens deze periode kun je alleen versturen naar ontvangers op hetzelfde domein als je From adres ({domain}).",
+      "postmark_pending_tip": "Tip: voor testen, gebruik {email}",
+      "offer_limit_title": "Maandlimiet bereikt",
+      "offer_limit_message": "Je hebt het maandelijkse limiet van {limit} offertes bereikt. Upgrade naar Pro om onbeperkt offertes te maken.",
+      "send_failed_title": "Kon offerte niet verzenden",
+      "send_failed_message": "Probeer het opnieuw",
+      "offer_limit_upgrade": "Upgrade naar Pro"
+    },
+    "sections": {
+      "project_customer_title": "Project & klant",
+      "project_customer_subtitle": "Kerncijfers en gegevens uit de aanvraag",
+      "total": "Totaal",
+      "area": "Oppervlakte",
+      "work_type": "Soort werk",
+      "review": "Controle",
+      "review_needed": "Even nalopen",
+      "review_done": "Gecontroleerd",
+      "contact": "Contact",
+      "name": "Naam",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "location_work": "Locatie & werk",
+      "address": "Adres",
+      "customer_request": "Wat wil de klant?",
+      "customer_request_empty": "Geen toelichting bij de aanvraag.",
+      "manual_overrides": "Handmatige offerte-aanpassingen",
+      "public_notes": "Publieke notities",
+      "no_extra_notes": "Geen extra notities",
+      "discount_percent": "Korting (%)",
+      "manual_total": "Handmatig totaal",
+      "effective_total": "Effectief totaal (incl. btw):"
+    },
+    "sales_cockpit": {
+      "what_now": "Wat nu?",
+      "what_now_subtitle": "Status en acties voor deze offerte.",
+      "current_status": "Huidige status",
+      "next_actions": "Nu doen",
+      "agenda": "Agenda",
+      "to_google_calendar": "Naar Google Agenda",
+      "connect_google_calendar": "Google Agenda koppelen",
+      "download_ics": ".ics downloaden",
+      "customer_link": "Link voor de klant",
+      "customer_link_hint": "Deel met de klant om te bekijken of te bevestigen.",
+      "customer_photos": "Fotos van de klant",
+      "no_customer_photos": "Geen fotos meegestuurd."
+    },
+    "timeline": {
+      "title": "Historie",
+      "subtitle": "Logboek",
+      "empty": "Nog geen regels in het logboek.",
+      "created": "Aangemaakt",
+      "sent_to_customer": "Verstuurd naar klant",
+      "viewed_by_customer": "Bekeken door klant",
+      "accepted": "Geaccepteerd",
+      "rejected": "Afgewezen",
+      "customer_note": "Toelichting klant"
+    },
+    "followup": {
+      "title": "Opvolging plannen",
+      "subtitle": "Alleen zichtbaar voor jouw team.",
+      "overdue": "Te laat",
+      "today": "Vandaag",
+      "upcoming": "Komt eraan",
+      "next_step": "Volgende stap",
+      "next_step_placeholder": "Bel vrijdag om akkoord te vragen",
+      "scheduled_for": "Gepland voor",
+      "internal_note": "Interne notitie",
+      "internal_note_placeholder": "Korte notitie over prijs, planning of afspraak",
+      "save": "Opslaan",
+      "saved_now": "Direct opgeslagen",
+      "toast_saved_title": "Opgeslagen",
+      "toast_saved_message": "Opvolging bijgewerkt."
+    },
+    "job": {
+      "title": "Klus #{id}",
+      "subtitle": "Planning & status",
+      "scheduled": "Ingepland",
+      "not_scheduled": "Nog niet ingepland",
+      "started": "Gestart",
+      "finished": "Afgerond",
+      "update_status": "Status bijwerken",
+      "start_job": "Klus starten",
+      "finish_job": "Afronden",
+      "update": "Bijwerken"
+    },
+    "schedule": {
+      "title": "Planning",
+      "currently_scheduled": "Momenteel ingepland",
+      "datetime": "Datum & tijd",
+      "schedule": "Inplannen",
+      "reschedule": "Bijwerken",
+      "quick_select": "Snel selecteren",
+      "today": "Vandaag",
+      "tomorrow": "Morgen",
+      "day_after_tomorrow": "Overmorgen",
+      "common_times": "Gebruikelijke tijden",
+      "instant_schedule": "Direct inplannen",
+      "clear_schedule": "Planning wissen"
+    },
+    "visit_modal": {
+      "title": "Bezichtiging plannen",
+      "close": "Sluiten",
+      "title_label": "Titel",
+      "start": "Start",
+      "end": "Einde",
+      "description": "Omschrijving (optioneel)",
+      "description_placeholder": "Adres en notities",
+      "attendee_email": "E-mail deelnemer (optioneel)",
+      "attendee_placeholder": "naam@voorbeeld.nl",
+      "cancel": "Annuleren",
+      "add_to_calendar": "Toevoegen aan agenda",
+      "success_title": "Bezichtiging gepland",
+      "success_text": "Toegevoegd aan je agenda.",
+      "success_open_google": "Open in Google Calendar",
+      "success_text_fallback": "Toegevoegd aan je gekoppelde Google-agenda.",
+      "validation_title_required": "Vul een titel in.",
+      "validation_start_end_required": "Kies start- en eindtijd.",
+      "validation_invalid_datetime": "Ongeldige datum/tijd.",
+      "validation_end_after_start": "Einde moet na start zijn.",
+      "request_failed": "Aanmaken mislukt.",
+      "network_error": "Netwerkfout. Probeer opnieuw."
+    },
+    "send": {
+      "toast_sent_title": "Offerte verzonden",
+      "toast_sent_message": "De klant ontvangt de e-mail binnenkort.",
+      "subscription_title": "Abonnement",
+      "subscription_inactive": "Abonnement niet actief. Open facturatie om te upgraden.",
+      "not_allowed_title": "Niet toegestaan",
+      "not_allowed_message": "Versturen is met dit abonnement niet mogelijk.",
+      "no_quote_title": "Geen offerte",
+      "no_quote_message": "Genereer eerst een offerte voordat je deze verstuurt.",
+      "no_email_title": "Geen e-mail",
+      "no_email_message": "Vul eerst een klant-e-mailadres in."
+    }
+  },
+  "leads_list": {
+    "header": {
+      "kicker": "Werkoverzicht offertes",
+      "title": "Vandaag te regelen",
+      "subtitle": "Zie in een oogopslag welke offertes aandacht vragen, welke opvolging gepland staat en welke direct actie nodig hebben."
+    },
+    "actions": {
+      "new_quote": "Nieuwe offerte"
+    },
+    "stats": {
+      "in_view": "In beeld",
+      "in_view_help": "Offertes in dit overzicht",
+      "follow_up_now": "Direct opvolgen",
+      "overdue_followup": "Te laat voor follow-up",
+      "open": "Nog open",
+      "sent_or_viewed": "Verstuurd of bekeken",
+      "won": "Binnen",
+      "accepted_quotes": "Geaccepteerde offertes"
+    },
+    "filters": {
+      "title": "Je offertes",
+      "subtitle": "Filter op stand en urgentie om sneller door te pakken.",
+      "search_label": "Zoeken",
+      "search_placeholder": "Zoek op klant, stand of vervolgstap",
+      "status_label": "Status",
+      "status_all": "Alle standen",
+      "urgency_label": "Urgentie",
+      "urgency_all": "Alle urgentie",
+      "reset": "Reset filters"
+    },
+    "table": {
+      "customer": "Klant",
+      "quote_status": "Stand van offerte",
+      "follow_up": "Opvolging",
+      "actions": "Acties",
+      "empty_customer": "—",
+      "quote_amount": "Offertebedrag",
+      "quote_amount_unknown": "Offertebedrag nog niet bekend"
+    },
+    "status": {
+      "draft": "Concept",
+      "ready": "Gereed",
+      "in_progress": "Bezig",
+      "unknown": "Onbekend"
+    },
+    "quote_state": {
+      "ready": "Offerte gereed",
+      "building": "Offerte in opbouw"
+    },
+    "followup": {
+      "scheduled": "Gepland",
+      "action": "Opvolgactie",
+      "moment_not_planned": "Moment nog niet gepland",
+      "none_planned": "Geen opvolging gepland"
+    },
+    "empty": {
+      "no_results_title": "Geen offertes gevonden",
+      "no_results_subtitle": "Pas je filters aan of maak direct een nieuwe offerte."
+    }
+  }
+}

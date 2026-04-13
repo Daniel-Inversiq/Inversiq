@@ -4,7 +4,7 @@ services:
     image: paintly-local
     command: gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8080
     ports:
-      - "8001:8080"
+      - "8000:8080"
     env_file:
       - .env
     environment:

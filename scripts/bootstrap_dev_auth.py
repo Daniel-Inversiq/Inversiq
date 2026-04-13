@@ -21,11 +21,28 @@ def main():
         # tenant
         tenant = db.query(Tenant).filter(Tenant.id == TENANT_ID).first()
         if not tenant:
-            # pas aan als jouw Tenant model andere velden heeft
-            tenant = Tenant(id=TENANT_ID, name=TENANT_NAME)
+            tenant = Tenant(
+                id=TENANT_ID,
+                name=TENANT_NAME,
+                slug=TENANT_ID,
+                enabled_verticals=["painting"],
+            )
             db.add(tenant)
             db.commit()
             print("✅ tenant created:", TENANT_ID)
+        else:
+            changed = False
+            if not tenant.slug:
+                tenant.slug = TENANT_ID
+                changed = True
+                print("✅ tenant slug set:", tenant.slug)
+            if tenant.enabled_verticals is None:
+                tenant.enabled_verticals = ["painting"]
+                changed = True
+                print("✅ tenant enabled_verticals set:", tenant.enabled_verticals)
+            if changed:
+                db.add(tenant)
+                db.commit()
 
         # user
         user = db.query(User).filter(User.email == EMAIL).first()

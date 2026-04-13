@@ -1,49 +1,116 @@
 <!doctype html>
-<html>
-  <body style="font-family: Arial, sans-serif;">
-    <h2>Approval vereist — Quote {{ quote.quoteId }}</h2>
+<html lang="nl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Approval vereist — Inversiq</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;">
 
-    <p>
-      <b>Klant:</b> {{ customer_id or "onbekend" }}<br/>
-      <b>Totale waarde:</b> {{ quote.totalSell }}<br/>
-      <b>Totale marge%:</b> {{ quote.marginPct }}
-    </p>
+          <!-- Brand header -->
+          <tr>
+            <td align="center" style="padding-bottom:18px;">
+              <span style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9ca3af;">Inversiq</span>
+            </td>
+          </tr>
 
-    <hr/>
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border:1px solid #e5e7eb;border-radius:6px;padding:28px 28px 24px;">
+              <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#111827;">
+                Approval vereist
+              </h1>
+              <p style="margin:0 0 20px;font-size:13px;color:#6b7280;">
+                Quote {{ quote.quoteId }}
+              </p>
 
-    <h3>Override</h3>
-    <p><b>Extra korting:</b> {{ override_pct }}%</p>
-    <p><b>Reden:</b> {{ reason }}</p>
-    <p><b>Waarom approval nodig is:</b><br/>
-      {{ why_approval }}
-    </p>
+              <!-- Quote summary -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px;border:1px solid #e5e7eb;border-radius:4px;">
+                <tr>
+                  <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
+                    <strong>Klant:</strong> {{ customer_id or "onbekend" }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
+                    <strong>Totale waarde:</strong> {{ quote.totalSell }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
+                    <strong>Marge:</strong> {{ quote.marginPct }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
+                    <strong>Extra korting:</strong> {{ override_pct }}%
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
+                    <strong>Reden:</strong> {{ reason }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px;font-size:13px;color:#374151;">
+                    <strong>Waarom approval:</strong> {{ why_approval }}
+                  </td>
+                </tr>
+              </table>
 
-    <hr/>
+              <!-- Line items -->
+              <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#111827;">Regels</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;border:1px solid #e5e7eb;border-radius:4px;">
+                {% for ln in quote.lines %}
+                <tr>
+                  <td style="padding:10px 14px;font-size:12px;color:#374151;{% if not loop.first %}border-top:1px solid #e5e7eb;{% endif %}">
+                    <strong>{{ ln.sku }}</strong> — qty {{ ln.qty }} — {{ ln.netSell }} — marge {{ ln.marginPct }}
+                    {% if ln.priceBreakdown %}
+                    <div style="margin-top:4px;color:#6b7280;">
+                      {% for b in ln.priceBreakdown %}<div>{{ b }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </table>
 
-    <h3>Regels</h3>
-    <ul>
-      {% for ln in quote.lines %}
-        <li>
-          <b>{{ ln.sku }}</b> — qty {{ ln.qty }} — netSell {{ ln.netSell }} — marginPct {{ ln.marginPct }}
-          <ul>
-            {% for b in ln.priceBreakdown %}
-              <li>{{ b }}</li>
-            {% endfor %}
-          </ul>
-        </li>
-      {% endfor %}
-    </ul>
+              <!-- Actions -->
+              <table role="presentation" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding-right:12px;">
+                    <a href="{{ approve_url }}" style="display:inline-block;background:#111318;color:#ffffff;text-decoration:none;padding:10px 18px;font-size:13px;font-weight:600;border-radius:4px;">
+                      Goedkeuren
+                    </a>
+                  </td>
+                  <td>
+                    <a href="{{ reject_url }}" style="display:inline-block;background:#ffffff;color:#374151;text-decoration:none;padding:10px 18px;font-size:13px;font-weight:600;border-radius:4px;border:1px solid #e5e7eb;">
+                      Afwijzen
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
-    <hr/>
+              <p style="margin:16px 0 0;font-size:12px;color:#9ca3af;">
+                Deze links zijn tijdelijk geldig.
+              </p>
+            </td>
+          </tr>
 
-    <p style="font-size: 16px;">
-      <a href="{{ approve_url }}">✅ Approve</a>
-      &nbsp; | &nbsp;
-      <a href="{{ reject_url }}">❌ Reject</a>
-    </p>
+          <!-- Footer -->
+          <tr>
+            <td style="text-align:center;padding-top:20px;font-size:12px;color:#9ca3af;line-height:1.6;">
+              Inversiq
+            </td>
+          </tr>
 
-    <p style="color:#666;font-size:12px;">
-      Deze link is tijdelijk geldig.
-    </p>
-  </body>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
 </html>

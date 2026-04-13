@@ -20,7 +20,7 @@ from app.services.email_service import (
 
 logger = logging.getLogger(__name__)
 
-_SUBJECT = "Welkom bij Paintly – jouw intake link staat klaar"
+_SUBJECT = "Welkom bij Inversiq – jouw intake link staat klaar"
 _TRIAL_DAYS = 14
 
 # TODO: Under concurrent requests or retries, two workers could both pass

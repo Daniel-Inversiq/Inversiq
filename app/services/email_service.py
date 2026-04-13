@@ -87,7 +87,7 @@ def _format_from_header(from_raw: str, display_name: str) -> str:
             return raw
 
     if "@" in raw and "<" not in raw:
-        name = (display_name or "").strip() or "Paintly"
+        name = (display_name or "").strip() or "Inversiq"
         return f"{name} <{raw}>"
 
     return raw
@@ -117,7 +117,7 @@ class PostmarkHttpEmailService:
     ) -> None:
         self._server_token = (server_token or settings.POSTMARK_SERVER_TOKEN or "").strip()
         from_raw = (from_email or settings.emails_from_address).strip()
-        display_name = (from_name or settings.POSTMARK_FROM_NAME or "Paintly").strip()
+        display_name = (from_name or settings.POSTMARK_FROM_NAME or "Inversiq").strip()
         self._from_header_value = _format_from_header(from_raw, display_name)
         self._default_stream = (
             default_message_stream or settings.POSTMARK_MESSAGE_STREAM or "outbound"

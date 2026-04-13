@@ -1,0 +1,400 @@
+# app/routers/intake.py
+from __future__ import annotations
+
+import logging
+import uuid
+import secrets
+
+from fastapi import APIRouter, BackgroundTasks, Request, HTTPException, Depends, Query
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from sqlalchemy.orm import Session
+
+from app.db import get_db, SessionLocal
+from app.models import LeadFile
+from app.verticals.registry import get as get_vertical
+from app.verticals.paintly.eu_config import resolve_eu_config  # ✅ ADD
+
+from app.auth.optional_user import get_optional_user
+from app.models.user import User
+from app.models.tenant import Tenant, get_tenant_by_slug
+from app.models.lead import Lead as LeadModel
+
+router = APIRouter(prefix="/intake", tags=["intake"])
+logger = logging.getLogger(__name__)
+
+DEFAULT_VERTICAL = "paintly"
+
+
+def _start_processing_for_lead_sync(lead_id: str) -> None:
+    """
+    Start de bestaande quote-processing in background.
+
+    We maken een nieuwe DB session aan, omdat FastAPI BackgroundTasks
+    request-scoped dependencies (zoals de `db` uit `Depends(get_db)`) niet veilig hergebruikt.
+    """
+    db = SessionLocal()
+    try:
+        from app.routers.quotes import publish_quote
+
+        publish_quote(
+            lead_id=lead_id,
+            background=BackgroundTasks(),
+            db=db,
+        )
+    except Exception:
+        logger.exception("Background processing failed lead=%s", lead_id)
+    finally:
+        db.close()
+
+
+def _normalize_vertical_id(vertical: str) -> str:
+    """
+    Accept slugs like:
+      - painters-us
+      - painters_us
+      - Painters-US
+    Normalize to registry key: painters_us
+    """
+    return (vertical or "").strip().lower().replace("-", "_")
+
+
+def _wants_json(request: Request) -> bool:
+    """
+    JSON when:
+    - ?format=json
+    - Accept: application/json (Swagger does this)
+    """
+    fmt = (request.query_params.get("format") or "").lower().strip()
+    if fmt == "json":
+        return True
+    accept = (request.headers.get("accept") or "").lower()
+    return "application/json" in accept
+
+
+def _status_url(lead_id: str) -> str:
+    """
+    Bepaalt de redirect na intake submit.
+
+    Flow:
+      intake submit -> /processing/{lead_id}
+
+    Let op: voor JSON flows wordt deze URL alleen als 'next.status' meegegeven.
+    """
+    return f"/processing/{lead_id}"
+
+
+def _ensure_public_flow_token(db: Session, lead_id: str) -> str:
+    lead = db.query(LeadModel).filter(LeadModel.id == str(lead_id)).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    token = (getattr(lead, "public_token", None) or "").strip()
+    if not token:
+        token = secrets.token_hex(16)
+        lead.public_token = token
+        db.add(lead)
+        db.commit()
+        db.refresh(lead)
+    return token
+
+
+def _public_status_url_for_lead(db: Session, lead_id: str) -> str:
+    token = _ensure_public_flow_token(db, lead_id)
+    return f"/public/processing/{token}"
+
+
+def _get_vertical_or_404(vertical: str):
+    vertical_id = _normalize_vertical_id(vertical)
+    try:
+        return get_vertical(vertical_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+# -------------------------
+# EU config (for country dropdown)
+# Put this BEFORE /{vertical} so it won't be captured as "vertical"
+# -------------------------
+@router.get("/eu/config")
+def eu_config(country: str = Query("NL", min_length=2, max_length=2)):
+    country = (country or "NL").strip().upper()
+    return resolve_eu_config(country)
+
+
+async def _create_lead_impl(
+    request: Request,
+    vertical: str,
+    db: Session,
+    user: User | None,
+    background: BackgroundTasks,
+):
+    v = _get_vertical_or_404(vertical)
+
+    form = await request.form()
+    form_tenant_id = (form.get("tenant_id") or "").strip()
+
+    if form_tenant_id:
+        tenant_id = form_tenant_id
+    elif user and user.tenant_id:
+        tenant_id = str(user.tenant_id)
+    else:
+        tenant_id = "dev-tenant"
+
+    if hasattr(v, "upsert_lead_from_form"):
+        result = await v.upsert_lead_from_form(
+            request,
+            db,
+            tenant_id=tenant_id,
+        )
+    else:
+        result = await v.create_lead_from_form(
+            request,
+            db,
+            tenant_id=tenant_id,
+        )
+
+    # Start processing alleen als de lead al uploadbestanden heeft.
+    # Dit voorkomt dat "draft lead" bij het uploaden van foto's meteen faalt.
+    try:
+        files_count = db.query(LeadFile).filter(LeadFile.lead_id == result.lead_id).count()
+    except Exception:
+        files_count = 0
+
+    if files_count > 0:
+        background.add_task(_start_processing_for_lead_sync, result.lead_id)
+
+    logger.info(
+        "INTAKE created lead=%s vertical=%s tenant=%s",
+        result.lead_id,
+        result.vertical,
+        result.tenant_id,
+    )
+
+    # Bepaal redirect:
+    # DEMO-MODUS:
+    # - Na intake altijd eerst naar de AI-gestuurde statuspagina,
+    #   zodat de klant de analyse/progress ziet voordat de uiteindelijke
+    #   offerte of NEEDS_REVIEW-status zichtbaar wordt.
+    status_url = _public_status_url_for_lead(db, result.lead_id)
+
+    if _wants_json(request):
+        return JSONResponse(
+            {
+                "lead_id": result.lead_id,
+                "tenant_id": result.tenant_id,
+                "files": result.files,
+                "vertical": result.vertical,
+                "next": {
+                    "status": status_url,
+                    "publish_estimate": f"/quotes/publish/{result.lead_id}",
+                    "json": f"/quotes/{result.lead_id}/json",
+                    "html": f"/quotes/{result.lead_id}/html",
+                },
+            }
+        )
+
+    return RedirectResponse(url=status_url, status_code=303)
+
+
+# -------------------------
+# Backward compatible + tenant slug routes
+# -------------------------
+@router.get("/painters-us", include_in_schema=False)
+def intake_painters_us_redirect():
+    # ✅ keep old link working, but always use tenant slug route now
+    return RedirectResponse(url="/intake/paintly", status_code=302)
+
+
+@router.get("/t/{tenant_slug}", include_in_schema=False)
+def legacy_intake_by_tenant_slug_redirect(tenant_slug: str):
+    """
+    Legacy entrypoint; keep compatibility but delegate to primary slug route.
+    """
+    return RedirectResponse(url=f"/intake/{tenant_slug}", status_code=302)
+
+
+@router.post("/t/{tenant_slug}/lead", include_in_schema=False)
+async def legacy_create_lead_by_tenant_slug(
+    request: Request,
+    tenant_slug: str,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Legacy POST entrypoint; reuse primary slug handler to avoid logic duplication.
+    """
+    return await create_lead_by_tenant_slug(
+        request=request, tenant_slug=tenant_slug, db=db, background=background
+    )
+
+
+@router.get("/{tenant_slug}", response_class=HTMLResponse)
+def intake_by_tenant_slug(
+    request: Request,
+    tenant_slug: str,
+    db: Session = Depends(get_db),
+):
+    # Temporary debug logging to diagnose slug lookup in production
+    logger.info("INTAKE slug GET hit", extra={"tenant_slug": tenant_slug})
+    tenant = get_tenant_by_slug(db, tenant_slug)
+    if not tenant:
+        logger.warning("INTAKE slug GET tenant not found", extra={"tenant_slug": tenant_slug})
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    logger.info(
+        "INTAKE slug GET tenant resolved",
+        extra={
+            "tenant_slug": tenant_slug,
+            "tenant_id": getattr(tenant, "id", None),
+            "tenant_company_name": getattr(tenant, "company_name", None),
+        },
+    )
+
+    v = _get_vertical_or_404(DEFAULT_VERTICAL)
+
+    return v.render_intake_form(
+        request,
+        lead_id=str(uuid.uuid4()),
+        tenant_id=str(tenant.id),
+        submit_url=f"/intake/{tenant_slug}",
+        extra_context={
+            "tenant": tenant,
+            "tenant_slug": tenant.slug,
+        },
+    )
+
+
+@router.post("/{tenant_slug}")
+async def create_lead_by_tenant_slug(
+    request: Request,
+    tenant_slug: str,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    try:
+        logger.info("INTAKE slug POST hit", extra={"tenant_slug": tenant_slug})
+        tenant = get_tenant_by_slug(db, tenant_slug)
+        if not tenant:
+            logger.warning("INTAKE slug POST tenant not found", extra={"tenant_slug": tenant_slug})
+            raise HTTPException(status_code=404, detail="Tenant not found")
+
+        logger.info(
+            "INTAKE slug POST tenant resolved",
+            extra={
+                "tenant_slug": tenant_slug,
+                "tenant_id": getattr(tenant, "id", None),
+                "tenant_company_name": getattr(tenant, "company_name", None),
+            },
+        )
+
+        v = _get_vertical_or_404(DEFAULT_VERTICAL)
+
+        if hasattr(v, "upsert_lead_from_form"):
+            result = await v.upsert_lead_from_form(
+                request,
+                db,
+                tenant_id=str(tenant.id),
+            )
+        else:
+            result = await v.create_lead_from_form(
+                request,
+                db,
+                tenant_id=str(tenant.id),
+            )
+
+        logger.info(
+            "INTAKE created lead=%s via tenant_slug=%s tenant=%s",
+            result.lead_id,
+            tenant_slug,
+            result.tenant_id,
+        )
+
+        # Start processing alleen als de lead al echte uploads heeft.
+        try:
+            files_count = (
+                db.query(LeadFile).filter(LeadFile.lead_id == result.lead_id).count()
+            )
+        except Exception:
+            files_count = 0
+
+        if files_count > 0:
+            background.add_task(_start_processing_for_lead_sync, result.lead_id)
+
+        status_url = _public_status_url_for_lead(db, result.lead_id)
+
+        if _wants_json(request):
+            return JSONResponse(
+                {
+                    "lead_id": result.lead_id,
+                    "tenant_id": result.tenant_id,
+                    "files": result.files,
+                    "vertical": result.vertical,
+                    "next": {
+                        "status": status_url,
+                        "publish_estimate": f"/quotes/publish/{result.lead_id}",
+                        "json": f"/quotes/{result.lead_id}/json",
+                        "html": f"/quotes/{result.lead_id}/html",
+                    },
+                }
+            )
+
+        return RedirectResponse(url=status_url, status_code=303)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("create_lead_by_tenant_slug crashed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------
+# Dynamic vertical routes (legacy, now under /v/)
+# -------------------------
+@router.get("/v/{vertical}", response_class=HTMLResponse)
+def intake_by_vertical(
+    request: Request,
+    vertical: str,
+    user: User | None = Depends(get_optional_user),
+):
+    v = _get_vertical_or_404(vertical)
+
+    tenant_id = user.tenant_id if user else "public"
+
+    return v.render_intake_form(
+        request,
+        lead_id=str(uuid.uuid4()),
+        tenant_id=tenant_id,
+        submit_url=f"/intake/v/{vertical}/lead",
+    )
+
+
+@router.post("/v/{vertical}/lead")
+async def create_lead_by_vertical(
+    request: Request,
+    vertical: str,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
+):
+    try:
+        return await _create_lead_impl(request, vertical, db, user, background)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("create_lead crashed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/lead")
+async def create_lead_legacy(
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
+):
+    try:
+        return await _create_lead_impl(request, DEFAULT_VERTICAL, db, user, background)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("create_lead crashed")
+        raise HTTPException(status_code=500, detail=str(e))

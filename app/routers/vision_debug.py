@@ -10,8 +10,7 @@ from app.core.settings import settings
 from app.db import get_db
 from app.models import Lead
 from app.verticals.registry import get as get_vertical
-from app.verticals.paintly.needs_review import needs_review_from_output
-from app.verticals.paintly.pipeline import compute_quote_for_lead
+from app.verticals.painting import compute_quote_for_lead, needs_review_from_output
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 logger = logging.getLogger(__name__)

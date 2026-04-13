@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/dvanl/Aether_engine/.claude/worktrees/nostalgic-nash -type f \\\\\\(-name *.py -o -name *.ts -o -name *.js -o -name *.json -o -name *.toml -o -name *.yaml -o -name *.yml -o -name *.env -o -name *.md -o -name *.txt -o -name *.cfg -o -name *.ini -o -name *.rs -o -name *.go -o -name *.lock -o -name *.gradle \\\\\\))",
+      "Bash(find /c/Users/dvanl/Aether_engine/.claude/worktrees/nostalgic-nash -type f \\\\\\(-name *.json -o -name *.yaml -o -name *.yml \\\\\\))",
+      "Bash(grep -r \"PYTHONPATH\\\\|sys.path\" /c/Users/dvanl/Aether_engine/.claude/worktrees/nostalgic-nash --include=*.py)",
+      "Bash(grep -rn aether --include=*.toml --include=*.cfg --include=*.ini --include=*.txt .)",
+      "Bash(grep -rn aether --include=*.env* --include=.env* .)",
+      "Bash(grep -rn \"aether\\\\|Aether\" --include=*.json .)",
+      "Bash(python -c \"import ast, sys, os:*)",
+      "Bash(grep -rn \"from aether\\\\|import aether\" --include=*.py /c/Users/dvanl/Aether_engine/.claude/worktrees/nostalgic-nash/)"
+    ]
+  }
+}

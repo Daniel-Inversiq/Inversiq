@@ -38,6 +38,21 @@ def get_or_create_usage(db: Session, tenant_id: str) -> TenantUsage:
     return usage
 
 
+def grant_top_up_credits(db: Session, tenant_id: str, credits: int) -> TenantUsage:
+    """
+    Add top-up credits to the tenant's current monthly usage row.
+    Credits accumulate on top of whatever is already stored.
+    """
+    usage = get_or_create_usage(db, tenant_id)
+    usage.top_up_credits += credits
+
+    db.add(usage)
+    db.commit()
+    db.refresh(usage)
+
+    return usage
+
+
 def increment_usage(db: Session, tenant_id: str) -> TenantUsage:
     """
     Increment quotes_sent for the tenant's current monthly usage row.

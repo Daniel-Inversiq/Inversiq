@@ -3,162 +3,148 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>We bekijken je foto's - Paintly</title>
+  <title>We maken je offerte - Inversiq</title>
 
   <style>
-    :root {
-      --overlay: rgba(11, 18, 32, 0.72);
-      --card: rgba(11, 18, 32, 0.96);
-      --card-border: rgba(96, 165, 250, 0.28);
-      --text: #f8fafc;
-      --muted: rgba(248, 250, 252, 0.78);
-      --accent: #60a5fa;
-      --danger: #f87171;
-    }
-
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background:
-        linear-gradient(var(--overlay), var(--overlay)),
-        radial-gradient(circle at top, rgba(96,165,250,0.08), transparent 40%),
-        #0f172a;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f8f9fa;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
-      color: var(--text);
+      color: #111318;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .modal {
+    .block {
       width: 100%;
-      max-width: 420px;
-      border-radius: 24px;
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-      padding: 24px 22px;
+      max-width: 340px;
+      text-align: center;
     }
 
-    .top {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-
+    /* Spinner */
     .spinner {
-      width: 32px;
-      height: 32px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      border: 4px solid rgba(96, 165, 250, 0.22);
-      border-top-color: var(--accent);
-      animation: spin 0.9s linear infinite;
-      flex: 0 0 auto;
-      margin-top: 2px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #6b7280;
+      animation: spin 0.85s linear infinite;
+      margin: 0 auto 20px;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
+    .hidden { display: none !important; }
+
     .title {
       margin: 0;
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1.25;
+      font-size: 15px;
+      font-weight: 500;
+      color: #111318;
+      line-height: 1.35;
     }
 
     .sub {
-      margin: 4px 0 0 0;
-      font-size: 14px;
-      color: var(--muted);
-      line-height: 1.45;
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
     }
 
-    .steps {
-      margin-top: 8px;
-      color: rgba(248, 250, 252, 0.92);
-      font-size: 14px;
-      line-height: 1.7;
+    .step-line {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #6b7280;
+      min-height: 20px;
     }
 
-    .steps div {
-      margin: 2px 0;
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    .hidden {
-      display: none !important;
+    .step-line.animate {
+      animation: fadein 0.3s ease both;
     }
 
+    /* Error state */
     .error {
       display: none;
-      margin-top: 16px;
-      padding: 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(248, 113, 113, 0.35);
-      background: rgba(248, 113, 113, 0.08);
+      margin-top: 20px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid #fde68a;
+      background: #fffbeb;
+      text-align: left;
     }
 
     .error-title {
-      margin: 0 0 6px 0;
-      color: rgba(248, 113, 113, 0.98);
-      font-weight: 700;
-      font-size: 15px;
+      margin: 0 0 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #92400e;
     }
 
     .error-text {
-      font-size: 13px;
-      color: rgba(248, 250, 252, 0.88);
+      font-size: 12px;
+      color: #78350f;
       white-space: pre-wrap;
+      line-height: 1.5;
     }
 
     .error-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       margin-top: 12px;
     }
 
     .btn {
       appearance: none;
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      background: rgba(15, 23, 42, 0.8);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 9px 14px;
-      font-size: 13px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+      border-radius: 4px;
+      padding: 0 12px;
+      height: 30px;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      font-family: inherit;
+      transition: background 0.1s;
     }
 
+    .btn:hover { background: #f9fafb; }
+
     .btn.primary {
-      border-color: rgba(96, 165, 250, 0.42);
-      background: rgba(96, 165, 250, 0.18);
+      border-color: #111318;
+      background: #111318;
+      color: #fff;
     }
+
+    .btn.primary:hover { background: #1e2129; }
   </style>
 </head>
 <body>
-  <div class="modal" role="status" aria-live="polite">
-    <div class="top">
-      <div class="spinner" id="spinner"></div>
-      <div>
-        <h1 class="title" id="pageTitle">We bekijken je foto's...</h1>
-        <p class="sub">Dit duurt meestal een paar seconden.</p>
-      </div>
-    </div>
+  <div class="block" role="status" aria-live="polite">
+    <div class="spinner" id="spinner"></div>
 
-    <div class="steps" id="rulesBox">
-      <div>Oppervlak bepalen...</div>
-      <div>Voorbereiding inschatten...</div>
-      <div>Conceptofferte opstellen...</div>
-    </div>
+    <h1 class="title" id="pageTitle">We maken je offerte...</h1>
+    <p class="sub">Dit duurt meestal een paar seconden.</p>
+
+    <div class="step-line" id="stepLine">Foto's analyseren...</div>
 
     <div class="error" id="errorBox">
       <div class="error-title">We konden je aanvraag niet verwerken</div>
@@ -176,45 +162,69 @@
     const retryEndpoint = String({{ (retry_endpoint or ('/quotes/publish/' ~ lead_id)) | tojson }});
     const initKey = `processing_init_${leadId}`;
 
-    const errorBox = document.getElementById("errorBox");
+    const errorBox  = document.getElementById("errorBox");
     const errorText = document.getElementById("errorText");
     const pageTitle = document.getElementById("pageTitle");
-    const rulesBox = document.getElementById("rulesBox");
-    const retryBtn = document.getElementById("retryBtn");
-    const backBtn = document.getElementById("backBtn");
-    const spinner = document.getElementById("spinner");
+    const stepLine  = document.getElementById("stepLine");
+    const retryBtn  = document.getElementById("retryBtn");
+    const backBtn   = document.getElementById("backBtn");
+    const spinner   = document.getElementById("spinner");
 
+    // ── Step rotation ──────────────────────────────────────────────
+    const loadingSteps = [
+      "Foto's analyseren...",
+      "Oppervlakte bepalen...",
+      "Offerte opstellen...",
+    ];
+    let stepIdx = 0;
+    let stepTimerId = null;
+
+    function setStep(text) {
+      if (!stepLine) return;
+      stepLine.classList.remove("animate");
+      // Force reflow so animation restarts
+      void stepLine.offsetWidth;
+      stepLine.textContent = text;
+      stepLine.classList.add("animate");
+    }
+
+    function startStepRotation() {
+      stepIdx = 0;
+      setStep(loadingSteps[0]);
+      stepTimerId = setInterval(function () {
+        stepIdx = (stepIdx + 1) % loadingSteps.length;
+        setStep(loadingSteps[stepIdx]);
+      }, 2200);
+    }
+
+    function stopStepRotation() {
+      if (stepTimerId) { clearInterval(stepTimerId); stepTimerId = null; }
+    }
+
+    // ── State helpers ──────────────────────────────────────────────
     function showReviewPending(msg) {
+      stopStepRotation();
       if (pageTitle) pageTitle.textContent = "Je offerte wordt gecontroleerd";
-      if (spinner) spinner.classList.add("hidden");
-      if (rulesBox) {
-        rulesBox.classList.remove("hidden");
-        rulesBox.innerHTML = `<div>${msg || "Er is nog een extra controle nodig voordat we de offerte kunnen tonen."}</div>`;
-      }
-      if (errorBox) errorBox.style.display = "none";
+      if (spinner)   spinner.classList.add("hidden");
+      if (stepLine)  { setStep(msg || "Er is nog een extra controle nodig."); }
+      if (errorBox)  errorBox.style.display = "none";
     }
 
     function showFailed(msg, data) {
+      stopStepRotation();
       if (pageTitle) pageTitle.textContent = "Er is iets misgegaan";
-      if (spinner) spinner.classList.add("hidden");
-      if (rulesBox) rulesBox.classList.add("hidden");
-      if (errorBox) errorBox.style.display = "block";
+      if (spinner)   spinner.classList.add("hidden");
+      if (stepLine)  stepLine.textContent = "";
+      if (errorBox)  errorBox.style.display = "block";
       if (errorText) errorText.textContent = msg || "Er is iets misgegaan. Probeer het opnieuw.";
       if (backBtn && data && data.back_url) backBtn.setAttribute("href", String(data.back_url));
     }
 
     function showLoading() {
-      if (pageTitle) pageTitle.textContent = "We bekijken je foto's...";
-      if (spinner) spinner.classList.remove("hidden");
-      if (rulesBox) {
-        rulesBox.classList.remove("hidden");
-        rulesBox.innerHTML = `
-          <div>Oppervlak bepalen...</div>
-          <div>Voorbereiding inschatten...</div>
-          <div>Conceptofferte opstellen...</div>
-        `;
-      }
-      if (errorBox) errorBox.style.display = "none";
+      if (pageTitle) pageTitle.textContent = "We maken je offerte...";
+      if (spinner)   spinner.classList.remove("hidden");
+      if (errorBox)  errorBox.style.display = "none";
+      startStepRotation();
     }
 
     function redirectToDone(data) {
@@ -222,6 +232,7 @@
       window.location.href = url;
     }
 
+    // ── Polling ────────────────────────────────────────────────────
     async function fetchStatusOnce() {
       try {
         const res = await fetch(statusEndpoint, {
@@ -240,10 +251,7 @@
     let isStopping = false;
 
     function stopPolling() {
-      if (pollIntervalId) {
-        clearInterval(pollIntervalId);
-        pollIntervalId = null;
-      }
+      if (pollIntervalId) { clearInterval(pollIntervalId); pollIntervalId = null; }
     }
 
     async function pollOnceAndAct() {
@@ -279,16 +287,11 @@
       isStopping = false;
 
       try {
-        await fetch(retryEndpoint, {
-          method: "POST",
-          cache: "no-store"
-        });
+        await fetch(retryEndpoint, { method: "POST", cache: "no-store" });
       } catch (_) {
         showFailed("Opnieuw proberen is nu niet gelukt. Probeer het zo nog eens.", null);
       } finally {
-        if (!pollIntervalId) {
-          pollIntervalId = setInterval(pollOnceAndAct, 2000);
-        }
+        if (!pollIntervalId) { pollIntervalId = setInterval(pollOnceAndAct, 2000); }
         pollOnceAndAct();
         if (retryBtn) retryBtn.disabled = false;
       }
@@ -298,6 +301,7 @@
 
     if (!window[initKey]) {
       window[initKey] = true;
+      showLoading();
       pollIntervalId = setInterval(pollOnceAndAct, 2000);
       pollOnceAndAct();
     }

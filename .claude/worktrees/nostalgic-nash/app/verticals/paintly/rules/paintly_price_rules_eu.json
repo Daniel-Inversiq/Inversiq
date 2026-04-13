@@ -1,0 +1,85 @@
+{
+    "vertical_id": "painters_eu",
+    "version": "1.0",
+    "currency": "EUR",
+    "units": {
+        "area": "sqm",
+        "discrete": "per_item"
+    },
+    "surface_types": [
+        "walls",
+        "ceilings",
+        "trim",
+        "doors",
+        "exterior_siding"
+    ],
+    "assumptions": {
+        "includes_paint": false,
+        "includes_prep": false,
+        "includes_cleanup": false,
+        "includes_repairs": false,
+        "includes_materials": false,
+        "includes_labor": false
+    },
+    "gates": {
+        "require_pricing_ready": false,
+        "min_confidence": 0.6
+    },
+    "base_rates": {
+        "walls": {
+            "unit": "sqm",
+            "rate_eur": 18
+        },
+        "ceilings": {
+            "unit": "sqm",
+            "rate_eur": 20
+        },
+        "exterior_siding": {
+            "unit": "sqm",
+            "rate_eur": 28
+        },
+        "trim": {
+            "unit": "fixed",
+            "base_eur": 250
+        },
+        "doors": {
+            "unit": "per_item",
+            "rate_eur": 95
+        }
+    },
+    "multipliers": {
+        "prep_level": {
+            "light": 1.0,
+            "medium": 1.25,
+            "heavy": 1.6
+        },
+        "access_risk": {
+            "low": 1.0,
+            "medium": 1.15,
+            "high": 1.35
+        },
+        "complexity": {
+            "low": 1.0,
+            "medium": 1.2,
+            "high": 1.4
+        },
+        "job_type": {
+            "Binnenwerk": 1.0,
+            "Buitenwerk": 1.3,
+            "Beide": 1.15
+        }
+    },
+    "cost_split": {
+        "labor_ratio": 0.7,
+        "materials_ratio": 0.3
+    },
+    "margin": {
+        "target": 0.30,
+        "minimum": 0.18
+    },
+    "estimate_range": {
+        "low_factor": 0.85,
+        "high_factor": 1.15
+    },
+    "hard_blocks": {}
+}

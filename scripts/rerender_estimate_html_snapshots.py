@@ -39,7 +39,7 @@ def main() -> int:
 
     from app.db import SessionLocal
     from app.models.lead import Lead
-    from app.verticals.paintly.router_app import rerender_stored_estimate_html_from_json
+    from app.verticals.painting.router_app import rerender_stored_estimate_html_from_json
 
     db = SessionLocal()
     try:

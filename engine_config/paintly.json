@@ -2,8 +2,8 @@
     "version": "1.0",
     "vertical_id": "paintly",
     "assets": {
-        "rules": "app/verticals/paintly/rules/pricing_rules_us.json",
-        "template": "app/verticals/paintly/templates/estimate.html"
+        "rules": "app/verticals/painting/rules/pricing_rules_us.json",
+        "template": "app/verticals/painting/templates/estimate.html"
     },
     "pipeline": {
         "steps": [

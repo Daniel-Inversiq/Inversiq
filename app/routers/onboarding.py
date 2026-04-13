@@ -22,7 +22,7 @@ from app.i18n.service import setup_jinja_i18n
 from app.services.tenant_onboarding import create_tenant_with_pricing
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
-templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+templates = Jinja2Templates(directory="app/verticals/painting/templates")
 setup_jinja_i18n(templates)
 
 

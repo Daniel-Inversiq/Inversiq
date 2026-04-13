@@ -1,0 +1,88 @@
+{% extends "app/layout.html" %}
+{% block content %}
+
+<div class="mx-auto max-w-2xl px-4 py-14">
+
+  <div class="rounded-[26px] border border-slate-200/70 bg-white shadow-sm overflow-hidden">
+
+    <!-- Header -->
+    <div class="border-b border-slate-100 px-6 py-6">
+      <h1 class="text-xl font-semibold tracking-tight text-slate-900">
+        Offerte aanvragen
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-600">
+        Je vraagt een schilderofferte aan bij
+        <span class="font-medium text-slate-900">
+          {{ (tenant.company_name if tenant is defined and tenant else none) or (tenant.name if tenant is defined and tenant else none) or "Inversiq partner" }}
+        </span>.
+      </p>
+    </div>
+
+    <!-- Form -->
+    <div class="px-6 py-6">
+
+      <form class="space-y-5">
+
+        <!-- Photos -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Foto's uploaden
+          </label>
+
+          <input
+            type="file"
+            multiple
+            class="mt-2 block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+          >
+
+          <p class="mt-1 text-xs text-slate-500">
+            Upload foto's van de ruimte voor een nauwkeurige prijsinschatting.
+          </p>
+        </div>
+
+        <!-- Name -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Naam
+          </label>
+
+          <input
+            type="text"
+            class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-300 focus:ring-2 focus:ring-slate-100 outline-none"
+            placeholder="Bijv. Jan Jansen"
+          >
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            E-mailadres
+          </label>
+
+          <input
+            type="email"
+            class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-300 focus:ring-2 focus:ring-slate-100 outline-none"
+            placeholder="jan@email.nl"
+          >
+        </div>
+
+        <!-- Submit -->
+        <div class="pt-2">
+          <button
+            type="submit"
+            class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800"
+          >
+            Offerte aanvragen
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

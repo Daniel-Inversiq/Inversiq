@@ -21,25 +21,25 @@ from app.models.quote_calendar_link import QuoteCalendarLink
 from app.models.user import User
 from app.services.storage import get_storage, head_ok, MAX_BYTES, ALLOWED_CONTENT_TYPES
 from app.services.metrics import inc  # ✅ FASE 6 metrics
-from app.verticals.paintly.calendar_ics import (
+from app.verticals.painting.calendar_ics import (
     build_quote_calendar_payload,
     build_quote_ics,
     build_quote_ics_filename,
 )
-from app.verticals.paintly.google_calendar_service import (
+from app.verticals.painting.google_calendar_service import (
     create_google_calendar_event_for_tenant,
 )
-from app.verticals.paintly.google_calendar_quote import build_google_event_payload
+from app.verticals.painting.google_calendar_quote import build_google_event_payload
 from app.verticals.registry import get as get_vertical
 from app.core.settings import settings
-from app.verticals.paintly.estimate_email import (
+from app.verticals.painting.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
 from app.i18n.service import setup_jinja_i18n
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 templates = Jinja2Templates(directory="app/templates")
-paintly_templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+paintly_templates = Jinja2Templates(directory="app/verticals/painting/templates")
 setup_jinja_i18n(templates)
 setup_jinja_i18n(paintly_templates)
 logger = logging.getLogger(__name__)
@@ -649,7 +649,7 @@ def publish_quote(
                     quote_url = f"/e/{lead.public_token}"
 
                 customer_name = getattr(lead, "name", "") or ""
-                company_name = "Paintly"
+                company_name = "Inversiq"
                 lead_id_value = str(lead.id)
                 tenant_id_value = str(getattr(lead, "tenant_id", "") or "")
 

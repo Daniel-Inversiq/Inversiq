@@ -6,7 +6,8 @@ from decimal import Decimal
 from typing import Any
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import and_, asc, case, desc, func, or_
 from sqlalchemy.orm import Session
@@ -39,17 +40,18 @@ FOUNDER_TENANT_SORTS = frozenset(
 
 
 _CANONICAL_PLAN_MRR_EUR: dict[str, int] = {
-    "starter_99": 99,
-    "pro_199": 199,
-    "business_399": 399,
+    "core": 399,
+    "growth": 899,
+    "pro": 2499,
+    "scale": 0,
 }
 
 
 def _estimated_mrr_eur_for_resolved_plan(resolved: str | None) -> int:
     """List-price MRR per seat for canonical Paintly plans (estimate only)."""
     if not resolved:
-        return _CANONICAL_PLAN_MRR_EUR["starter_99"]
-    return _CANONICAL_PLAN_MRR_EUR.get(resolved, _CANONICAL_PLAN_MRR_EUR["starter_99"])
+        return _CANONICAL_PLAN_MRR_EUR["core"]
+    return _CANONICAL_PLAN_MRR_EUR.get(resolved, _CANONICAL_PLAN_MRR_EUR["core"])
 
 
 def _chart_label_short(name: str | None, *, max_len: int = 32) -> str:
@@ -254,9 +256,9 @@ def founder_dashboard(
     business_count = 0
     for row in plan_counts_raw:
         resolved = resolve_plan_code(row.plan_code)
-        if resolved == "pro_199":
+        if resolved == "growth":
             pro_count += row.count
-        elif resolved == "business_399":
+        elif resolved == "pro":
             business_count += row.count
         else:
             free_count += row.count
@@ -941,5 +943,33 @@ def founder_tenant_detail(
             "tenant_summary": tenant_summary,
             "app_public_origin": app_public_origin,
             "recent_quote_rows": recent_quote_rows,
+            "all_workflows": ["painting", "roofing", "solar"],
         },
+    )
+
+
+_VALID_WORKFLOWS = frozenset(["painting", "roofing", "solar"])
+
+
+@router.post("/tenants/{tenant_id}/workflows", name="founder_tenant_workflows_update")
+def founder_tenant_workflows_update(
+    tenant_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_platform_admin),
+    workflows: list[str] = Form(default=[]),
+):
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    # Accept only known workflow ids; preserve order painting → roofing → solar.
+    enabled = [w for w in ["painting", "roofing", "solar"] if w in set(workflows) & _VALID_WORKFLOWS]
+    tenant.enabled_verticals = enabled if enabled else ["painting"]
+    db.add(tenant)
+    db.commit()
+
+    return RedirectResponse(
+        url=str(request.url_for("founder_tenant_detail", tenant_id=tenant_id)) + "?workflows_saved=1",
+        status_code=303,
     )

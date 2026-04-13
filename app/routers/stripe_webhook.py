@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models.tenant import Tenant
+from app.core.plan_catalog import TOPUP_REQUEST_COUNT, TOPUP_STRIPE_PRICE_ENV_KEY
+from app.services.usage_service import grant_top_up_credits
 
 import stripe
 import logging
@@ -66,22 +68,62 @@ async def stripe_webhook(
         # Primary coupling via tenant_id from metadata.
         metadata = data.get("metadata") or {}
         tenant_id = metadata.get("tenant_id")
+        purchase_type = metadata.get("purchase_type")
         target_plan_code = metadata.get("target_plan_code")
 
-        tenant = _find_tenant_by_id(db, tenant_id)
-        if tenant:
-            customer_id = data.get("customer")
-            subscription_id = data.get("subscription")
+        # --- Top-up purchase ---
+        if purchase_type == "topup" and tenant_id:
+            topup_price_id = (os.getenv(TOPUP_STRIPE_PRICE_ENV_KEY) or "").strip() or None
+            # Verify the session was actually for the configured top-up price
+            # before granting credits (guard against metadata spoofing via
+            # line_items is not possible here without an extra API call, so we
+            # rely on the signed webhook + purchase_type flag).
+            payment_status = data.get("payment_status")
+            if payment_status == "paid":
+                grant_top_up_credits(db, tenant_id, TOPUP_REQUEST_COUNT)
+                logger.info(
+                    "topup_credits_granted tenant_id=%s credits=%s",
+                    tenant_id,
+                    TOPUP_REQUEST_COUNT,
+                )
+        else:
+            # --- Subscription checkout ---
+            tenant = _find_tenant_by_id(db, tenant_id)
+            if tenant:
+                customer_id = data.get("customer")
+                subscription_id = data.get("subscription")
 
-            if customer_id:
-                tenant.stripe_customer_id = customer_id
-            if subscription_id:
-                tenant.stripe_subscription_id = subscription_id
-            if target_plan_code:
-                tenant.plan_code = target_plan_code
+                if customer_id:
+                    tenant.stripe_customer_id = customer_id
+                if subscription_id:
+                    tenant.stripe_subscription_id = subscription_id
+                if target_plan_code:
+                    tenant.plan_code = target_plan_code
 
-            db.add(tenant)
-            db.commit()
+                # Resolve subscription_status from the actual Stripe subscription
+                # so activation does not depend on customer.subscription.created
+                # arriving and succeeding as a separate event.
+                if subscription_id:
+                    try:
+                        sub = stripe.Subscription.retrieve(subscription_id)
+                        sub_status = getattr(sub, "status", None)
+                        if sub_status:
+                            tenant.subscription_status = sub_status
+                    except stripe.error.StripeError:
+                        logger.warning(
+                            "Could not retrieve subscription %s during checkout activation",
+                            subscription_id,
+                        )
+                        # Fall back: mark active so the tenant is not locked out.
+                        # customer.subscription.created will correct it if needed.
+                        if not tenant.subscription_status or tenant.subscription_status in (
+                            "trialing",
+                            None,
+                        ):
+                            tenant.subscription_status = "active"
+
+                db.add(tenant)
+                db.commit()
 
     elif event_type in {
         "customer.subscription.created",
@@ -110,7 +152,7 @@ async def stripe_webhook(
 
             if event_type == "customer.subscription.deleted":
                 tenant.subscription_status = "canceled"
-                tenant.plan_code = "starter_99"
+                tenant.plan_code = "core"
             else:
                 if status:
                     tenant.subscription_status = status

@@ -1,0 +1,65 @@
+services:
+  app:
+    build: .
+    image: paintly-local
+    command: gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8080
+    ports:
+      - "8001:8080"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://levelai_user:levelai_password@postgres:5432/levelai_db
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - levelai_network
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: levelai_postgres
+    environment:
+      POSTGRES_DB: levelai_db
+      POSTGRES_USER: levelai_user
+      POSTGRES_PASSWORD: levelai_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U levelai_user -d levelai_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - levelai_network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: levelai_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - levelai_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  levelai_network:
+    driver: bridge

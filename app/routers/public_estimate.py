@@ -28,7 +28,7 @@ from app.services.workflow import (
     mark_lead_accepted,
     mark_lead_viewed,
 )
-from app.verticals.paintly.email_render import (
+from app.verticals.painting.email_render import (
     render_estimate_accepted_email,
     render_painter_estimate_accepted_email,
 )
@@ -38,7 +38,7 @@ from app.i18n.service import setup_jinja_i18n
 router = APIRouter(prefix="/e", tags=["public_estimate"])
 # Alias router for simple customer-friendly quote URL (/q/{public_token})
 router_q = APIRouter(prefix="/q", tags=["public_quote"])
-paintly_templates = Jinja2Templates(directory="app/verticals/paintly/templates")
+paintly_templates = Jinja2Templates(directory="app/verticals/painting/templates")
 setup_jinja_i18n(paintly_templates)
 
 logger = logging.getLogger(__name__)
@@ -192,7 +192,7 @@ def _is_pre_send_public_status(lead_status: str) -> bool:
 
 
 @router.get("/{token}", response_class=HTMLResponse)
-def public_estimate(token: str, request: Request, db: Session = Depends(get_db)):
+def public_estimate(token: str, request: Request, db: Session = Depends(get_db), preview: bool = False):
     lead = db.query(Lead).filter(Lead.public_token == token).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Not found")
@@ -277,7 +277,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Offerte in review — Paintly</title>
+  <title>Offerte in review — Inversiq</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gray-50 text-slate-900 antialiased">
@@ -291,7 +291,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
           </svg>
         </div>
         <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Paintly bevestiging</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inversiq bevestiging</p>
           <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
             Bedankt, we gaan uw aanvraag controleren
           </h1>
@@ -337,8 +337,9 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
     if not html_key:
         raise HTTPException(status_code=404, detail="Estimate not found")
 
-    mark_lead_viewed(db, lead)
-    db.commit()
+    if not preview:
+        mark_lead_viewed(db, lead)
+        db.commit()
 
     # Normaliseer tenant_id + key op dezelfde manier als de interne HTML-flow:
     # - tenant_id fallback naar "default"
@@ -500,7 +501,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
         branding_source = "tenant" if tenant_company_name else "user"
         fallback_reason = None if branding_logo_url else "logo_missing"
     else:
-        branding_company_name = "Paintly"
+        branding_company_name = "Inversiq"
         branding_logo_url = None
         branding_source = "default"
         fallback_reason = "tier_not_allowed" if not branding_allowed else "company_name_missing"
@@ -589,6 +590,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db))
         ui_status=ui_status,
         ui_mode=ui_mode,
         is_public=True,
+        is_preview=bool(preview),
         iframe_url=iframe_url,
         body_html=body_html or "",
         branding_company_name=branding_company_name,
@@ -694,7 +696,7 @@ def public_accept(
             background.add_task(
                 send_painter_accept_email,
                 painter_email=painter_email,
-                company_name="Paintly",
+                company_name="Inversiq",
                 lead_name=getattr(lead, "name", "") or "—",
                 lead_email=getattr(lead, "email", "") or "",
                 lead_phone=getattr(lead, "phone", "") or "",
@@ -716,7 +718,7 @@ def public_accept(
                     else f"/e/{lead.public_token}"
                 )
                 customer_name = getattr(lead, "name", "") or ""
-                company_name = "Paintly"
+                company_name = "Inversiq"
 
                 async def _send():
                     html_body = render_estimate_accepted_email(

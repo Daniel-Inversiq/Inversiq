@@ -81,12 +81,8 @@ def require_action_feature(action: str) -> str | None:
 
     if act is Action.SEND_QUOTE:
         return Feature.BASIC_SENDING.value
-    if act is Action.EXPORT_PDF:
-        return Feature.PDF_EXPORT.value
-    if act is Action.USE_BRANDING:
-        return Feature.BRANDING.value
-    if act is Action.USE_WHITELABEL:
-        return Feature.WHITELABEL.value
+    # EXPORT_PDF, USE_BRANDING, USE_WHITELABEL are available to all accessible
+    # accounts and are not gated by a plan feature.
     return None
 
 
@@ -109,20 +105,21 @@ def build_upgrade_url(feature: str | None = None, action: str | None = None) -> 
     return "/app/billing"
 
 
-def _extract_usage(tenant: TenantUsageLike | None) -> tuple[int | None, int | None]:
+def _extract_usage(tenant: TenantUsageLike | None) -> tuple[int | None, int | None, int]:
     """
-    Extract (quotes_sent, monthly_usage_baseline) from a tenant/usage-like object.
-    Safe when attributes are missing or None.
+    Extract (quotes_sent, monthly_usage_baseline, top_up_credits) from a
+    tenant/usage-like object.  Safe when attributes are missing or None.
     """
 
     if tenant is None:
-        return None, None
+        return None, None, 0
 
     raw_sent = getattr(tenant, "quotes_sent", None)
     # Backward compatible fallback for legacy contexts that still expose quote_limit.
     raw_limit = getattr(tenant, "monthly_usage_baseline", None)
     if raw_limit is None:
         raw_limit = getattr(tenant, "quote_limit", None)
+    raw_topup = getattr(tenant, "top_up_credits", None)
 
     try:
         sent = int(raw_sent) if raw_sent is not None else None
@@ -134,14 +131,19 @@ def _extract_usage(tenant: TenantUsageLike | None) -> tuple[int | None, int | No
     except (TypeError, ValueError):
         limit = None
 
-    return sent, limit
+    try:
+        top_up = int(raw_topup) if raw_topup is not None else 0
+    except (TypeError, ValueError):
+        top_up = 0
+
+    return sent, limit, top_up
 
 
 def _resolve_monthly_offer_limit(plan_code: str | None) -> int | None:
     item = get_plan_item(plan_code, allow_aliases=True)
     if item is None:
         return None
-    return item.monthly_offer_limit
+    return item.monthly_request_limit
 
 
 def check_entitlement(tenant: TenantUsageLike | None, action: str) -> EntitlementResult:
@@ -203,9 +205,11 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
             )
 
         # 3) Usage/paywall enforcement per plan.
-        usage_current, usage_limit = _extract_usage(tenant)
+        usage_current, usage_limit, top_up_credits = _extract_usage(tenant)
         if usage_limit is None:
             usage_limit = _resolve_monthly_offer_limit(plan_code)
+        if usage_limit is not None and top_up_credits > 0:
+            usage_limit = usage_limit + top_up_credits
 
         if (
             usage_limit is not None
@@ -237,91 +241,44 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
             subscription_status=subscription_status,
         )
 
-    # EXPORT_PDF: feature + subscription (same feature-based rules as other actions).
-    if act is Action.EXPORT_PDF:
+    # EXPORT_PDF, USE_BRANDING, USE_WHITELABEL: accessible to all tenants with
+    # an active subscription — no plan feature gating.
+    if act in {Action.EXPORT_PDF, Action.USE_BRANDING, Action.USE_WHITELABEL}:
         if not is_subscription_accessible(subscription_status, trial_ends_at):
             logger.info(
-                "PDF_ENTITLEMENT_CHECK tenant_id=%s plan_code=%s subscription_status=%s action=%s allowed=%s reason=%s feature=%s features=%s",
+                "ENTITLEMENT_CHECK tenant_id=%s plan_code=%s subscription_status=%s action=%s allowed=%s reason=%s features=%s",
                 getattr(tenant, "id", None) if tenant is not None else None,
                 plan_code,
                 subscription_status,
                 act.value,
                 False,
                 "subscription_inactive",
-                feature,
                 plan_features,
             )
             return EntitlementResult(
                 allowed=False,
                 action=act.value,
                 reason="subscription_inactive",
-                feature=feature,
-                upgrade_url=build_upgrade_url(feature=feature, action=act.value),
+                feature=None,
+                upgrade_url=build_upgrade_url(action=act.value),
                 plan_code=plan_code,
                 subscription_status=subscription_status,
             )
-        if tenant is None or not tenant_has_feature(tenant, Feature.PDF_EXPORT.value):
-            return EntitlementResult(
-                allowed=False,
-                action=act.value,
-                reason="feature_not_in_plan",
-                feature=feature,
-                upgrade_url=build_upgrade_url(feature=feature, action=act.value),
-                plan_code=plan_code,
-                subscription_status=subscription_status,
-            )
+
         logger.info(
-            "PDF_ENTITLEMENT_CHECK tenant_id=%s plan_code=%s subscription_status=%s action=%s allowed=%s reason=%s feature=%s features=%s",
-            getattr(tenant, "id", None),
+            "ENTITLEMENT_CHECK tenant_id=%s plan_code=%s subscription_status=%s action=%s allowed=%s features=%s",
+            getattr(tenant, "id", None) if tenant is not None else None,
             plan_code,
             subscription_status,
             act.value,
             True,
-            None,
-            feature,
             plan_features,
         )
         return EntitlementResult(
             allowed=True,
             action=act.value,
             reason=None,
-            feature=feature,
-            upgrade_url=None,
-            plan_code=plan_code,
-            subscription_status=subscription_status,
-        )
-
-    # Other actions: feature gating + subscription status (where applicable)
-    if act in {Action.USE_BRANDING, Action.USE_WHITELABEL}:
-        # We intentionally reuse subscription accessibility here so that
-        # premium features cannot be used on inactive accounts.
-        if not is_subscription_accessible(subscription_status, trial_ends_at):
-            return EntitlementResult(
-                allowed=False,
-                action=act.value,
-                reason="subscription_inactive",
-                feature=feature,
-                upgrade_url=build_upgrade_url(feature=feature, action=act.value),
-                plan_code=plan_code,
-                subscription_status=subscription_status,
-            )
-
-        if tenant is None or not tenant_has_feature(tenant, feature or ""):
-            return EntitlementResult(
-                allowed=False,
-                action=act.value,
-                reason="feature_not_in_plan",
-                feature=feature,
-                upgrade_url=build_upgrade_url(feature=feature, action=act.value),
-                plan_code=plan_code,
-                subscription_status=subscription_status,
-            )
-
-        return EntitlementResult(
-            allowed=True,
-            action=act.value,
-            reason=None,
-            feature=feature,
+            feature=None,
             upgrade_url=None,
             plan_code=plan_code,
             subscription_status=subscription_status,
@@ -337,4 +294,3 @@ def check_entitlement(tenant: TenantUsageLike | None, action: str) -> Entitlemen
         plan_code=plan_code,
         subscription_status=subscription_status,
     )
-

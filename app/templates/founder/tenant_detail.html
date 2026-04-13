@@ -226,5 +226,36 @@
     });
   })();
   </script>
+
+  <!-- Workflows -->
+  <section aria-label="Workflows">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Workflows</h3>
+    {% if request.query_params.get('workflows_saved') %}
+    <p class="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Saved.</p>
+    {% endif %}
+    <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="mb-4 text-sm text-slate-500">
+        Controls which intake buttons and lead filters are active for this tenant.
+        Painting is always the fallback if none are saved.
+      </p>
+      <form method="post" action="{{ url_for('founder_tenant_workflows_update', tenant_id=tenant.id) }}">
+        {% set active = tenant.enabled_verticals or ['painting'] %}
+        <div class="flex flex-wrap gap-4 mb-5">
+          {% for wf in all_workflows %}
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" name="workflows" value="{{ wf }}"
+              {% if wf in active %}checked{% endif %}
+              class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500">
+            <span class="text-sm font-medium text-slate-700 capitalize">{{ wf }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <button type="submit"
+          class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
+          Save workflows
+        </button>
+      </form>
+    </article>
+  </section>
 </div>
 {% endblock %}

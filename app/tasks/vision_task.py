@@ -467,7 +467,7 @@ def _legacy_image_prediction_from_photo_pred(
     }
 
 
-def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
+def run_vision_for_lead(db: Session, lead_id: str, *, lead=None) -> Dict[str, Any]:
     """
     Runs vision for a lead:
     - loads Lead + LeadFile
@@ -475,10 +475,14 @@ def run_vision_for_lead(db: Session, lead_id: str) -> Dict[str, Any]:
     - runs predict_images(local_paths)
     - aggregates for paintly if enabled
     - stores on lead.vision_json or lead.vision_output
+
+    If `lead` is provided (e.g. already loaded by the engine facade), the initial
+    db.query(Lead) is skipped to avoid a redundant round-trip.
     """
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
-    if not lead:
-        raise ValueError("Lead not found")
+    if lead is None:
+        lead = db.query(Lead).filter(Lead.id == lead_id).first()
+        if not lead:
+            raise ValueError("Lead not found")
 
     file_sources, file_skip_reasons = _resolve_vision_file_sources(db, lead)
     if not file_sources:

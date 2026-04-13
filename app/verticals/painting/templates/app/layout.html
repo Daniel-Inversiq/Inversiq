@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    {% if title %}
+      {{ title }} — {{ company_name or "Inversiq" }}
+    {% else %}
+      Inversiq — {{ company_name or "Inversiq" }}
+    {% endif %}
+  </title>
+
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <link rel="stylesheet" href="/static/app.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    html { scroll-behavior: smooth; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, input, textarea, select { font-family: inherit; }
+
+    /* HTMX */
+    .htmx-indicator { opacity: 0; transition: opacity 120ms ease; }
+    .htmx-indicator.htmx-request { opacity: 1; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3a3e4a; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4a4f5c; }
+
+    /* Status dot */
+    @keyframes soft-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    .status-dot { animation: soft-pulse 3s ease-in-out infinite; }
+  </style>
+</head>
+
+<!-- Outer body: dark void frame -->
+<body class="min-h-screen bg-[#111318] font-sans text-[#374151] antialiased">
+  {% set path = request.url.path if request else "" %}
+
+  <!-- Full-bleed workspace shell — no rounded card, no floating margin -->
+  <div class="flex min-h-screen">
+
+    <!-- ── Sidebar ─────────────────────────────────────────────── -->
+    <aside class="hidden bg-[#191c23] border-r border-[#262b35] lg:flex lg:w-56 lg:flex-col shrink-0">
+
+      <!-- Logo / brand -->
+      <div class="px-4 pb-3 pt-5 border-b border-[#262b35]">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#252931] text-[#6b7280]">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="text-[13px] font-semibold leading-none text-[#dde2ec]">Inversiq</div>
+            <div class="mt-1 truncate text-[11px] leading-none text-[#464d5c]">
+              {{ company_name or "Offertes voor schilders" }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav label -->
+      <div class="px-4 pb-1 pt-4">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#363c4a]">Werkruimte</div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 space-y-px px-2 py-1">
+        {% macro nav_link(href, label, icon_path, active_condition) %}
+<a href="{{ href }}"
+   class="group flex items-center gap-2.5 border-l-2 px-3 py-[7px] text-[12px] font-medium leading-none transition-all duration-100
+     {% if active_condition %}
+       border-[#4a90d9] bg-[#22262f] text-[#dde2ec]
+     {% else %}
+       border-transparent text-[#737a8a] hover:bg-[#1e2129] hover:text-[#b0b8c8]
+     {% endif %}">
+
+  <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center transition-colors
+    {% if active_condition %}
+      text-[#4a90d9]
+    {% else %}
+      text-[#4a5060] group-hover:text-[#737a8a]
+    {% endif %}">
+    <svg class="h-[14px] w-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="{{ icon_path }}"/>
+    </svg>
+  </span>
+
+  <span class="truncate">{{ label }}</span>
+</a>
+{% endmacro %}
+
+        {{ nav_link('/app/dashboard', 'Overzicht',
+          'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
+          path.startswith('/app/dashboard')) }}
+
+        {{ nav_link('/app/leads', 'Offertes',
+          'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+          path.startswith('/app/leads')) }}
+
+        {{ nav_link('/app/jobs', 'Klussen',
+          'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+          path.startswith('/app/jobs')) }}
+
+        {{ nav_link('/app/reviews', 'Review',
+          'M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h5l2 2h3a2 2 0 012 2v10a2 2 0 01-2 2z',
+          path.startswith('/app/reviews')) }}
+
+        {{ nav_link('/app/calendar', 'Agenda',
+          'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+          path.startswith('/app/calendar')) }}
+
+        <div class="mx-2 my-2 border-t border-[#262b35]"></div>
+
+        {{ nav_link('/app/settings', 'Instellingen',
+          'M10.325 4.317a1 1 0 011.35-.936l.527.211a1 1 0 001.357-.556l.21-.527a1 1 0 011.873 0l.21.527a1 1 0 001.357.556l.527-.211a1 1 0 011.35.936l.05.566a1 1 0 001.114.873l.566-.05a1 1 0 01.936 1.35l-.211.527a1 1 0 00.556 1.357l.527.21a1 1 0 010 1.873l-.527.21a1 1 0 00-.556 1.357l.211.527a1 1 0 01-.936 1.35l-.566-.05a1 1 0 00-1.114.873l-.05.566a1 1 0 01-1.35.936l-.527-.211a1 1 0 00-1.357.556l-.21.527a1 1 0 01-1.873 0l-.21-.527a1 1 0 00-1.357-.556l-.527.211a1 1 0 01-1.35-.936l-.05-.566a1 1 0 00-1.114-.873l-.566.05a1 1 0 01-.936-1.35l.211-.527a1 1 0 00-.556-1.357l-.527-.21a1 1 0 010-1.873l.527-.21a1 1 0 00.556-1.357l-.211-.527a1 1 0 01.936-1.35l.566.05a1 1 0 001.114-.873l.05-.566z M12 15a3 3 0 100-6 3 3 0 000 6z',
+          path.startswith('/app/settings')) }}
+      </nav>
+
+      <!-- Bottom -->
+      <div class="mt-auto border-t border-[#262b35] p-3 space-y-1">
+        <!-- Status -->
+        <div class="rounded bg-[#14171e] px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <div class="status-dot h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+            <span class="text-[11px] font-medium text-[#5a6070]">Systeem online</span>
+          </div>
+        </div>
+
+        <!-- Logout -->
+        <form method="post" action="/auth/logout">
+          <button type="submit"
+            class="group flex w-full items-center gap-2 border-l-2 border-transparent px-3 py-[7px] text-[12px] font-medium text-[#4d5463] transition-all hover:bg-[#1e2129] hover:text-[#737a8a]">
+            <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-[#3d4350] transition-colors group-hover:text-[#5a6070]">
+              <svg class="h-[14px] w-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+            </span>
+            <span>Uitloggen</span>
+          </button>
+        </form>
+      </div>
+    </aside>
+
+    <!-- ── Main ──────────────────────────────────────────────── -->
+    <div class="flex min-w-0 flex-1 flex-col bg-[#f0f2f5]">
+
+      <!-- Topbar -->
+      <header class="sticky top-0 z-40 border-b border-[#d0d4dd] bg-white">
+        <div class="px-5 sm:px-6">
+          <div class="flex h-[52px] items-center justify-between gap-4">
+
+            <!-- Left -->
+            <div class="flex min-w-0 items-center gap-3">
+              <!-- Mobile hamburger -->
+              <button type="button"
+                      onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                      class="inline-flex items-center justify-center rounded border border-[#d0d4dd] bg-white p-1.5 text-[#6b7280] transition hover:bg-[#f0f2f5] lg:hidden">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              </button>
+
+              <!-- Mobile brand -->
+              <div class="flex items-center gap-2 lg:hidden">
+                <div class="flex h-7 w-7 items-center justify-center rounded bg-[#191c23] text-[#6b7280]">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                  </svg>
+                </div>
+                <span class="text-[13px] font-semibold text-[#111318]">
+                  {{ company_name or "Inversiq" }}
+                </span>
+              </div>
+
+              <!-- Desktop breadcrumb/title -->
+              <div class="hidden lg:flex items-center gap-2">
+                <span class="text-[11px] font-medium text-[#9ca3af] uppercase tracking-[0.08em]">Inversiq</span>
+                <span class="text-[#d0d4dd]">/</span>
+                <span class="text-[13px] font-semibold text-[#111318]">
+                  {{ title or "Overzicht" }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Right -->
+            <div class="flex items-center gap-2">
+              <span class="hidden sm:inline-flex items-center rounded border border-[#e5e7eb] px-2 py-0.5 text-[10px] font-medium tabular-nums text-[#c0c4ce]">
+                v1.0
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Mobile menu -->
+      <div id="mobile-menu" class="hidden border-b border-[#d0d4dd] bg-white lg:hidden">
+        <nav class="space-y-px px-3 py-2">
+          {% macro mobile_nav_link(href, label, active_condition) %}
+            <a href="{{ href }}"
+               class="block border-l-2 px-3 py-2 text-[12px] font-medium transition-all
+                 {% if active_condition %}
+                   border-[#4a90d9] bg-[#f0f2f5] text-[#111318]
+                 {% else %}
+                   border-transparent text-[#6b7280] hover:bg-[#f5f6f8] hover:text-[#374151]
+                 {% endif %}">
+              {{ label }}
+            </a>
+          {% endmacro %}
+
+          {{ mobile_nav_link('/app/dashboard', 'Overzicht', path.startswith('/app/dashboard')) }}
+          {{ mobile_nav_link('/app/leads', 'Offertes', path.startswith('/app/leads')) }}
+          {{ mobile_nav_link('/app/jobs', 'Klussen', path.startswith('/app/jobs')) }}
+          {{ mobile_nav_link('/app/reviews', 'Review', path.startswith('/app/reviews')) }}
+          {{ mobile_nav_link('/app/calendar', 'Agenda', path.startswith('/app/calendar')) }}
+        </nav>
+      </div>
+
+      <!-- Content -->
+      <main class="flex-1 w-full px-5 py-5 sm:px-6 lg:px-7">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- ── Toast ──────────────────────────────────────────────── -->
+  <div id="toast"
+       x-data="{ open: false, level: 'success', title: '', message: '' }"
+       x-show="open"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0 translate-y-1"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       x-cloak
+       @paintly-toast.window="level = $event.detail.level || 'success'; title = $event.detail.title || ''; message = $event.detail.message || ''; open = true; clearTimeout(window.__paintlyToastTimer); window.__paintlyToastTimer = setTimeout(() => open = false, 3200)"
+       class="pointer-events-none fixed bottom-5 right-5 z-[100] w-64 rounded border border-[#d0d4dd] bg-white px-3.5 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.10)]">
+    <div class="flex items-start gap-2.5">
+      <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded"
+           :class="level === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'">
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="text-[12px] font-semibold text-[#111318]" x-text="title"></div>
+        <div class="mt-0.5 text-[11px] text-[#6b7280]" x-show="message" x-text="message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.paintlyToast = function (payload) {
+      var level = (payload && payload.level) || 'success';
+      var title = (payload && payload.title) || '';
+      var message = (payload && payload.message) || '';
+      window.dispatchEvent(new CustomEvent('paintly-toast', {
+        bubbles: true,
+        detail: { level: level, title: title, message: message },
+      }));
+    };
+
+    window.paintlyCopy = function (text) {
+      if (!text) return Promise.resolve();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(function () {
+          window.paintlyToast({ level: 'success', title: 'Gekopieerd', message: 'Link staat op het klembord.' });
+        });
+      }
+      prompt('Kopieer dit:', text);
+      return Promise.resolve();
+    };
+
+    document.addEventListener('htmx:afterRequest', function (evt) {
+      try {
+        var xhr = evt.detail.xhr;
+        if (!xhr) return;
+        var raw = xhr.getResponseHeader('HX-Trigger');
+        if (!raw) return;
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed['show-toast']) {
+          window.paintlyToast(parsed['show-toast']);
+        }
+      } catch (e) { /* ignore */ }
+    });
+
+    document.addEventListener('htmx:responseError', function () {
+      window.paintlyToast({ level: 'error', title: 'Fout', message: 'Actie mislukt. Probeer opnieuw.' });
+    });
+
+    document.addEventListener('htmx:sendError', function () {
+      window.paintlyToast({ level: 'error', title: 'Netwerkfout', message: 'Verbinding mislukt. Probeer opnieuw.' });
+    });
+  </script>
+</body>
+</html>

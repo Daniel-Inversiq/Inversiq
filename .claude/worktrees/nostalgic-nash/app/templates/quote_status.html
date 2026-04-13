@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Doorsturen...</title>
+</head>
+<body>
+  <script>
+    const leadId = String({{ lead_id | tojson }});
+    window.location.replace(`/processing/${encodeURIComponent(leadId)}`);
+  </script>
+</body>
+</html>

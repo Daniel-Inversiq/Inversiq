@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Offerte #{{ lead.id }} - {{ lead.name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 20px;
+        }
+        .wrap {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+            overflow: hidden;
+        }
+        .header {
+            padding: 24px 32px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #fff;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .brand img {
+            max-height: 60px;
+            width: auto;
+            max-width: 220px;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 6px 8px;
+        }
+        .brand-name {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            line-height: 1.1;
+        }
+        .header h1 {
+            margin: 0 0 6px 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .section {
+            padding: 24px 32px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #111827;
+        }
+        .two-col {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            font-size: 14px;
+        }
+        .two-col div {
+            flex: 1;
+            min-width: 200px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+        .right {
+            text-align: right;
+        }
+        .totals {
+            margin-top: 10px;
+            max-width: 300px;
+            margin-left: auto;
+            font-size: 14px;
+        }
+        .totals div {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+        .totals div.total {
+            font-weight: 700;
+            font-size: 16px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 6px;
+            padding-top: 8px;
+        }
+        .notes {
+            white-space: pre-line;
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .photos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .photos img {
+            max-width: 180px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            object-fit: cover;
+        }
+        .footer {
+            padding: 16px 32px 24px;
+            font-size: 12px;
+            color: #6b7280;
+            background: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header">
+        {% set brand_company_name = (
+            (user.company_name if user and user.company_name else None)
+            or (tenant.company_name if tenant and tenant.company_name else None)
+            or "Paintly"
+        ) %}
+        {% set brand_logo_url = (
+            (user.logo_url if user and user.logo_url else None)
+            or (tenant.logo_url if tenant and tenant.logo_url else None)
+        ) %}
+        {% if brand_logo_url or brand_company_name %}
+        <div class="brand">
+            {% if brand_logo_url %}
+            <img src="{{ brand_logo_url }}" alt="{{ brand_company_name or 'Bedrijfslogo' }}">
+            {% endif %}
+            {% if brand_company_name %}
+            <div class="brand-name">{{ brand_company_name }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+        <h1>Offerte voor {{ lead.name }}</h1>
+        <p>Lead #{{ lead.id }}{% if tenant_id %} · Tenant: {{ tenant_id }}{% endif %}</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Klantgegevens</div>
+        <div class="two-col">
+            <div>
+                <strong>Naam</strong><br>
+                {{ lead.name }}<br><br>
+                <strong>E-mail</strong><br>
+                {{ lead.email }}<br><br>
+                <strong>Telefoon</strong><br>
+                {{ lead.phone }}
+            </div>
+            <div>
+                {% if quote.items and quote.items[0].quantity_m2 %}
+                    <strong>Oppervlakte</strong><br>
+                    {{ quote.items[0].quantity_m2 }} m²<br><br>
+                {% endif %}
+                <strong>Offertedatum</strong><br>
+                {{ (quote.created_at if quote.created_at is defined else "") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Samenvatting werkzaamheden</div>
+        <table>
+            <thead>
+            <tr>
+                <th>Omschrijving</th>
+                <th class="right">m²</th>
+                <th class="right">Prijs/m²</th>
+                <th class="right">Totaal</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in quote.items %}
+                <tr>
+                    <td>{{ item.description }}</td>
+                    <td class="right">{{ "%.2f"|format(item.quantity_m2) }}</td>
+                    <td class="right">€ {{ "%.2f"|format(item.unit_price) }}</td>
+                    <td class="right">€ {{ "%.2f"|format(item.total_price) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div>
+                <span>Subtotaal</span>
+                <span>€ {{ "%.2f"|format(quote.subtotal) }}</span>
+            </div>
+            <div>
+                <span>BTW</span>
+                <span>€ {{ "%.2f"|format(quote.vat) }}</span>
+            </div>
+            <div class="total">
+                <span>Totaal (incl. BTW)</span>
+                <span>€ {{ "%.2f"|format(quote.total) }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if files %}
+    <div class="section">
+        <div class="section-title">Bijgevoegde foto&apos;s</div>
+        <div class="photos">
+            {% for f in files %}
+                <img src="{{ file_base_url }}{{ f.s3_key }}" alt="Foto lead {{ lead.id }}">
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <div class="section-title">Toelichting & aannames</div>
+        <div class="notes">
+            {{ quote.notes }}
+        </div>
+    </div>
+
+    <div class="footer">
+        Deze offerte is gebaseerd op de door u aangeleverde informatie en foto&apos;s.
+        Eventuele grote afwijkingen op locatie kunnen invloed hebben op de uiteindelijke prijs.
+    </div>
+</div>
+</body>
+</html>

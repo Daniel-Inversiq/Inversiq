@@ -1,0 +1,1172 @@
+{% extends "app/layout.html" %}
+{% block content %}
+
+<div class="space-y-4">
+
+  {% set sent = request.query_params.get('sent') %}
+  {% set send_error = request.query_params.get('send_error') %}
+
+  {# intake payload veilig uitlezen #}
+  {% set payload = intake_payload_dict if intake_payload_dict is defined and intake_payload_dict else {} %}
+
+  {% set street = payload.get('street') or payload.get('address_street') or '' %}
+  {% set city = payload.get('city') or payload.get('address_city') or '' %}
+  {% set state = payload.get('state') or payload.get('region') or '' %}
+  {% set zip_code = payload.get('zip') or payload.get('postal_code') or '' %}
+  {% set country = payload.get('country') or '' %}
+  {% set square_meters = payload.get('square_meters') or payload.get('sqm') or '' %}
+  {% set job_type = payload.get('job_type') or '' %}
+  {% set st = (lead.status or '').upper() %}
+  {% set q = quote_ui or {} %}
+  {% set ctx_total_price = total_price if total_price is defined and total_price else q.total_price %}
+  {% set ctx_needs_review = needs_review if needs_review is defined else (q.needs_review if q.needs_review is defined else (st == 'NEEDS_REVIEW')) %}
+  {% set ctx_price_mode = (price_mode if price_mode is defined and price_mode else (q.price_mode if q.price_mode is defined and q.price_mode else ('priced' if ctx_total_price and not ctx_needs_review else 'tbd'))) | lower %}
+  {% set ctx_show_prices = show_prices if show_prices is defined else (q.show_prices if q.show_prices is defined else ((not ctx_needs_review) and (st == 'SUCCEEDED') and (ctx_price_mode == 'priced') and ctx_total_price)) %}
+  {% set status_labels = {
+    'ACCEPTED': 'Geaccepteerd',
+    'DONE': 'Afgerond',
+    'COMPLETED': 'Compleet',
+    'SENT': 'Verstuurd',
+    'VIEWED': 'Bekeken',
+    'REJECTED': 'Afgewezen',
+    'DECLINED': 'Afgewezen',
+    'CANCELLED': 'Geannuleerd',
+    'NEW': 'Nieuw',
+    'QUOTE_READY': 'Offerte gereed',
+    'NEEDS_REVIEW': 'Controleer offerte'
+  } %}
+  {% if st in ['ACCEPTED','DONE','COMPLETED'] %}
+    {% set lead_status_badge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
+  {% elif st in ['SENT','VIEWED'] %}
+    {% set lead_status_badge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
+  {% elif st in ['REJECTED','DECLINED','CANCELLED'] %}
+    {% set lead_status_badge = 'border border-rose-200 bg-rose-50 text-rose-700' %}
+  {% else %}
+    {% set lead_status_badge = 'border border-[#d0d4dd] bg-[#f6f7f9] text-[#6b7280]' %}
+  {% endif %}
+
+  {% set address_parts = [] %}
+  {% if street %}{% set _ = address_parts.append(street) %}{% endif %}
+  {% if city %}{% set _ = address_parts.append(city) %}{% endif %}
+  {% if state %}{% set _ = address_parts.append(state) %}{% endif %}
+  {% if zip_code %}{% set _ = address_parts.append(zip_code) %}{% endif %}
+  {% if country %}{% set _ = address_parts.append(country) %}{% endif %}
+  {% set full_address = address_parts | join(', ') %}
+
+  {% set quote_bez_customer = lead.name or 'Klant' %}
+  {% set quote_bez_title = 'Bezichtiging - ' ~ quote_bez_customer %}
+  {% set quote_bez_desc_lines = [] %}
+  {% if full_address %}{% set _ = quote_bez_desc_lines.append('Adres: ' ~ full_address) %}{% endif %}
+  {% if lead.notes and (lead.notes|string)|trim %}{% set _ = quote_bez_desc_lines.append('Notities: ' ~ ((lead.notes|string)|trim)) %}{% endif %}
+  {% set quote_bez_description_raw = quote_bez_desc_lines | join('\n\n') %}
+  {% set quote_bez_description = quote_bez_description_raw[0:8000] if quote_bez_description_raw|length > 8000 else quote_bez_description_raw %}
+
+  {% set header_work_summary = (job_type ~ (' • ' ~ square_meters ~ ' m²' if square_meters else '')) if job_type else ((square_meters ~ ' m²') if square_meters else 'Werksamenvatting niet ingevuld') %}
+
+  {% if vertical != 'paintly' %}
+  <div class="flex items-center">
+    <a href="/app/leads"
+       class="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#9ca3af] transition hover:text-[#111318]">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Terug naar leads
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Header -->
+  <div class="border-b border-[#e8eaee] pb-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-[14px] font-semibold text-[#111318]">Offerte #{{ (lead.id|string)[-6:]|upper }}</h1>
+          <span class="inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold {{ lead_status_badge }}">
+            {{ status_labels.get(st, 'Nieuw') }}
+          </span>
+        </div>
+        <p class="mt-0.5 text-[12px] text-[#9ca3af]">
+          <span class="font-semibold text-[#374151]">{{ lead.name or 'Onbekende klant' }}</span>
+          <span class="mx-1">·</span>
+          <span>{{ header_work_summary }}</span>
+          {% if ctx_show_prices and effective_total_display %}
+            <span class="mx-1">·</span>
+            <span class="font-semibold text-[#111318]">{{ effective_total_display }}</span>
+          {% elif ctx_show_prices and lead.final_price is not none %}
+            <span class="mx-1">·</span>
+            <span class="font-semibold text-[#111318]">€ {{ "%.2f"|format(lead.final_price) }}</span>
+          {% elif ctx_show_prices and lead.total_amount_display %}
+            <span class="mx-1">·</span>
+            <span class="font-semibold text-[#111318]">{{ lead.total_amount_display }}</span>
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="flex shrink-0 flex-wrap items-center gap-1.5">
+        {% if quote_ui and quote_ui.can_view %}
+          <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+             href="/quotes/{{ lead.id }}/html" target="_blank">
+            Bekijk offerte
+          </a>
+        {% endif %}
+        {% set ent = (entitlements.export_pdf if entitlements is defined and entitlements else None) %}
+        {% if quote_ui and quote_ui.can_download_pdf %}
+          {% if ent and ent.allowed %}
+            <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+               href="/app/leads/{{ lead.id }}/export-pdf" target="_blank">
+              PDF downloaden
+            </a>
+          {% else %}
+            <a class="inline-flex h-7 cursor-not-allowed items-center justify-center rounded border border-dashed border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#9ca3af]"
+               href="{{ (ent.upgrade_url if ent and ent.upgrade_url else '/app/billing?upgrade=1&feature=PDF_EXPORT') }}">
+              PDF export niet beschikbaar
+            </a>
+          {% endif %}
+        {% endif %}
+        {% if quote_ui and quote_ui.can_copy_link and lead.public_token %}
+          <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+             href="/e/{{ lead.public_token }}?preview=1" target="_blank">
+            Bekijk klantlink
+          </a>
+          <button class="inline-flex h-7 items-center justify-center gap-1.5 rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                  type="button"
+                  data-copy-url="{{ request.base_url }}e/{{ lead.public_token }}"
+                  x-data="{ copied: false }"
+                  @click="window.paintlyCopy($el.dataset.copyUrl).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+            <span x-show="!copied" class="inline">Link kopiëren</span>
+            <span x-show="copied" class="inline text-emerald-600" x-cloak>Gekopieerd</span>
+          </button>
+        {% endif %}
+        {% if quote_ui and quote_ui.can_edit %}
+          <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+             href="/app/leads/{{ lead.id }}/edit-estimate">
+            Offerte bewerken
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div
+    id="quote-bez-success-toast"
+    class="pointer-events-none fixed bottom-6 left-1/2 z-[100] hidden w-[min(100%-2rem,26rem)] -translate-x-1/2 px-0"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <div
+      class="pointer-events-auto flex gap-3 rounded border border-emerald-200 bg-white p-4 shadow-md"
+    >
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-emerald-50 text-emerald-600">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <div class="min-w-0 flex-1 pt-0.5">
+        <p class="text-[12px] font-semibold text-emerald-700">Bezichtiging gepland</p>
+        <p class="mt-1 text-[12px] leading-snug text-emerald-600" id="quote-bez-success-toast-line"></p>
+      </div>
+      <button
+        type="button"
+        onclick="hideQuoteBezSuccessToast()"
+        class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#9ca3af] transition hover:bg-[#f6f7f9] hover:text-[#374151]"
+        aria-label="Melding sluiten"
+      >
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Estimate output (vertical-agnostic) -->
+  {% if estimate_summary or estimate_rendered_text %}
+  <div class="overflow-hidden border border-[#d0d4dd] bg-white">
+    <div class="border-b border-[#e8eaee] px-5 py-3">
+      <div class="flex items-center gap-2">
+        <span class="text-[12px] font-semibold text-[#111318]">Estimate output</span>
+        {% if vertical %}
+        <span class="inline-flex items-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7280]">{{ vertical }}</span>
+        {% endif %}
+      </div>
+      {% if estimate_summary %}
+      <p class="mt-1 text-[12px] text-[#9ca3af]">{{ estimate_summary }}</p>
+      {% endif %}
+    </div>
+    {% if estimate_rendered_text %}
+    <div class="px-5 py-4">
+      <pre class="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-[#374151]">{{ estimate_rendered_text }}</pre>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Painting NEW state: waiting for customer photos -->
+  {% if vertical == 'paintly' and st == 'NEW' and not estimate_summary and not estimate_rendered_text %}
+  <div class="border border-sky-200 bg-sky-50 px-5 py-4">
+    <div class="flex items-start gap-3">
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-sky-100 text-sky-600">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-[12px] font-semibold text-sky-800">Aanvraag ontvangen</div>
+        <p class="mt-0.5 text-[12px] text-sky-700">
+          De offerte wordt automatisch aangemaakt zodra de klant foto's instuurt via de intakepagina.
+        </p>
+        <a href="/app/settings" class="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 transition hover:text-sky-900">
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 015.656 0l4-4a4 4 0 01-5.656-5.656l-1.1 1.1"/>
+          </svg>
+          Bekijk je intakelink
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Non-painting NEEDS_REVIEW callout -->
+  {% if vertical != 'paintly' and st == 'NEEDS_REVIEW' %}
+  <div class="border border-amber-200 bg-amber-50 px-5 py-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <svg class="h-4 w-4 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <span class="text-[12px] font-semibold text-amber-800">Prijs op basis van standaardschatting</span>
+        </div>
+        <p class="mt-1.5 text-[12px] text-amber-700">
+          {% if vertical == 'solar' %}
+            De klant heeft geen systeemgrootte (kWp) opgegeven. De prijs is berekend met een standaardwaarde.
+          {% elif vertical == 'roofing' %}
+            De klant heeft geen dakoppervlak opgegeven. De prijs is berekend met een standaardschatting.
+          {% else %}
+            De offerte is berekend op basis van een standaardwaarde omdat niet alle gegevens beschikbaar waren.
+          {% endif %}
+          Controleer de offerte en bevestig als de prijs akkoord is.
+        </p>
+        {% if estimate_summary %}
+        <p class="mt-2 text-[11px] font-medium text-amber-700">{{ estimate_summary }}</p>
+        {% endif %}
+        {% if request.query_params.get('approved') == '1' %}
+        <p class="mt-2 text-[11px] font-semibold text-emerald-700">Offerte bevestigd.</p>
+        {% endif %}
+      </div>
+      <form method="post" action="/app/leads/{{ lead.id }}/approve" class="shrink-0">
+        <button type="submit"
+          class="inline-flex h-7 items-center justify-center rounded bg-amber-500 px-3 text-[11px] font-semibold text-white transition hover:bg-amber-600 whitespace-nowrap">
+          Bevestig offerte
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Painting: missing wall rate warning -->
+  {% if vertical == 'paintly' and missing_wall_rate %}
+  <div class="border border-amber-200 bg-amber-50 px-5 py-4">
+    <div class="flex items-start gap-3">
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-amber-100 text-amber-600">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-[12px] font-semibold text-amber-800">Geen m² prijs ingesteld</div>
+        <p class="mt-0.5 text-[12px] text-amber-700">
+          Er is nog geen wandtarief ingesteld. Prijsindicaties kunnen daardoor onnauwkeurig zijn.
+        </p>
+        <a href="/app/settings"
+           class="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 transition underline-offset-2 hover:underline">
+          Stel je m² prijs in
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Alerts -->
+  {% if sent == '1' %}
+    <div class="border border-emerald-200 bg-emerald-50 px-4 py-3">
+      <div class="flex items-start gap-3">
+        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-emerald-100 text-emerald-600">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-[12px] font-semibold text-emerald-800">Offerte verzonden</div>
+          <div class="mt-0.5 text-[11px] text-emerald-700">De klant krijgt de e-mail zo binnen</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if send_error == 'postmark_pending' and vertical == 'paintly' %}
+    <div class="border border-amber-200 bg-amber-50 px-4 py-3">
+      <div class="flex items-start gap-3">
+        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-amber-100 text-amber-600">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-[12px] font-semibold text-amber-800">E-mail verzending nog niet actief</div>
+          <div class="mt-1 text-[11px] text-amber-700">
+            Postmark is in afwachting van goedkeuring. Tijdens deze periode kun je alleen versturen naar ontvangers op hetzelfde domein als je From adres
+            (<code class="rounded bg-amber-100 px-1 py-0.5 font-mono">getpaintly.com</code>).
+          </div>
+          <div class="mt-2 text-[11px] text-amber-600">
+            Tip: voor testen, gebruik <code class="rounded bg-amber-100 px-1 py-0.5 font-mono">jij@getpaintly.com</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if send_error and send_error != 'postmark_pending' %}
+    {% if send_error == 'offer_limit' %}
+      {% set usage_current = request.query_params.get('usage_current') | int(default=0) %}
+      {% set usage_limit   = request.query_params.get('usage_limit')   | int(default=0) %}
+      {% set upgrade_url   = request.query_params.get('upgrade_url') or '/app/billing?upgrade=1' %}
+      <div class="border border-amber-200 bg-amber-50 px-4 py-4">
+        <div class="flex items-start gap-3">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-amber-100 text-amber-600">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <div class="text-[12px] font-semibold text-amber-900">Maandlimiet bereikt</div>
+            {% if usage_limit > 0 %}
+              <div class="mt-0.5 text-[11px] text-amber-800">
+                Je hebt <strong>{{ usage_current }} van {{ usage_limit }}</strong> offertes gebruikt deze maand.
+              </div>
+            {% else %}
+              <div class="mt-0.5 text-[11px] text-amber-800">Je hebt je maandelijkse limiet bereikt.</div>
+            {% endif %}
+            <div class="mt-3 flex flex-wrap gap-2">
+              <a href="/app/billing?action=topup"
+                 class="inline-flex items-center gap-1.5 rounded bg-[#111318] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#2a2d35]">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Extra credits kopen
+              </a>
+              <a href="{{ upgrade_url }}"
+                 class="inline-flex items-center gap-1.5 rounded border border-[#d0d4dd] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111318] hover:bg-[#f5f6f8]">
+                Plan upgraden
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="border border-rose-200 bg-rose-50 px-4 py-3">
+        <div class="flex items-start gap-3">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-rose-100 text-rose-600">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-[12px] font-semibold text-rose-800">Kon offerte niet verzenden</div>
+            <div class="mt-0.5 text-[11px] text-rose-700">Probeer het opnieuw</div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+
+    <!-- Left column -->
+    <div class="space-y-4 lg:col-span-8">
+
+      <!-- Lead card -->
+      <div class="overflow-hidden border border-[#d0d4dd] bg-white">
+        <div class="border-b border-[#e8eaee] px-5 py-4">
+          <h2 class="text-[13px] font-semibold text-[#111318]">Project &amp; klant</h2>
+          <p class="mt-0.5 text-[11px] text-[#9ca3af]">Kerncijfers en gegevens uit de aanvraag</p>
+
+          <!-- Summary stat row -->
+          <div class="mt-4 grid gap-0 divide-x divide-[#e8eaee] border border-[#e8eaee] sm:grid-cols-2 lg:grid-cols-4">
+            <div class="px-4 py-3">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Totaal</div>
+              <div class="mt-1.5 text-[13px] font-semibold tabular-nums text-[#111318]">
+                {% if effective_total_display %}
+                  {{ effective_total_display }}
+                {% elif lead.final_price is not none %}
+                  € {{ "%.2f"|format(lead.final_price) }}
+                {% elif lead.total_amount_display %}
+                  {{ lead.total_amount_display }}
+                {% else %}
+                  —
+                {% endif %}
+              </div>
+            </div>
+            <div class="px-4 py-3">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Oppervlakte</div>
+              <div class="mt-1.5 text-[13px] font-semibold tabular-nums text-[#111318]">
+                {% if square_meters %}{{ square_meters }} m²{% else %}—{% endif %}
+              </div>
+            </div>
+            <div class="px-4 py-3">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Soort werk</div>
+              <div class="mt-1.5 text-[13px] font-semibold text-[#111318]">
+                {{ job_type or "—" }}
+              </div>
+            </div>
+            <div class="px-4 py-3">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Controle</div>
+              {% set q = quote_ui or {} %}
+              {% set qs = q.quote_status or 'none' %}
+              {% if qs == 'review' %}
+                <div class="mt-1.5 inline-flex rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                  Even nalopen
+                </div>
+              {% elif qs in ['generated','sent','accepted'] %}
+                <div class="mt-1.5 inline-flex rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                  Gecontroleerd
+                </div>
+              {% else %}
+                <div class="mt-1.5 text-[13px] font-semibold text-[#9ca3af]">—</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="divide-y divide-[#e8eaee]">
+          <div class="px-5 py-4">
+            <h3 class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Contact</h3>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+              <div>
+                <div class="text-[11px] text-[#9ca3af]">Naam</div>
+                <div class="mt-1 text-[12px] font-semibold text-[#111318]">{{ lead.name or "—" }}</div>
+              </div>
+              <div class="sm:col-span-2">
+                <div class="text-[11px] text-[#9ca3af]">E-mail</div>
+                <div class="mt-1 break-all text-[12px] font-semibold text-[#111318]">{{ lead.email or "—" }}</div>
+              </div>
+              <div>
+                <div class="text-[11px] text-[#9ca3af]">Telefoon</div>
+                <div class="mt-1 text-[12px] font-semibold text-[#111318]">{{ lead.phone or "—" }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-5 py-4">
+            <h3 class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Locatie &amp; werk</h3>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <div class="text-[11px] text-[#9ca3af]">Adres</div>
+                <div class="mt-1 text-[12px] font-semibold text-[#111318]">{{ full_address or "—" }}</div>
+              </div>
+              <div>
+                <div class="text-[11px] text-[#9ca3af]">Oppervlakte</div>
+                <div class="mt-1 text-[12px] font-semibold text-[#111318]">{% if square_meters %}{{ square_meters }} m²{% else %}—{% endif %}</div>
+              </div>
+              <div>
+                <div class="text-[11px] text-[#9ca3af]">Soort werk</div>
+                <div class="mt-1 text-[12px] font-semibold text-[#111318]">{{ job_type or "—" }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-5 py-4">
+            <h3 class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Wat wil de klant?</h3>
+            {% set raw_notes = lead.notes or "" %}
+            {% set lines = raw_notes.split('\n') %}
+            {% set first_line = (lines[0] if lines else '') %}
+            {% if (first_line|trim)[:6] == 'Adres:' %}
+              {% set _ = lines.pop(0) %}
+            {% endif %}
+            {% set clean_notes = (lines|join('\n'))|trim %}
+            <div class="mt-3 rounded border border-[#d0d4dd] bg-[#f6f7f9] px-4 py-3 text-[12px] leading-relaxed text-[#374151] whitespace-pre-line">
+              {{ clean_notes or "Geen toelichting bij de aanvraag." }}
+            </div>
+          </div>
+
+          {% if estimate_overrides %}
+          <div class="px-5 py-4">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Handmatige offerte-aanpassingen</div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div>
+                <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Publieke notities</div>
+                <div class="mt-2 rounded border border-[#d0d4dd] bg-[#f6f7f9] px-3 py-2.5 text-[11px] text-[#374151] whitespace-pre-line">
+                  {{ estimate_overrides.public_notes or "Geen extra notities" }}
+                </div>
+              </div>
+
+              <div>
+                <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Korting (%)</div>
+                <div class="mt-2 text-[12px] font-semibold text-[#111318]">
+                  {% if estimate_overrides.discount_percent is not none %}
+                    {{ estimate_overrides.discount_percent }}%
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+
+              <div>
+                <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Handmatig totaal</div>
+                <div class="mt-2 text-[12px] font-semibold text-[#111318]">
+                  {% if estimate_overrides.manual_total is not none %}
+                    € {{ "%.2f"|format(estimate_overrides.manual_total) }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+                {% if effective_total_display %}
+                  <div class="mt-1 text-[11px] text-[#9ca3af]">
+                    Effectief totaal (incl. btw): <span class="font-semibold text-[#111318]">{{ effective_total_display }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- Job card -->
+      {% if job %}
+        <div id="job" class="overflow-hidden border border-[#d0d4dd] bg-white">
+          <div class="flex items-center justify-between border-b border-[#e8eaee] px-5 py-3">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-7 w-7 items-center justify-center rounded bg-[#f6f7f9] text-[#9ca3af]">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="text-[12px] font-semibold text-[#111318]">Klus #{{ job.id }}</div>
+                <div class="text-[11px] text-[#9ca3af]">Planning & status</div>
+              </div>
+            </div>
+
+            {% set jst = (job.status or '').upper() %}
+            {% set job_status_labels = {
+              'DONE': 'Afgerond',
+              'IN_PROGRESS': 'Bezig',
+              'SCHEDULED': 'Ingepland',
+              'CANCELLED': 'Geannuleerd',
+              'NEW': 'Nieuw'
+            } %}
+            {% if jst == 'DONE' %}
+              {% set jbadge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
+            {% elif jst == 'IN_PROGRESS' %}
+              {% set jbadge = 'border border-violet-200 bg-violet-50 text-violet-700' %}
+            {% elif jst == 'SCHEDULED' %}
+              {% set jbadge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
+            {% elif jst == 'CANCELLED' %}
+              {% set jbadge = 'border border-rose-200 bg-rose-50 text-rose-700' %}
+            {% else %}
+              {% set jbadge = 'border border-[#d0d4dd] bg-[#f6f7f9] text-[#6b7280]' %}
+            {% endif %}
+
+            <span class="inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold {{ jbadge }}">
+              {{ job_status_labels.get(jst, 'Nieuw') }}
+            </span>
+          </div>
+
+          <div class="divide-y divide-[#e8eaee]">
+            <div class="space-y-3 px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="flex h-7 w-7 items-center justify-center rounded {% if job.scheduled_at %}bg-sky-50 text-sky-600{% else %}bg-[#f6f7f9] text-[#9ca3af]{% endif %}">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <div class="text-[12px] font-semibold text-[#111318]">Ingepland</div>
+                  <div class="text-[11px] text-[#9ca3af]">
+                    {% if job.scheduled_at %}
+                      {{ scheduled_display }} <span class="text-[#6b7280]">({{ tz_name }})</span>
+                    {% else %}
+                      Nog niet ingepland
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              {% if job.started_at %}
+                <div class="flex items-center gap-3">
+                  <div class="flex h-7 w-7 items-center justify-center rounded bg-violet-50 text-violet-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <div class="text-[12px] font-semibold text-[#111318]">Gestart</div>
+                    <div class="text-[11px] text-[#9ca3af]">{{ started_display }} <span class="text-[#6b7280]">({{ tz_name }})</span></div>
+                  </div>
+                </div>
+              {% endif %}
+
+              {% if job.done_at %}
+                <div class="flex items-center gap-3">
+                  <div class="flex h-7 w-7 items-center justify-center rounded bg-emerald-50 text-emerald-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <div class="text-[12px] font-semibold text-[#111318]">Afgerond</div>
+                    <div class="text-[11px] text-[#9ca3af]">{{ done_display }} <span class="text-[#6b7280]">({{ tz_name }})</span></div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="px-5 py-4">
+              <div class="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Status bijwerken</div>
+              <div class="flex flex-wrap items-center gap-2">
+                {% if job.status == "SCHEDULED" %}
+                  <form method="post" action="/app/jobs/{{ job.id }}/start" class="m-0">
+                    <button class="inline-flex h-7 items-center justify-center rounded bg-violet-600 px-3 text-[11px] font-semibold text-white transition hover:bg-violet-700" type="submit">
+                      <svg class="mr-1.5 h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      Klus starten
+                    </button>
+                  </form>
+                {% endif %}
+
+                {% if job.status == "IN_PROGRESS" %}
+                  <form method="post" action="/app/jobs/{{ job.id }}/done" class="m-0">
+                    <button class="inline-flex h-7 items-center justify-center rounded bg-emerald-600 px-3 text-[11px] font-semibold text-white transition hover:bg-emerald-700" type="submit">
+                      <svg class="mr-1.5 h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      Afronden
+                    </button>
+                  </form>
+                {% endif %}
+
+                <form method="post" action="/app/jobs/{{ job.id }}/status" class="m-0 flex flex-wrap items-center gap-2">
+                  <select name="status"
+                          class="h-8 rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#374151] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20">
+                    {% for s in ["NEW","SCHEDULED","IN_PROGRESS","DONE","CANCELLED"] %}
+                      {% set status_display = {
+                        'NEW': 'Nieuw',
+                        'SCHEDULED': 'Ingepland',
+                        'IN_PROGRESS': 'Bezig',
+                        'DONE': 'Afgerond',
+                        'CANCELLED': 'Geannuleerd'
+                      } %}
+                      <option value="{{ s }}" {% if job.status == s %}selected{% endif %}>{{ status_display[s] }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-semibold text-[#374151] transition hover:bg-[#f6f7f9]" type="submit">
+                    Bijwerken
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Right column: sales cockpit -->
+    <div class="space-y-4 lg:col-span-4">
+      {% set q = quote_ui or {} %}
+
+      <div id="hx-quote-poller"
+           class="hidden"
+           aria-hidden="true"
+           hx-get="/app/tenants/{{ lead.tenant_id }}/quotes/{{ lead.id }}/partials/summary"
+           hx-trigger="load delay:1s, every 20s"
+           hx-swap="none"></div>
+
+      <!-- Primaire werkzone -->
+      <div class="overflow-hidden border border-[#d0d4dd] bg-white">
+        <div class="border-b border-[#e8eaee] px-5 py-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Wat nu?</p>
+        </div>
+
+        <div class="px-5 pt-4">
+          <h3 class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Huidige status</h3>
+          <div id="quote-status" class="mt-2">
+            {% include "quotes/partials/status_badge.html" %}
+          </div>
+        </div>
+
+        <div class="mt-4 border-t border-[#e8eaee]"></div>
+
+        <div class="px-5 py-4">
+          <h3 class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Nu doen</h3>
+          <div id="quote-actions" class="mt-2">
+            {% include "quotes/partials/quote_actions.html" %}
+          </div>
+        </div>
+
+        <div class="border-t border-[#e8eaee]"></div>
+
+        {% include "quotes/partials/internal_notes.html" %}
+      </div>
+
+      {% if st == "ACCEPTED" %}
+        <div class="overflow-hidden border border-[#d0d4dd] bg-white">
+          <div class="px-4 py-4">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Agenda</div>
+            {% if lead_scheduled_start_display and lead_scheduled_end_display %}
+              <div class="mt-2 text-[12px] text-[#374151]">
+                <span class="font-semibold text-[#111318]">{{ lead_scheduled_start_display }}</span>
+                – <span class="font-semibold text-[#111318]">{{ lead_scheduled_end_display }}</span>
+                <span class="text-[#9ca3af]">({{ tz_name }})</span>
+              </div>
+            {% endif %}
+            <div id="agenda-feedback" class="mt-2"></div>
+            <div class="mt-3 flex flex-wrap gap-1.5">
+              {% if google_calendar_connected %}
+                <button
+                  class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+                  hx-post="/quotes/{{ lead.id }}/calendar/google/partial"
+                  hx-target="#agenda-feedback"
+                  hx-swap="innerHTML"
+                  type="button"
+                >
+                  Naar Google Agenda
+                </button>
+              {% else %}
+                <a
+                  class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+                  href="/integrations/google-calendar/connect"
+                >
+                  Google Agenda koppelen
+                </a>
+              {% endif %}
+              <a
+                class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                href="/quotes/{{ lead.id }}/calendar.ics"
+              >
+                .ics downloaden
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if q.can_copy_link and lead.public_token %}
+        <div class="overflow-hidden border border-[#d0d4dd] bg-white">
+          <div class="px-4 py-4">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Link voor de klant</div>
+            <code class="mt-2 block truncate rounded border border-[#d0d4dd] bg-[#f6f7f9] px-3 py-1.5 font-mono text-[11px] text-[#374151]">/e/{{ lead.public_token }}</code>
+            <div class="mt-3 flex flex-wrap items-center gap-1.5">
+              <button class="inline-flex h-7 items-center justify-center gap-1.5 rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                      type="button"
+                      data-copy-url="{{ request.base_url }}e/{{ lead.public_token }}"
+                      x-data="{ copied: false }"
+                      @click="window.paintlyCopy($el.dataset.copyUrl).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                <span x-show="!copied">Link kopiëren</span>
+                <span x-show="copied" class="text-emerald-600" x-cloak>Gekopieerd</span>
+              </button>
+              <span class="text-[11px] text-[#9ca3af]">Deel met de klant om te bekijken of te bevestigen.</span>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <div id="timeline-block">
+        {% include "quotes/partials/timeline_block.html" %}
+      </div>
+
+      {% if vertical == 'paintly' %}
+      <div class="overflow-hidden border border-dashed border-[#d0d4dd] bg-[#f6f7f9] px-4 py-4">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Foto's van de klant</span>
+          <span class="text-[10px] text-[#9ca3af]">{{ (photo_previews|length) if photo_previews else 0 }}</span>
+        </div>
+        {% if photo_previews and photo_previews|length > 0 %}
+          <div class="flex flex-wrap gap-2">
+            {% for p in photo_previews %}
+              <a href="{{ p.url }}" target="_blank" class="group block h-12 w-12 shrink-0 overflow-hidden rounded border border-[#d0d4dd] bg-white">
+                <img src="{{ p.url }}" alt="{{ p.name or 'Foto' }}" class="h-full w-full object-cover transition group-hover:opacity-90" />
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-[11px] text-[#9ca3af]">Geen foto's meegestuurd.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if job and job.status in ["NEW","SCHEDULED"] %}
+        <div class="overflow-hidden border border-[#d0d4dd] bg-white">
+          <div class="flex items-center justify-between border-b border-[#e8eaee] px-5 py-3">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-7 w-7 items-center justify-center rounded bg-[#f6f7f9] text-[#9ca3af]">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="text-[12px] font-semibold text-[#111318]">Planning</div>
+                <div class="text-[11px] text-[#9ca3af]">{{ tz_name }}</div>
+              </div>
+            </div>
+
+            {% if job.scheduled_at %}
+              <div class="text-right">
+                <div class="text-[12px] font-semibold text-[#111318]">{{ scheduled_display }}</div>
+                <div class="text-[11px] text-[#9ca3af]">Momenteel ingepland</div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="space-y-4 p-5">
+            <form id="scheduleForm" method="post" action="/app/jobs/{{ job.id }}/schedule" class="space-y-4">
+              <div>
+                <label class="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Datum & tijd</label>
+                <div class="flex gap-2">
+                  <input id="dtInput" type="datetime-local" name="scheduled_at_local" value="{{ scheduled_input_value }}" required
+                         class="h-8 flex-1 rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#374151] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20" />
+                  <button class="inline-flex h-8 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]" type="submit">
+                    {% if job.scheduled_at %}Bijwerken{% else %}Inplannen{% endif %}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Snel selecteren</label>
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" onclick="setDayOffset(0)" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Vandaag</button>
+                  <button type="button" onclick="setDayOffset(1)" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Morgen</button>
+                  <button type="button" onclick="setDayOffset(2)" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Overmorgen</button>
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Gebruikelijke tijden</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button type="button" onclick="setTime('09:00')" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">09:00</button>
+                  <button type="button" onclick="setTime('11:00')" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">11:00</button>
+                  <button type="button" onclick="setTime('13:00')" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">13:00</button>
+                  <button type="button" onclick="setTime('15:00')" class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">15:00</button>
+                </div>
+              </div>
+
+              <div class="border-t border-[#e8eaee] pt-4">
+                <label class="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Direct inplannen</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button type="button" onclick="quickSchedule(0,'09:00')" class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Vandaag 9:00</button>
+                  <button type="button" onclick="quickSchedule(0,'13:00')" class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Vandaag 13:00</button>
+                  <button type="button" onclick="quickSchedule(1,'09:00')" class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Morgen 9:00</button>
+                  <button type="button" onclick="quickSchedule(1,'13:00')" class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">Morgen 13:00</button>
+                </div>
+              </div>
+            </form>
+
+            {% if job.scheduled_at %}
+              <form id="unscheduleForm" method="post" action="/app/jobs/{{ job.id }}/unschedule" class="border-t border-[#e8eaee] pt-4">
+                <button type="submit" class="inline-flex h-7 items-center justify-center rounded border border-rose-200 bg-white px-3 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-50">
+                  <svg class="mr-1.5 h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Planning wissen
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if google_calendar_connected %}
+<div
+  id="quote-bez-modal"
+  class="fixed inset-0 z-50 flex hidden items-start justify-center overflow-y-auto bg-[#111318]/40 p-4 pt-12 sm:pt-16"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="quote-bez-modal-title"
+>
+  <div class="fixed inset-0 z-0" aria-hidden="true" onclick="closeQuoteBezichtigingModal()"></div>
+  <div class="relative z-10 mt-0 w-full max-w-lg rounded border border-[#d0d4dd] bg-white shadow-xl" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between border-b border-[#e8eaee] px-5 py-4">
+      <h3 id="quote-bez-modal-title" class="text-[13px] font-semibold text-[#111318]">Bezichtiging plannen</h3>
+      <button type="button" onclick="closeQuoteBezichtigingModal()"
+              class="inline-flex h-7 w-7 items-center justify-center rounded text-[#9ca3af] transition hover:bg-[#f6f7f9] hover:text-[#374151]"
+              aria-label="Sluiten">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="space-y-4 p-5">
+      <div
+        id="quote-bez-modal-error"
+        class="hidden flex gap-2.5 rounded border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] text-rose-800"
+        role="alert"
+        aria-live="assertive"
+      >
+        <svg class="mt-0.5 h-4 w-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <p class="min-w-0 flex-1 text-[12px] leading-snug" id="quote-bez-modal-error-line"></p>
+      </div>
+      <div class="space-y-1.5">
+        <label class="block text-[11px] font-medium text-[#374151]" for="quote-bez-title">Titel</label>
+        <input id="quote-bez-title" type="text"
+               class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
+               value="{{ quote_bez_title|e }}" />
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="block text-[11px] font-medium text-[#374151]" for="quote-bez-start">Start</label>
+          <input id="quote-bez-start" type="datetime-local"
+                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-[#374151]" for="quote-bez-end">Einde</label>
+          <input id="quote-bez-end" type="datetime-local"
+                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-[11px] font-medium text-[#374151]" for="quote-bez-desc">Omschrijving (optioneel)</label>
+        <textarea id="quote-bez-desc" rows="{{ 4 if quote_bez_description else 2 }}"
+                  class="w-full rounded border border-[#d0d4dd] bg-white px-3 py-2 text-[12px] text-[#111318] outline-none focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
+                  placeholder="Adres en notities">{{ quote_bez_description|e }}</textarea>
+      </div>
+      <div>
+        <label class="block text-[11px] font-medium text-[#374151]" for="quote-bez-email">E-mail deelnemer (optioneel)</label>
+        <input id="quote-bez-email" type="email" inputmode="email" autocomplete="email"
+               class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
+               placeholder="naam@voorbeeld.nl"
+               value="{{ (lead.email or '')|e }}" />
+      </div>
+      <div class="flex flex-wrap items-center justify-end gap-1.5 border-t border-[#e8eaee] pt-4">
+        <button type="button" onclick="closeQuoteBezichtigingModal()"
+                class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-semibold text-[#374151] transition hover:bg-[#f6f7f9]">
+          Annuleren
+        </button>
+        <button type="button" onclick="scheduleQuoteBezichtiging()"
+                class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]">
+          Toevoegen aan agenda
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  var QUOTE_BEZ_DEFAULTS = {
+    title: {{ quote_bez_title|tojson }},
+    description: {{ quote_bez_description|tojson }},
+    email: {{ (lead.email or "")|tojson }},
+    descRows: {{ 4 if quote_bez_description else 2 }}
+  };
+
+  function hideQuoteBezSuccessToast() {
+    var ok = document.getElementById("quote-bez-success-toast");
+    if (ok) ok.classList.add("hidden");
+  }
+
+  function hideQuoteBezModalError() {
+    var wrap = document.getElementById("quote-bez-modal-error");
+    if (wrap) wrap.classList.add("hidden");
+  }
+
+  function showQuoteBezError(msg) {
+    var wrap = document.getElementById("quote-bez-modal-error");
+    var line = document.getElementById("quote-bez-modal-error-line");
+    if (line) line.textContent = msg;
+    if (wrap) {
+      wrap.classList.remove("hidden");
+      try {
+        wrap.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      } catch (e) {}
+    }
+  }
+
+  function resetQuoteBezichtigingForm() {
+    var d = QUOTE_BEZ_DEFAULTS || {};
+    var titleEl = document.getElementById("quote-bez-title");
+    var startEl = document.getElementById("quote-bez-start");
+    var endEl = document.getElementById("quote-bez-end");
+    var descEl = document.getElementById("quote-bez-desc");
+    var emailEl = document.getElementById("quote-bez-email");
+    if (titleEl) titleEl.value = d.title != null ? d.title : "Bezichtiging";
+    if (startEl) startEl.value = "";
+    if (endEl) endEl.value = "";
+    if (descEl) {
+      descEl.value = d.description != null ? d.description : "";
+      descEl.rows = d.descRows || 2;
+    }
+    if (emailEl) emailEl.value = d.email != null ? d.email : "";
+  }
+
+  function openQuoteBezichtigingModal() {
+    var m = document.getElementById("quote-bez-modal");
+    if (!m) return;
+    hideQuoteBezSuccessToast();
+    hideQuoteBezModalError();
+    m.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+    setTimeout(function () {
+      var el = document.getElementById("quote-bez-start");
+      if (el) el.focus();
+    }, 50);
+  }
+
+  function closeQuoteBezichtigingModal() {
+    var m = document.getElementById("quote-bez-modal");
+    if (!m) return;
+    m.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+    hideQuoteBezModalError();
+  }
+
+  function showQuoteBezSuccess(data) {
+    closeQuoteBezichtigingModal();
+    resetQuoteBezichtigingForm();
+    var wrap = document.getElementById("quote-bez-success-toast");
+    var line = document.getElementById("quote-bez-success-toast-line");
+    if (!line || !wrap) return;
+    line.textContent = "";
+    if (data && data.html_link) {
+      line.appendChild(document.createTextNode("Toegevoegd aan je agenda. "));
+      var a = document.createElement("a");
+      a.href = data.html_link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "font-medium text-emerald-900 underline decoration-emerald-400/80 underline-offset-2 hover:text-emerald-950";
+      a.textContent = "Open in Google Calendar";
+      line.appendChild(a);
+    } else {
+      line.textContent = "Toegevoegd aan je gekoppelde Google-agenda.";
+    }
+    wrap.classList.remove("hidden");
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      var m = document.getElementById("quote-bez-modal");
+      if (m && !m.classList.contains("hidden")) closeQuoteBezichtigingModal();
+    }
+  });
+
+  async function scheduleQuoteBezichtiging() {
+    var titleEl = document.getElementById("quote-bez-title");
+    var startEl = document.getElementById("quote-bez-start");
+    var endEl = document.getElementById("quote-bez-end");
+    var descEl = document.getElementById("quote-bez-desc");
+    var emailEl = document.getElementById("quote-bez-email");
+    if (!titleEl || !startEl || !endEl) return;
+    hideQuoteBezSuccessToast();
+    hideQuoteBezModalError();
+    var title = (titleEl.value || "").trim();
+    if (!title) {
+      showQuoteBezError("Vul een titel in.");
+      return;
+    }
+    if (!startEl.value || !endEl.value) {
+      showQuoteBezError("Kies start- en eindtijd.");
+      return;
+    }
+    var start = new Date(startEl.value);
+    var end = new Date(endEl.value);
+    if (!(start instanceof Date) || !(end instanceof Date) || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      showQuoteBezError("Ongeldige datum/tijd.");
+      return;
+    }
+    if (end <= start) {
+      showQuoteBezError("Einde moet na start zijn.");
+      return;
+    }
+    var desc = descEl ? (descEl.value || "").trim() : "";
+    var emailRaw = emailEl ? (emailEl.value || "").trim() : "";
+    var attendee_emails = emailRaw ? [emailRaw] : null;
+    try {
+      var res = await fetch("/app/calendar/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          title: title,
+          start_datetime: start.toISOString(),
+          end_datetime: end.toISOString(),
+          description: desc || null,
+          attendee_emails: attendee_emails,
+          quote_id: {{ lead.id|tojson }},
+        }),
+      });
+      var data = await res.json().catch(function () {
+        return {};
+      });
+      if (!res.ok) {
+        var detail = data && data.detail;
+        var msg =
+          typeof detail === "string"
+            ? detail
+            : Array.isArray(detail)
+              ? detail
+                  .map(function (d) {
+                    return d.msg || "";
+                  })
+                  .filter(Boolean)
+                  .join(" ") || "Aanmaken mislukt."
+              : "Aanmaken mislukt.";
+        showQuoteBezError(msg);
+        return;
+      }
+      showQuoteBezSuccess(data);
+    } catch (err) {
+      showQuoteBezError("Netwerkfout. Probeer opnieuw.");
+    }
+  }
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function setDayOffset(offsetDays){
+    const input = document.getElementById("dtInput");
+    if(!input) return;
+    const current = input.value ? new Date(input.value) : new Date();
+    const d = new Date(current.getTime());
+    d.setDate(d.getDate() + offsetDays);
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth()+1);
+    const dd = pad(d.getDate());
+    let time = "09:00";
+    if (input.value && input.value.includes("T")) {
+      const t = input.value.split("T")[1];
+      time = (t && t.length >= 5) ? t.slice(0,5) : "09:00";
+    }
+    input.value = `${yyyy}-${mm}-${dd}T${time}`;
+  }
+
+  function setTime(hhmm){
+    const input = document.getElementById("dtInput");
+    if(!input) return;
+    if(!input.value){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = pad(d.getMonth()+1);
+      const dd = pad(d.getDate());
+      input.value = `${yyyy}-${mm}-${dd}T${hhmm}`;
+      return;
+    }
+    const parts = input.value.split("T");
+    const datePart = parts[0];
+    input.value = `${datePart}T${hhmm}`;
+  }
+
+  function quickSchedule(dayOffset, hhmm){
+    setDayOffset(dayOffset);
+    setTime(hhmm);
+    document.getElementById("scheduleForm").submit();
+  }
+
+</script>
+
+{% endblock %}

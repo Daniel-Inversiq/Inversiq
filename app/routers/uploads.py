@@ -526,7 +526,7 @@ async def complete_upload(
     try:
         vertical = (getattr(lead, "vertical", "") or "").strip().lower()
         if vertical == "paintly":
-            from app.verticals.paintly.adapter import PaintlyAdapter
+            from app.verticals.painting.adapter import PaintlyAdapter
 
             # Reload lead state after file/record writes
             db.refresh(lead)
@@ -691,7 +691,7 @@ async def public_complete_upload(
     try:
         vertical = (getattr(lead, "vertical", "") or "").strip().lower()
         if vertical == "paintly":
-            from app.verticals.paintly.adapter import PaintlyAdapter
+            from app.verticals.painting.adapter import PaintlyAdapter
 
             db.refresh(lead)
             has_estimate = bool(getattr(lead, "estimate_html_key", None))

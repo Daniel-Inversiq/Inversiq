@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db, SessionLocal
 from app.models import LeadFile
 from app.verticals.registry import get as get_vertical
-from app.verticals.paintly.eu_config import resolve_eu_config  # ✅ ADD
+from app.verticals.painting.eu_config import resolve_eu_config  # ✅ ADD
 
 from app.auth.optional_user import get_optional_user
 from app.models.user import User
@@ -225,6 +225,129 @@ async def legacy_create_lead_by_tenant_slug(
     return await create_lead_by_tenant_slug(
         request=request, tenant_slug=tenant_slug, db=db, background=background
     )
+
+
+# -------------------------
+# Roofing intake (dedicated route — must come before /{tenant_slug} wildcard)
+# -------------------------
+@router.get("/roofing", response_class=HTMLResponse)
+def intake_roofing_form(
+    request: Request,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    v = _get_vertical_or_404("roofing")
+    tenant_id = str(user.tenant_id) if user and user.tenant_id else "dev-tenant"
+    return v.render_intake_form(
+        request,
+        lead_id=str(uuid.uuid4()),
+        tenant_id=tenant_id,
+    )
+
+
+@router.post("/roofing")
+async def intake_roofing_submit(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
+):
+    v = _get_vertical_or_404("roofing")
+    tenant_id = str(user.tenant_id) if user and user.tenant_id else "dev-tenant"
+
+    result = await v.create_lead_from_form(request, db, tenant_id=tenant_id)
+
+    # Run the roofing engine immediately (no async photo processing needed).
+    try:
+        import json as _json
+        from app.verticals.roofing.workflow import ROOFING_VERTICAL
+        from inversiq.engine.facade import compute_quote_for_lead_v15
+
+        lead = db.query(LeadModel).filter(LeadModel.id == result.lead_id).first()
+        if lead:
+            engine_out = compute_quote_for_lead_v15(db, lead, ROOFING_VERTICAL)
+            estimate = engine_out.get("estimate_json")
+            lead.estimate_json = _json.dumps(estimate, ensure_ascii=False) if estimate else None
+            lead.estimate_html_key = engine_out.get("estimate_html_key")
+            lead.status = "NEEDS_REVIEW" if engine_out.get("needs_review") else "QUOTE_READY"
+            db.add(lead)
+            db.commit()
+            logger.info(
+                "ROOFING_ENGINE_OK lead_id=%s status=%s", result.lead_id, lead.status
+            )
+    except Exception:
+        logger.exception("ROOFING_ENGINE_FAILED lead_id=%s", result.lead_id)
+        # Lead was created; engine failure sets status to FAILED but does not 500 the user.
+        try:
+            lead = db.query(LeadModel).filter(LeadModel.id == result.lead_id).first()
+            if lead:
+                lead.status = "FAILED"
+                db.add(lead)
+                db.commit()
+        except Exception:
+            pass
+
+    return RedirectResponse(url=f"/app/leads/{result.lead_id}", status_code=303)
+
+
+# -------------------------
+# Solar intake (dedicated route — must come before /{tenant_slug} wildcard)
+# -------------------------
+@router.get("/solar", response_class=HTMLResponse)
+def intake_solar_form(
+    request: Request,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    v = _get_vertical_or_404("solar")
+    tenant_id = str(user.tenant_id) if user and user.tenant_id else "dev-tenant"
+    return v.render_intake_form(
+        request,
+        lead_id=str(uuid.uuid4()),
+        tenant_id=tenant_id,
+    )
+
+
+@router.post("/solar")
+async def intake_solar_submit(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
+):
+    v = _get_vertical_or_404("solar")
+    tenant_id = str(user.tenant_id) if user and user.tenant_id else "dev-tenant"
+
+    result = await v.create_lead_from_form(request, db, tenant_id=tenant_id)
+
+    # Run the solar engine immediately (pure math, no async photo processing needed).
+    try:
+        import json as _json
+        from app.verticals.solar.workflow import SOLAR_VERTICAL
+        from inversiq.engine.facade import compute_quote_for_lead_v15
+
+        lead = db.query(LeadModel).filter(LeadModel.id == result.lead_id).first()
+        if lead:
+            engine_out = compute_quote_for_lead_v15(db, lead, SOLAR_VERTICAL)
+            estimate = engine_out.get("estimate_json")
+            lead.estimate_json = _json.dumps(estimate, ensure_ascii=False) if estimate else None
+            lead.estimate_html_key = engine_out.get("estimate_html_key")
+            lead.status = "NEEDS_REVIEW" if engine_out.get("needs_review") else "QUOTE_READY"
+            db.add(lead)
+            db.commit()
+            logger.info(
+                "SOLAR_ENGINE_OK lead_id=%s status=%s", result.lead_id, lead.status
+            )
+    except Exception:
+        logger.exception("SOLAR_ENGINE_FAILED lead_id=%s", result.lead_id)
+        try:
+            lead = db.query(LeadModel).filter(LeadModel.id == result.lead_id).first()
+            if lead:
+                lead.status = "FAILED"
+                db.add(lead)
+                db.commit()
+        except Exception:
+            pass
+
+    return RedirectResponse(url=f"/app/leads/{result.lead_id}", status_code=303)
 
 
 @router.get("/{tenant_slug}", response_class=HTMLResponse)

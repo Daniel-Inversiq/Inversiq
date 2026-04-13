@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>We bekijken je foto's - Paintly</title>
+
+  <style>
+    :root {
+      --overlay: rgba(11, 18, 32, 0.72);
+      --card: rgba(11, 18, 32, 0.96);
+      --card-border: rgba(96, 165, 250, 0.28);
+      --text: #f8fafc;
+      --muted: rgba(248, 250, 252, 0.78);
+      --accent: #60a5fa;
+      --danger: #f87171;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background:
+        linear-gradient(var(--overlay), var(--overlay)),
+        radial-gradient(circle at top, rgba(96,165,250,0.08), transparent 40%),
+        #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--text);
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 24px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      padding: 24px 22px;
+    }
+
+    .top {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 4px solid rgba(96, 165, 250, 0.22);
+      border-top-color: var(--accent);
+      animation: spin 0.9s linear infinite;
+      flex: 0 0 auto;
+      margin-top: 2px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .sub {
+      margin: 4px 0 0 0;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .steps {
+      margin-top: 8px;
+      color: rgba(248, 250, 252, 0.92);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .steps div {
+      margin: 2px 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .error {
+      display: none;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      background: rgba(248, 113, 113, 0.08);
+    }
+
+    .error-title {
+      margin: 0 0 6px 0;
+      color: rgba(248, 113, 113, 0.98);
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .error-text {
+      font-size: 13px;
+      color: rgba(248, 250, 252, 0.88);
+      white-space: pre-wrap;
+    }
+
+    .error-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn.primary {
+      border-color: rgba(96, 165, 250, 0.42);
+      background: rgba(96, 165, 250, 0.18);
+    }
+  </style>
+</head>
+<body>
+  <div class="modal" role="status" aria-live="polite">
+    <div class="top">
+      <div class="spinner" id="spinner"></div>
+      <div>
+        <h1 class="title" id="pageTitle">We bekijken je foto's...</h1>
+        <p class="sub">Dit duurt meestal een paar seconden.</p>
+      </div>
+    </div>
+
+    <div class="steps" id="rulesBox">
+      <div>Oppervlak bepalen...</div>
+      <div>Voorbereiding inschatten...</div>
+      <div>Conceptofferte opstellen...</div>
+    </div>
+
+    <div class="error" id="errorBox">
+      <div class="error-title">We konden je aanvraag niet verwerken</div>
+      <div class="error-text" id="errorText"></div>
+      <div class="error-actions">
+        <button type="button" class="btn primary" id="retryBtn">Opnieuw proberen</button>
+        <a href="/" class="btn" id="backBtn">Terug</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const leadId = String({{ lead_id | tojson }});
+    const statusEndpoint = String({{ (status_endpoint or ('/leads/' ~ lead_id ~ '/status')) | tojson }});
+    const retryEndpoint = String({{ (retry_endpoint or ('/quotes/publish/' ~ lead_id)) | tojson }});
+    const initKey = `processing_init_${leadId}`;
+
+    const errorBox = document.getElementById("errorBox");
+    const errorText = document.getElementById("errorText");
+    const pageTitle = document.getElementById("pageTitle");
+    const rulesBox = document.getElementById("rulesBox");
+    const retryBtn = document.getElementById("retryBtn");
+    const backBtn = document.getElementById("backBtn");
+    const spinner = document.getElementById("spinner");
+
+    function showReviewPending(msg) {
+      if (pageTitle) pageTitle.textContent = "Je offerte wordt gecontroleerd";
+      if (spinner) spinner.classList.add("hidden");
+      if (rulesBox) {
+        rulesBox.classList.remove("hidden");
+        rulesBox.innerHTML = `<div>${msg || "Er is nog een extra controle nodig voordat we de offerte kunnen tonen."}</div>`;
+      }
+      if (errorBox) errorBox.style.display = "none";
+    }
+
+    function showFailed(msg, data) {
+      if (pageTitle) pageTitle.textContent = "Er is iets misgegaan";
+      if (spinner) spinner.classList.add("hidden");
+      if (rulesBox) rulesBox.classList.add("hidden");
+      if (errorBox) errorBox.style.display = "block";
+      if (errorText) errorText.textContent = msg || "Er is iets misgegaan. Probeer het opnieuw.";
+      if (backBtn && data && data.back_url) backBtn.setAttribute("href", String(data.back_url));
+    }
+
+    function showLoading() {
+      if (pageTitle) pageTitle.textContent = "We bekijken je foto's...";
+      if (spinner) spinner.classList.remove("hidden");
+      if (rulesBox) {
+        rulesBox.classList.remove("hidden");
+        rulesBox.innerHTML = `
+          <div>Oppervlak bepalen...</div>
+          <div>Voorbereiding inschatten...</div>
+          <div>Conceptofferte opstellen...</div>
+        `;
+      }
+      if (errorBox) errorBox.style.display = "none";
+    }
+
+    function redirectToDone(data) {
+      const url = (data && data.redirect_url) ? String(data.redirect_url) : "/thank-you";
+      window.location.href = url;
+    }
+
+    async function fetchStatusOnce() {
+      try {
+        const res = await fetch(statusEndpoint, {
+          method: "GET",
+          headers: { "accept": "application/json" },
+          cache: "no-store"
+        });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch (_) {
+        return null;
+      }
+    }
+
+    let pollIntervalId = null;
+    let isStopping = false;
+
+    function stopPolling() {
+      if (pollIntervalId) {
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
+      }
+    }
+
+    async function pollOnceAndAct() {
+      const data = await fetchStatusOnce();
+      if (!data || isStopping) return;
+
+      const status = (data.status || "queued").toString();
+
+      if (status === "done") {
+        isStopping = true;
+        stopPolling();
+        redirectToDone(data);
+        return;
+      }
+
+      if (status === "review_pending") {
+        isStopping = true;
+        stopPolling();
+        showReviewPending(data.user_message);
+        return;
+      }
+
+      if (status === "failed") {
+        isStopping = true;
+        stopPolling();
+        showFailed(data.user_message || "Er is iets misgegaan. Probeer het opnieuw.", data);
+      }
+    }
+
+    async function retryQuote() {
+      if (retryBtn) retryBtn.disabled = true;
+      showLoading();
+      isStopping = false;
+
+      try {
+        await fetch(retryEndpoint, {
+          method: "POST",
+          cache: "no-store"
+        });
+      } catch (_) {
+        showFailed("Opnieuw proberen is nu niet gelukt. Probeer het zo nog eens.", null);
+      } finally {
+        if (!pollIntervalId) {
+          pollIntervalId = setInterval(pollOnceAndAct, 2000);
+        }
+        pollOnceAndAct();
+        if (retryBtn) retryBtn.disabled = false;
+      }
+    }
+
+    if (retryBtn) retryBtn.addEventListener("click", retryQuote);
+
+    if (!window[initKey]) {
+      window[initKey] = true;
+      pollIntervalId = setInterval(pollOnceAndAct, 2000);
+      pollOnceAndAct();
+    }
+  </script>
+</body>
+</html>

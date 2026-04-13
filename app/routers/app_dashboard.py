@@ -112,7 +112,7 @@ def lead_detail_page(
     # Fallback router compatibility:
     # delegate to the Paintly quote detail page so /app/leads/{lead_id}
     # always renders the full offerte-detail UI with quote actions.
-    from app.verticals.paintly.router_app import app_lead_detail as paintly_lead_detail
+    from app.verticals.painting.router_app import app_lead_detail as paintly_lead_detail
 
     return paintly_lead_detail(
         request=request,

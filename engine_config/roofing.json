@@ -1,0 +1,25 @@
+{
+    "version": "1.0",
+    "vertical_id": "roofing",
+    "assets": {
+        "rules": "engine_config/roofing_rules.json",
+        "template": "engine_config/roofing_estimate.html"
+    },
+    "pipeline": {
+        "steps": [
+            {
+                "id": "estimate",
+                "use": "roofing.estimate.v1"
+            },
+            {
+                "id": "review",
+                "use": "roofing.review.v1",
+                "on_needs_review": "CONTINUE"
+            },
+            {
+                "id": "store",
+                "use": "roofing.store.v1"
+            }
+        ]
+    }
+}

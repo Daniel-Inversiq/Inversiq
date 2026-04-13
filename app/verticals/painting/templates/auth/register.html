@@ -1,0 +1,122 @@
+{% extends "app/layout.html" %}
+{% block content %}
+
+<div class="flex min-h-[80vh] items-center justify-center bg-[#f8f9fa] px-4 py-10">
+  <div class="w-full max-w-sm">
+
+    <!-- Brand -->
+    <div class="mb-7 text-center">
+      <div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Inversiq</div>
+      <h1 class="text-xl font-semibold text-gray-900">Account aanmaken</h1>
+      <p class="mt-1 text-sm text-gray-500">Ontvang aanvragen via je eigen intake link</p>
+    </div>
+
+    <!-- Card -->
+    <div class="rounded-md border border-[#e8eaee] bg-white px-6 py-6">
+
+      <form method="post" action="/auth/register" class="space-y-4">
+
+        <!-- Company name -->
+        <div>
+          <label for="company_name" class="mb-1 block text-xs text-gray-500">Bedrijfsnaam (optioneel)</label>
+          <input
+            id="company_name"
+            name="company_name"
+            type="text"
+            placeholder="Bijv. Jansen Schilderwerken"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="email" class="mb-1 block text-xs text-gray-500">E-mailadres</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="jij@bedrijf.nl"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <!-- Phone -->
+        <div>
+          <label for="phone" class="mb-1 block text-xs text-gray-500">Telefoonnummer (optioneel)</label>
+          <input
+            id="phone"
+            name="phone"
+            type="text"
+            placeholder="+31 6 12345678"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <!-- Wall rate -->
+        <div>
+          <label for="walls_rate_eur_per_sqm" class="mb-1 block text-xs text-gray-500">Wandtarief per m² in € (optioneel)</label>
+          <input
+            id="walls_rate_eur_per_sqm"
+            name="walls_rate_eur_per_sqm"
+            type="number"
+            step="0.01"
+            min="0.01"
+            placeholder="Bijv. 40"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="mb-1 block text-xs text-gray-500">Wachtwoord</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            placeholder="••••••••"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+          <p class="mt-1 text-xs text-gray-400">Minimaal 8 tekens</p>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="h-9 w-full rounded bg-[#111318] text-sm font-medium text-white transition hover:bg-[#1d2330]"
+        >
+          Account aanmaken
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="relative my-5">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-[#e8eaee]"></div>
+        </div>
+        <div class="relative flex justify-center">
+          <span class="bg-white px-3 text-xs text-gray-400">of</span>
+        </div>
+      </div>
+
+      <!-- Login link -->
+      <p class="text-center text-sm text-gray-500">
+        Al een account?
+        <a href="/auth/login" class="font-medium text-gray-900 transition hover:underline">Log in</a>
+      </p>
+
+    </div>
+
+    <!-- Footer -->
+    <p class="mt-6 text-center text-xs text-gray-400">
+      Door te registreren ga je akkoord met onze
+      <a href="#" class="underline underline-offset-2 hover:text-gray-600">voorwaarden</a>
+      en
+      <a href="#" class="underline underline-offset-2 hover:text-gray-600">privacyverklaring</a>.
+    </p>
+
+  </div>
+</div>
+
+{% endblock %}

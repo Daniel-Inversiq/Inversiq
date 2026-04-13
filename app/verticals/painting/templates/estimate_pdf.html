@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ copy.doc_title if copy and copy.doc_title else "Offerte schilderwerk" }}</title>
+  <style>
+    *,
+    *:before,
+    *:after {
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4;
+      margin: 14mm 12mm 16mm 12mm;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .page {
+      width: 100%;
+    }
+
+    .content-wrap {
+      width: 100%;
+      max-width: 186mm;
+      margin: 0 auto;
+      padding-top: 2mm;
+    }
+
+    /* ---- Header ---- */
+
+    .header {
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 18px 22px 16px;
+      margin: 0 0 24px;
+      page-break-inside: avoid;
+      background: #ffffff;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      width: 100%;
+    }
+
+    .two-col {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .two-col td {
+      vertical-align: top;
+    }
+
+    .brand-col {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .brand-media {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-logo-col {
+      width: 114px;
+      flex: 0 0 114px;
+    }
+
+    .brand-text-col {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-right: 8px;
+    }
+
+    .meta-col {
+      flex: 0 0 auto;
+      width: 34%;
+      max-width: 63mm;
+      min-width: 48mm;
+      margin-left: 8px;
+    }
+
+    .logo-wrap {
+      width: 104px;
+      height: 104px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 4px;
+      background: #ffffff;
+    }
+
+    .logo-wrap img {
+      max-width: 96px;
+      max-height: 96px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .logo-fallback {
+      width: 104px;
+      height: 104px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      background: #f8fafc;
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 11pt;
+      font-weight: 700;
+      color: #334155;
+      letter-spacing: 0.02em;
+      padding: 0 8px;
+      box-sizing: border-box;
+    }
+
+    .brand-name {
+      margin: 0 0 6px;
+      font-size: 16pt;
+      font-weight: 600;
+      letter-spacing: 0.1px;
+      color: #0f172a;
+    }
+
+    .brand-sub {
+      margin: 0;
+      font-size: 8.2pt;
+      color: #94a3b8;
+    }
+
+    .meta-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 14px 16px;
+      background: #f8fafc;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .meta-row {
+      margin: 0 0 7px;
+      font-size: 8.3pt;
+      line-height: 1.45;
+    }
+
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-label {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .meta-value {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .divider {
+      border-top: 1px solid #e2e8f0;
+      margin-top: 16px;
+      padding-top: 0;
+    }
+
+    /* ---- Title block ---- */
+
+    .title-block {
+      margin-bottom: 24px;
+      page-break-inside: avoid;
+      padding-left: 2px;
+    }
+
+    .label-badge {
+      display: inline-block;
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 8.6pt;
+      font-weight: 600;
+      color: #475569;
+      background: #f1f5f9;
+      margin-bottom: 7px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      color: #0f172a;
+    }
+
+    h1 {
+      font-size: 22pt;
+      line-height: 1.15;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 11pt;
+      line-height: 1.25;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+
+    h3 {
+      font-size: 10pt;
+      line-height: 1.25;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+
+    p {
+      margin: 0 0 8px;
+    }
+
+    .subtitle {
+      font-size: 9pt;
+      color: #94a3b8;
+      max-width: 520px;
+    }
+
+    /* ---- Cards ---- */
+
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+      background: #ffffff;
+    }
+
+    .card-soft {
+      background: #f8fafc;
+      border-color: #e8edf5;
+    }
+
+    /* ---- Price block ---- */
+
+    .price-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 22px;
+      margin-bottom: 22px;
+      background: #f8fafc;
+      page-break-inside: avoid;
+    }
+
+    .kicker {
+      margin: 0 0 8px;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .total-main {
+      margin: 0;
+      font-size: 28pt;
+      line-height: 1.05;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .total-suffix {
+      font-size: 8.7pt;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .price-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .price-grid td {
+      font-size: 8.8pt;
+      padding: 7px 0;
+      border: 0;
+      color: #64748b;
+    }
+
+    .price-grid td:last-child {
+      text-align: right;
+      font-size: 9.6pt;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .price-note {
+      margin-top: 16px;
+      font-size: 8.6pt;
+      color: #94a3b8;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 9pt;
+    }
+
+    /* ---- Specification table ---- */
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e8edf5;
+      vertical-align: top;
+      font-size: 9.3pt;
+    }
+
+    thead th {
+      background: #f8fafc;
+      font-weight: 600;
+      text-align: left;
+      color: #64748b;
+      border-top: 1px solid #e8edf5;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 7.8pt;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fbfdff;
+    }
+
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* ---- Lists ---- */
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      margin-bottom: 6px;
+      padding-left: 13px;
+      position: relative;
+      color: #1e293b;
+    }
+
+    li:before {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #94a3b8;
+      position: absolute;
+      left: 0;
+      top: 8px;
+    }
+
+    .checklist li:before {
+      width: 5px;
+      height: 5px;
+      background: #64748b;
+      top: 7px;
+    }
+
+    /* ---- Utility ---- */
+
+    .small {
+      font-size: 8.5pt;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-soft {
+      color: #64748b;
+    }
+
+    /* ---- Footer ---- */
+
+    .footer {
+      margin-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      font-size: 7.6pt;
+      color: #94a3b8;
+      page-break-inside: avoid;
+      line-height: 1.35;
+    }
+
+    .footer strong {
+      color: #334155;
+    }
+
+    .section-head {
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e8edf5;
+      color: #1e293b;
+    }
+
+    .footnote {
+      margin-top: 8px;
+      font-size: 8.6pt;
+      color: #94a3b8;
+    }
+
+    /* ---- KV table (key / value pairs) ---- */
+
+    .kv {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .kv td {
+      border: 0;
+      padding: 4px 0 8px;
+      font-size: 8.9pt;
+    }
+
+    .kv td:first-child {
+      width: 42%;
+      color: #94a3b8;
+      font-size: 8.4pt;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .kv td:last-child {
+      color: #1e293b;
+      font-weight: 600;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  {% set company_display_name = (branding_company_name if branding_company_name else (company.name if company and company.name else "Inversiq")) %}
+  {% set ref_code = "" %}
+  {% if project and project.reference %}
+    {% set ref_code = (project.reference|string)|upper %}
+  {% elif project and project.estimate_id %}
+    {% set ref_code = (project.estimate_id|string)[-6:]|upper %}
+  {% elif project and project.lead_id %}
+    {% set ref_code = (project.lead_id|string)[-6:]|upper %}
+  {% endif %}
+  {% set lead_name = (customer.name if customer and customer.name else (lead.name if lead and lead.name else "Niet opgegeven")) %}
+  {% set lead_email = (customer.email if customer and customer.email else (lead.email if lead and lead.email else "Niet opgegeven")) %}
+  {% set lead_phone = (customer.phone if customer and customer.phone else (lead.phone if lead and lead.phone else "Niet opgegeven")) %}
+  {% set lead_address = (project.address if project and project.address else (project.location if project and project.location else "Nog te bevestigen")) %}
+
+  <div class="page">
+    <div class="content-wrap">
+      <div class="header">
+        <div class="header-inner">
+          <div class="brand-col">
+            <div class="brand-media">
+              {% set logo_src = (branding_logo_data_url if branding_logo_data_url else branding_logo_url) %}
+              <div class="brand-logo-col">
+                {% if logo_src %}
+                  <div class="logo-wrap">
+                    <img src="{{ logo_src }}" alt="{{ company_display_name }}">
+                  </div>
+                {% else %}
+                  {% set _words = company_display_name.split() %}
+                  {% set _initials = (_words[0][0] ~ _words[1][0]) if _words|length > 1 else _words[0][:2] %}
+                  <div class="logo-fallback">{{ _initials | upper }}</div>
+                {% endif %}
+              </div>
+              <div class="brand-text-col">
+                <p class="brand-name">{{ company_display_name }}</p>
+                <p class="brand-sub">Professionele offerte voor schilderwerk</p>
+                {% if company.phone or company.email %}
+                  <p class="brand-sub">
+                    {% if company.phone %}{{ company.phone }}{% endif %}
+                    {% if company.phone and company.email %} | {% endif %}
+                    {% if company.email %}{{ company.email }}{% endif %}
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="meta-col">
+            <div class="meta-card">
+              <p class="meta-row">
+                <span class="meta-label">Referentie:</span>
+                <span class="meta-value">{% if project and project.reference %}{{ project.reference }}{% elif ref_code %}Offerte #{{ ref_code }}{% else %}Offerte{% endif %}</span>
+              </p>
+              <p class="meta-row">
+                <span class="meta-label">Offertedatum:</span>
+                <span class="meta-value">{{ project.date if project and project.date else "Niet opgegeven" }}</span>
+              </p>
+              <p class="meta-row">
+                <span class="meta-label">Geldig tot:</span>
+                <span class="meta-value">{{ project.valid_until if project and project.valid_until else "In overleg" }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+      </div>
+
+    <div class="title-block">
+      <span class="label-badge">Offerte</span>
+      <h1>{{ project.title if project and project.title else "Offerte schilderwerk" }}</h1>
+      <p class="subtitle">
+        {{ project.subtitle if project and project.subtitle else "Heldere prijsopgave met duidelijke specificatie van werkzaamheden, materialen en voorwaarden." }}
+      </p>
+    </div>
+
+    <div class="price-card">
+      {% if pricing_ready %}
+        <p class="kicker">Totaalbedrag</p>
+        <p class="total-main">
+          {{ fmt_eur(vat.total_incl_vat if vat and vat.total_incl_vat is not none else 0) }}
+          <span class="total-suffix">incl. btw</span>
+        </p>
+        <table class="price-grid">
+          <tr>
+            <td>Subtotaal (excl. btw)</td>
+            <td>{{ fmt_eur(vat.subtotal_excl_vat if vat and vat.subtotal_excl_vat is not none else 0) }}</td>
+          </tr>
+          <tr>
+            <td>BTW ({{ ((vat.vat_rate if vat and vat.vat_rate is not none else 0) * 100) | round(0) }}%)</td>
+            <td>{{ fmt_eur(vat.vat_amount if vat and vat.vat_amount is not none else 0) }}</td>
+          </tr>
+          <tr>
+            <td>Geldig tot</td>
+            <td>{{ project.valid_until if project and project.valid_until else "In overleg" }}</td>
+          </tr>
+        </table>
+        <p class="price-note">Inclusief voorbereiding, materialen en nette oplevering volgens afspraak.</p>
+      {% else %}
+        <p class="kicker">Prijsstatus</p>
+        <p class="total-main" style="font-size: 19pt;">Prijs wordt definitief na korte review</p>
+        <p class="price-note">Na controle van oppervlakken, voorbereiding en bereikbaarheid ontvangt u de definitieve prijs.</p>
+        {% if review_reasons and (review_reasons | length) > 0 %}
+          <ul>
+            {% for r in review_reasons %}
+              <li>{{ review_label_nl(r) }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2 class="section-head">Uitvoerder en klant/project</h2>
+      <table class="two-col">
+        <tr>
+          <td style="width: 48%; padding-right: 16px; border: 0;">
+            <h3>Uitvoerder</h3>
+            <table class="kv">
+              <tr>
+                <td>Bedrijf</td>
+                <td>{{ company_display_name }}</td>
+              </tr>
+              <tr>
+                <td>E-mail</td>
+                <td>{{ company.email if company and company.email else "Niet opgegeven" }}</td>
+              </tr>
+              <tr>
+                <td>Telefoon</td>
+                <td>{{ company.phone if company and company.phone else "Niet opgegeven" }}</td>
+              </tr>
+            </table>
+          </td>
+          <td style="width: 52%; padding-left: 16px; border: 0;">
+            <h3>Klant / project</h3>
+            <table class="kv">
+              <tr>
+                <td>Naam</td>
+                <td>{{ lead_name }}</td>
+              </tr>
+              <tr>
+                <td>E-mail</td>
+                <td>{{ lead_email }}</td>
+              </tr>
+              <tr>
+                <td>Telefoon</td>
+                <td>{{ lead_phone }}</td>
+              </tr>
+              <tr>
+                <td>Locatie</td>
+                <td>{{ lead_address }}</td>
+              </tr>
+              {% if project and project.square_meters %}
+                <tr>
+                  <td>Oppervlakte</td>
+                  <td>{{ fmt_qty(project.square_meters) }} m²</td>
+                </tr>
+              {% endif %}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 class="section-head">Gedetailleerde specificatie</h2>
+      {% if pricing and pricing.line_items and (pricing.line_items | length) > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th>Onderdeel / ruimte</th>
+              <th>Hoeveelheid</th>
+              <th class="text-right">Prijs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in pricing.line_items %}
+              {% set unit = (item.unit if item and item.unit else '') %}
+              {% set qty = (item.quantity if item and item.quantity is defined else None) %}
+              {% set is_row_provisional = needs_review_flag %}
+              {% set is_meaningless_job_qty = (unit == 'job' and (qty == 1 or qty == 1.0 or qty == '1' or qty == '1.0')) %}
+              <tr>
+                <td>
+                  <strong>{{ item.label }}</strong>
+                  {% if item.description %}
+                    <div class="small text-soft">{{ item.description }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if is_row_provisional or is_meaningless_job_qty %}
+                    —
+                  {% else %}
+                    {% set display_unit = 'm²' if item.unit == 'sqm' else item.unit %}
+                    {{ fmt_qty(item.quantity, item.unit) }} {{ display_unit }}
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  {% if pricing_ready and item.total %}
+                    {{ fmt_eur(item.total) }}
+                  {% else %}
+                    <span class="text-soft small">Nader te bepalen</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">Nog geen regels beschikbaar.</p>
+      {% endif %}
+      <p class="footnote">Alle bedragen zijn in euro en inclusief de hierboven vermelde btw.</p>
+    </div>
+
+    <div class="card card-soft">
+      <h2 class="section-head">Inbegrepen werkzaamheden</h2>
+      {% if scope_bullets %}
+        <ul class="checklist">
+          {% for b in scope_bullets %}
+            <li>{{ b }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Volgens afspraak.</p>
+      {% endif %}
+    </div>
+
+    <div class="card card-soft">
+      <h2 class="section-head">Niet inbegrepen / opmerkingen</h2>
+      {% if exclusions %}
+        <ul>
+          {% for x in exclusions %}
+            <li>{{ x }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Geen aanvullende uitsluitingen.</p>
+      {% endif %}
+      {% if project and project.description %}
+        <p style="margin-top: 8px;"><strong>Projectomschrijving:</strong> {{ project.description }}</p>
+      {% endif %}
+    </div>
+
+    {% if pricing and pricing.public_notes %}
+      <div class="card card-soft">
+        <h2 class="section-head">Publieke notities</h2>
+        <p>{{ pricing.public_notes }}</p>
+      </div>
+    {% endif %}
+
+    <div class="footer">
+      <p>
+        <strong>Referentie:</strong>
+        {% if ref_code %}Offerte #{{ ref_code }}{% else %}Offerte{% endif %}
+        {% if company_display_name %} | <strong>{{ company_display_name }}</strong>{% endif %}
+      </p>
+      <p>
+        Automatisch gegenereerde offerte op basis van aangeleverde projectinformatie, onder voorbehoud van eindcontrole op locatie.
+      </p>
+    </div>
+    </div>
+  </div>
+</body>
+</html>

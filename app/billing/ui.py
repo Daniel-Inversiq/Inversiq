@@ -28,15 +28,8 @@ class FeatureUI:
 
 _DEFAULT_HINTS: Mapping[str, str] = {
     Feature.BASIC_SENDING.value: "Beschikbaar vanaf Starter",
-    Feature.PDF_EXPORT.value: "Beschikbaar vanaf Pro",
-    Feature.BRANDING.value: "Beschikbaar vanaf Pro",
-    Feature.PROFESSIONAL_LAYOUT.value: "Beschikbaar vanaf Pro",
     Feature.SMART_PRICING.value: "Beschikbaar vanaf Pro",
-    Feature.NOTIFICATIONS.value: "Beschikbaar vanaf Pro",
-    Feature.PLANNING_CALENDAR.value: "Beschikbaar vanaf Pro",
     Feature.AUTOMATION.value: "Beschikbaar vanaf Business",
-    Feature.PRIORITY_PROCESSING.value: "Beschikbaar vanaf Business",
-    Feature.WHITELABEL.value: "Beschikbaar vanaf Business",
     Feature.PRIORITY_SUPPORT.value: "Beschikbaar vanaf Business",
 }
 
@@ -53,16 +46,16 @@ def tenant_feature_flags(tenant: TenantLike | None) -> dict[str, bool]:
     if tenant is None:
         return {
             "basic_sending": False,
-            "pdf_export": False,
-            "branding": False,
-            "whitelabel": False,
+            "pdf_export": True,
+            "branding": True,
+            "whitelabel": True,
         }
 
     return {
         "basic_sending": tenant_has_feature(tenant, Feature.BASIC_SENDING.value),
-        "pdf_export": tenant_has_feature(tenant, Feature.PDF_EXPORT.value),
-        "branding": tenant_has_feature(tenant, Feature.BRANDING.value),
-        "whitelabel": tenant_has_feature(tenant, Feature.WHITELABEL.value),
+        "pdf_export": True,
+        "branding": True,
+        "whitelabel": True,
     }
 
 
@@ -107,5 +100,3 @@ def tenant_entitlements(tenant: TenantLike | None) -> dict[str, dict[str, object
     base["use_whitelabel"] = _wrap(check_entitlement(tenant, Action.USE_WHITELABEL.value))
 
     return base
-
-

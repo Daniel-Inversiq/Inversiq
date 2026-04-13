@@ -1,0 +1,17 @@
+{
+    "vertical_id": "roofing",
+    "version": "1.0",
+    "currency": "EUR",
+    "default_area_m2": 80,
+    "base_rates": {
+        "pitched": {
+            "rate_eur_per_m2": 48.00,
+            "label": "Dakdekking schuin dak"
+        },
+        "flat": {
+            "rate_eur_per_m2": 58.00,
+            "label": "Dakdekking plat dak"
+        }
+    },
+    "minimum_total_eur": 800.00
+}

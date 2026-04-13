@@ -17,4 +17,5 @@ class TenantUsage(Base):
     month: Mapped[int] = mapped_column(Integer, nullable=False)
 
     quotes_sent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    top_up_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

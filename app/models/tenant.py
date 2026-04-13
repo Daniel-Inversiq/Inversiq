@@ -19,6 +19,11 @@ class Tenant(Base):
 
     pricing_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    # Workflow visibility: list of vertical_id strings this tenant has access to.
+    # None → legacy / unset → treated as ["painting"] by the UI fallback.
+    # Example: ["painting", "roofing"]
+    enabled_verticals: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     subscription_status: Mapped[str | None] = mapped_column(String(50), nullable=True)

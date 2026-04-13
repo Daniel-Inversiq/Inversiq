@@ -1,0 +1,25 @@
+{
+    "version": "1.0",
+    "vertical_id": "solar",
+    "assets": {
+        "rules": "engine_config/solar_rules.json",
+        "template": "engine_config/solar_quote.html"
+    },
+    "pipeline": {
+        "steps": [
+            {
+                "id": "quote",
+                "use": "solar.quote.v1"
+            },
+            {
+                "id": "review",
+                "use": "solar.review.v1",
+                "on_needs_review": "CONTINUE"
+            },
+            {
+                "id": "save",
+                "use": "solar.save.v1"
+            }
+        ]
+    }
+}

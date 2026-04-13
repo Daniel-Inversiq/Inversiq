@@ -31,7 +31,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
 TEMPLATES_DIR = (
-    Path(__file__).resolve().parents[1] / "verticals" / "paintly" / "templates"
+    Path(__file__).resolve().parents[1] / "verticals" / "painting" / "templates"
 )
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 setup_jinja_i18n(templates)
@@ -72,10 +72,10 @@ async def _send_password_reset_email_task(*, to_email: str, reset_url: str) -> N
 
 
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request, next: str = "/app/leads", reset: int = 0):
+def login_page(request: Request, next: str = "/app/leads", reset: int = 0, error: int = 0):
     return templates.TemplateResponse(
         "auth/login.html",
-        {"request": request, "next": next, "reset": bool(reset)},
+        {"request": request, "next": next, "reset": bool(reset), "error": bool(error)},
     )
 
 
@@ -135,7 +135,7 @@ def login_form(
 
     if not user or not verify_password(password, user.password_hash):
         logger.warning("AUTH_LOGIN_INVALID_CREDENTIALS email=%s", email_norm)
-        return RedirectResponse(url=f"/auth/login?next={next}", status_code=302)
+        return RedirectResponse(url=f"/auth/login?next={next}&error=1", status_code=302)
 
     token = create_access_token(
         user_id=user.id,
@@ -198,7 +198,7 @@ def register_form(
         email=email_norm,
         phone=phone_clean,
         slug=slug,
-        plan_code="pro_199",
+        plan_code="core",
         subscription_status="trialing",
         trial_ends_at=trial_end,
         pricing_json=(
@@ -206,6 +206,7 @@ def register_form(
             if walls_rate_eur_per_sqm is not None
             else {}
         ),
+        enabled_verticals=["painting"],
     )
 
     user = User(

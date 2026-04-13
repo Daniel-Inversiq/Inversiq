@@ -1,0 +1,215 @@
+{% extends "founder/_base.html" %}
+{% import "founder/_macros.html" as founder %}
+
+{% block title %}Founder Tenants{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <header class="border-b border-slate-200 pb-5">
+    <h2 class="text-xl font-semibold tracking-tight text-slate-900">Tenants</h2>
+    <p class="mt-1 text-sm text-slate-500">Browse and open any organization.</p>
+  </header>
+
+  <form method="get" action="{{ url_for('founder_tenants') }}" class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+    <input type="hidden" name="per_page" value="{{ per_page }}" />
+    <input type="hidden" name="sort" value="{{ sort_by }}" />
+    <input type="hidden" name="dir" value="{{ sort_dir }}" />
+    <div class="min-w-0 flex-1 sm:max-w-md">
+      <label for="tenant-search-q" class="sr-only">Search tenants</label>
+      <input
+        id="tenant-search-q"
+        type="search"
+        name="q"
+        value="{{ q }}"
+        placeholder="Company, email, owner, slug…"
+        autocomplete="off"
+        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+      />
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Search</button>
+      {% if q %}
+      <a href="{{ url_for('founder_tenants') }}?per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="text-sm text-slate-600" role="status">
+    {% if total == 0 %}
+      <span class="font-medium tabular-nums text-slate-900">0</span> results
+    {% else %}
+      Showing <span class="font-medium tabular-nums text-slate-900">{{ showing_from }}–{{ showing_to }}</span> of
+      <span class="font-medium tabular-nums text-slate-900">{{ total }}</span>
+    {% endif %}
+  </p>
+
+  {% if top_performers %}
+  <section class="rounded-lg border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm" aria-label="Top performers">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      Top performers
+      <span class="font-normal normal-case text-slate-400">({% if top_performers_mode == 'revenue' %}by accepted revenue{% else %}by leads{% endif %})</span>
+    </p>
+    <ol class="mt-2 flex list-none flex-wrap gap-x-8 gap-y-2">
+      {% for p in top_performers %}
+      <li class="flex min-w-0 items-baseline gap-2">
+        <span class="shrink-0 tabular-nums text-xs font-semibold text-slate-400">{{ loop.index }}.</span>
+        <a href="{{ url_for('founder_tenant_detail', tenant_id=p.id) }}" class="min-w-0 truncate font-medium text-slate-900 underline decoration-slate-200 underline-offset-2 hover:decoration-slate-400">{{ p.company_name }}</a>
+        <span class="shrink-0 tabular-nums text-slate-600">
+          {% if p.kind == 'revenue' %}{{ p.label }}{% else %}{{ p.label }} leads{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  {% if tenants %}
+  {% set max_leads = ([tenants | map(attribute='lead_count') | max, 1] | max) %}
+  {% set max_est = ([tenants | map(attribute='estimate_count') | max, 1] | max) %}
+  {% set max_rev = ([tenants | map(attribute='accepted_revenue') | max, 1] | max) %}
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+    <div class="overflow-x-auto">
+      <table class="min-w-[86rem] w-full table-fixed border-collapse text-left text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-50/95">
+            <th scope="col" class="w-[14%] px-4 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <a href="{{ sort_href.company }}" class="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 {% if sort_by == 'company' %}font-bold text-slate-900{% endif %}">
+                Company{% if sort_by == 'company' %}<span class="text-slate-400" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span><span class="sr-only">, sorted {% if sort_dir == 'asc' %}ascending{% else %}descending{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="w-[11%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Owner</th>
+            <th scope="col" class="w-[14%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Email</th>
+            <th scope="col" class="w-[9%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</th>
+            <th scope="col" class="w-[9%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Slug</th>
+            <th scope="col" class="w-[8%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Plan</th>
+            <th scope="col" class="w-[7%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+            <th scope="col" class="w-[9%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Health</th>
+            <th scope="col" class="w-[8%] px-3 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <a href="{{ sort_href.created_at }}" class="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 {% if sort_by == 'created_at' %}font-bold text-slate-900{% endif %}">
+                Created{% if sort_by == 'created_at' %}<span class="text-slate-400" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span><span class="sr-only">, sorted {% if sort_dir == 'asc' %}ascending{% else %}descending{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="w-[10%] px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <a href="{{ sort_href.leads }}" class="inline-flex w-full items-center justify-end gap-1 text-slate-600 hover:text-slate-900 {% if sort_by == 'leads' %}font-bold text-slate-900{% endif %}">
+                Leads{% if sort_by == 'leads' %}<span class="text-slate-400" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span><span class="sr-only">, sorted {% if sort_dir == 'asc' %}ascending{% else %}descending{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="w-[6%] px-2 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500" title="Accepted leads ÷ total leads">Conv.</th>
+            <th scope="col" class="w-[8%] px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <a href="{{ sort_href.estimates }}" class="inline-flex w-full items-center justify-end gap-1 text-slate-600 hover:text-slate-900 {% if sort_by == 'estimates' %}font-bold text-slate-900{% endif %}">
+                Est.{% if sort_by == 'estimates' %}<span class="text-slate-400" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span><span class="sr-only">, sorted {% if sort_dir == 'asc' %}ascending{% else %}descending{% endif %}</span>{% endif %}
+              </a>
+            </th>
+            <th scope="col" class="w-[11%] px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <a href="{{ sort_href.revenue }}" class="inline-flex w-full items-center justify-end gap-1 hover:text-slate-900 {% if sort_by == 'revenue' %}font-bold text-slate-900{% endif %}">
+                Revenue{% if sort_by == 'revenue' %}<span class="text-slate-400" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span><span class="sr-only">, sorted {% if sort_dir == 'asc' %}ascending{% else %}descending{% endif %}</span>{% endif %}
+              </a>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for t in tenants %}
+          {% set href = url_for('founder_tenant_detail', tenant_id=t.id) %}
+          {% set lp = ([((t.lead_count * 100) / max_leads) | int, 100] | min) if max_leads else 0 %}
+          {% set ep = ([((t.estimate_count * 100) / max_est) | int, 100] | min) if max_est else 0 %}
+          {% set rp = ([((t.accepted_revenue * 100) / max_rev) | int, 100] | min) if max_rev else 0 %}
+          <tr
+            class="group cursor-pointer transition-colors hover:bg-slate-50/95 {% if t.at_risk %}bg-amber-50/35{% endif %}"
+            data-row-href="{{ href }}"
+            role="link"
+            tabindex="0"
+            aria-label="Open tenant {{ t.company_name or 'detail' }}"
+          >
+            <td class="px-4 py-3 align-middle">
+              <span class="inline-flex max-w-full flex-wrap items-center gap-x-1 gap-y-1">
+                <span class="font-semibold text-slate-900 group-hover:text-slate-950">{{ t.company_name or "—" }}</span>
+                {% if t.at_risk %}{{ founder.at_risk_badge() }}{% endif %}
+              </span>
+            </td>
+            <td class="px-3 py-3 align-middle text-slate-600">{{ t.owner_name or "—" }}</td>
+            <td class="max-w-0 truncate px-3 py-3 align-middle text-slate-600" title="{{ t.owner_email or '' }}">{{ t.owner_email or "—" }}</td>
+            <td class="whitespace-nowrap px-3 py-3 align-middle text-slate-600">{{ t.phone or "—" }}</td>
+            <td class="px-3 py-3 align-middle font-mono text-xs text-slate-500">{{ t.slug or "—" }}</td>
+            <td class="px-3 py-3 align-middle">{{ founder.plan_badge(t.plan_tier or "starter_99") }}</td>
+            <td class="px-3 py-3 align-middle">{{ founder.status_badge(t.status) }}</td>
+            <td class="px-3 py-3 align-top text-slate-700">{{ founder.insight_health_badge(t.health, t.health_reason) }}</td>
+            <td class="whitespace-nowrap px-3 py-3 align-middle">
+              <span class="text-xs tabular-nums text-slate-400" title="{{ founder.fmt_date(t.created_at) }}">{{ t.created_relative }}</span>
+            </td>
+            <td class="px-3 py-2.5 align-middle text-right">
+              <div class="relative flex w-full min-w-[5.5rem] flex-col items-end justify-center gap-0.5 py-1">
+                <div class="pointer-events-none absolute inset-y-0 right-0 rounded-l bg-slate-200/50" style="width: {{ lp }}%; max-width: 100%;"></div>
+                <span class="relative z-10 tabular-nums text-sm font-medium text-slate-800">{{ t.lead_count }} total<span class="font-normal text-slate-500"> (+{{ t.leads_7d }} last 7d)</span></span>
+              </div>
+            </td>
+            <td class="px-2 py-3 align-middle text-right">
+              {% if t.conversion_pct is not none %}
+              <span class="tabular-nums text-slate-700">{{ t.conversion_pct }}%</span>
+              {% else %}
+              <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2.5 align-middle text-right">
+              <div class="relative flex w-full min-w-[4rem] justify-end py-1">
+                <div class="pointer-events-none absolute inset-y-0 right-0 rounded-l bg-slate-200/45" style="width: {{ ep }}%; max-width: 100%;"></div>
+                <span class="relative z-10 tabular-nums font-medium text-slate-800">{{ t.estimate_count }}</span>
+              </div>
+            </td>
+            <td class="whitespace-nowrap px-4 py-3 align-middle text-right">
+              <div class="relative flex w-full min-w-[5.5rem] justify-end py-1">
+                <div class="pointer-events-none absolute inset-y-0 right-0 rounded-l bg-indigo-100/60" style="width: {{ rp }}%; max-width: 100%;"></div>
+                <span class="relative z-10 text-base font-bold tabular-nums tracking-tight text-slate-900">{{ t.accepted_revenue_fmt }}</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <script>
+  (function () {
+    document.querySelectorAll("tr[data-row-href]").forEach(function (tr) {
+      var go = function () { window.location = tr.getAttribute("data-row-href"); };
+      tr.addEventListener("click", function (e) {
+        if (e.target.closest("a, button, input")) return;
+        go();
+      });
+      tr.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          go();
+        }
+      });
+    });
+  })();
+  </script>
+  {% if total_pages > 1 %}
+  <nav class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm text-slate-600" aria-label="Tenant list pagination">
+    <div>
+      {% if url_prev %}
+      <a href="{{ url_prev }}" class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500">Previous</a>
+      {% else %}
+      <span class="text-slate-400">Previous</span>
+      {% endif %}
+      <span class="mx-2 text-slate-300" aria-hidden="true">·</span>
+      {% if url_next %}
+      <a href="{{ url_next }}" class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500">Next</a>
+      {% else %}
+      <span class="text-slate-400">Next</span>
+      {% endif %}
+    </div>
+    <p class="tabular-nums text-slate-500">Page {{ page }} of {{ total_pages }}</p>
+  </nav>
+  {% endif %}
+  {% else %}
+  <section class="overflow-hidden rounded-xl border border-dashed border-slate-200 bg-white">
+    {% if q %}
+    {{ founder.empty_state("No matching tenants", "Try a different search or clear filters to see all tenants.") }}
+    {% else %}
+    {{ founder.empty_state("No tenants yet", "When organizations sign up, they will appear in this list.") }}
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

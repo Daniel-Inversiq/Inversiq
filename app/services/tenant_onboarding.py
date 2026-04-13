@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.tenant import Tenant
 from app.schemas.onboarding import TenantOnboardingCreate
+from app.core.plan_catalog import TRIAL_DAYS, TRIAL_DEFAULT_PLAN_CODE
 
 
 def _slugify_company_name(company_name: str) -> str:
@@ -45,7 +46,7 @@ def create_tenant_with_pricing(db: Session, payload: TenantOnboardingCreate) -> 
     unique_slug = _ensure_unique_slug(db, base_slug)
 
     trial_start = datetime.now(timezone.utc)
-    trial_end = trial_start + timedelta(days=14)
+    trial_end = trial_start + timedelta(days=TRIAL_DAYS)
 
     tenant = Tenant(
         id=str(uuid.uuid4()),
@@ -54,12 +55,13 @@ def create_tenant_with_pricing(db: Session, payload: TenantOnboardingCreate) -> 
         email=email,
         phone=phone,
         slug=unique_slug,
-        plan_code="pro_199",
+        plan_code=TRIAL_DEFAULT_PLAN_CODE,
         subscription_status="trialing",
         trial_ends_at=trial_end,
         pricing_json={
             "walls_rate_eur_per_sqm": float(payload.walls_rate_eur_per_sqm),
         },
+        enabled_verticals=["painting"],
     )
 
     db.add(tenant)

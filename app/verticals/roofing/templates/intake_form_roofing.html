@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dakofferte aanvragen — Inversiq</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+
+<div class="flex min-h-screen items-start justify-center px-4 py-12">
+  <div class="w-full max-w-md">
+
+    <!-- Header -->
+    <div class="mb-8 text-center">
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-sm">
+        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+      </div>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-600">Inversiq — Dakdekken</p>
+      <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Dakofferte aanvragen</h1>
+      <p class="mt-1.5 text-sm text-slate-500">Vul de gegevens in voor een directe prijsindicatie.</p>
+    </div>
+
+    <!-- Card -->
+    <div class="overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-sm">
+      <form method="post" action="/intake/roofing" class="px-8 py-8 space-y-5">
+
+        <!-- hidden fields -->
+        <input type="hidden" name="lead_id" value="{{ lead_id }}" />
+        <input type="hidden" name="tenant_id" value="{{ tenant_id }}" />
+        <input type="hidden" name="vertical" value="roofing" />
+
+        <!-- Contact -->
+        <div class="space-y-4">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Uw gegevens</div>
+
+          <div>
+            <label for="name" class="mb-1.5 block text-sm font-medium text-slate-700">Naam</label>
+            <input id="name" name="name" type="text" required placeholder="Jan de Vries"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100" />
+          </div>
+
+          <div>
+            <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">E-mailadres</label>
+            <input id="email" name="email" type="email" required placeholder="jan@voorbeeld.nl"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100" />
+          </div>
+
+          <div>
+            <label for="phone" class="mb-1.5 block text-sm font-medium text-slate-700">
+              Telefoonnummer <span class="text-slate-400 font-normal">(optioneel)</span>
+            </label>
+            <input id="phone" name="phone" type="tel" placeholder="06 12345678"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100" />
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100"></div>
+
+        <!-- Roof details -->
+        <div class="space-y-4">
+          <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Dakgegevens</div>
+
+          <div>
+            <label for="roof_area_m2" class="mb-1.5 block text-sm font-medium text-slate-700">Dakoppervlak (m²)</label>
+            <input id="roof_area_m2" name="roof_area_m2" type="number" step="0.5" min="1" max="2000"
+              placeholder="bijv. 80"
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100" />
+            <p class="mt-1.5 text-xs text-slate-400">Laat leeg als u het oppervlak niet weet — we gebruiken dan een standaardschatting.</p>
+          </div>
+
+          <div>
+            <label for="roof_type" class="mb-1.5 block text-sm font-medium text-slate-700">Type dak</label>
+            <select id="roof_type" name="roof_type" required
+              class="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100">
+              <option value="" disabled selected>Kies een daktype…</option>
+              <option value="pitched">Schuin dak</option>
+              <option value="flat">Plat dak</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="pt-2">
+          <button type="submit"
+            class="flex h-11 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-sm font-semibold text-white shadow-sm transition hover:from-sky-600 hover:to-blue-700">
+            Offerte berekenen
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

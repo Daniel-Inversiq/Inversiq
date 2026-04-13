@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
-from app.billing.features import PLAN_FEATURES
+from app.core.plan_catalog import TRIAL_DEFAULT_PLAN_CODE, get_stripe_price_id
 from app.db import get_db
 from app.models.tenant import Tenant
 from app.models.user import User
@@ -54,26 +54,24 @@ def start_trial(
         customer = stripe_service.create_customer(email=tenant.email or user.email)
         tenant.stripe_customer_id = customer.id
 
-    # 2) Create subscription with 14 day trial
+    # 2) Resolve canonical core price and create subscription with 14 day trial
+    _, core_price_id = get_stripe_price_id(TRIAL_DEFAULT_PLAN_CODE)
+    if not core_price_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Stripe price not configured for core plan",
+        )
+
     subscription = stripe_service.create_trial_subscription(
         customer_id=tenant.stripe_customer_id,
+        price_id=core_price_id,
         trial_days=14,
     )
 
     tenant.stripe_subscription_id = subscription.id
     status: str = getattr(subscription, "status", "trialing")
     tenant.subscription_status = status
-    # Keep internal plan codes stable for entitlement checks.
-    # Stripe subscription payload can return price/plan IDs that do not match
-    # our internal mapping keys.
-    subscription_plan_code = getattr(subscription, "plan", {}).get("id") if getattr(
-        subscription, "plan", None
-    ) else None
-    tenant.plan_code = (
-        subscription_plan_code
-        if subscription_plan_code in PLAN_FEATURES
-        else (tenant.plan_code or "starter_99")
-    )
+    tenant.plan_code = tenant.plan_code or TRIAL_DEFAULT_PLAN_CODE
 
     trial_end = getattr(subscription, "trial_end", None)
     tenant.trial_ends_at = compute_trial_end(trial_end)

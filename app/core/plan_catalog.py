@@ -1,23 +1,27 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
-DEFAULT_PLAN_CODE = "starter_99"
+DEFAULT_PLAN_CODE = "core"
 CANONICAL_PLAN_CODES: tuple[str, ...] = (
-    "starter_99",
-    "pro_199",
-    "business_399",
+    "core",
+    "growth",
+    "pro",
+    "scale",
 )
 
-# Temporary backwards-compatible aliases for historic/external inputs.
+# Backwards-compatible aliases for historic/external inputs.
 PLAN_CODE_ALIASES: dict[str, str] = {
-    "starter": "starter_99",
-    "starter_monthly": "starter_99",
-    "starter-yearly": "starter_99",
-    "pro": "pro_199",
-    "business": "business_399",
+    # legacy plan codes
+    "starter_99": "core",
+    "starter": "core",
+    "starter_monthly": "core",
+    "starter-yearly": "core",
+    "pro_199": "growth",
+    "business_399": "pro",
+    "business": "pro",
 }
 
 
@@ -25,94 +29,140 @@ PLAN_CODE_ALIASES: dict[str, str] = {
 class PlanCatalogItem:
     code: str
     name: str
+    price_cents: int | None          # None = custom/contact sales
     price_display: str
     price_period: str
     quote_limit_label: str
-    monthly_offer_limit: int | None
+    monthly_request_limit: int | None  # None = unlimited
     tagline_nl: str
     ui_features: tuple[str, ...]
     entitlement_features: frozenset[str]
     stripe_price_env_key: str
+    # Founding pricing: applies to core only
+    founding_price_cents: int | None = field(default=None)
+    founding_stripe_price_env_key: str | None = field(default=None)
+    # Top-up pricing (€30 per 10 requests, active subscription required)
+    topup_price_cents: int = field(default=3000)
+    topup_requests: int = field(default=10)
 
 
 PLAN_CATALOG: dict[str, PlanCatalogItem] = {
-    "starter_99": PlanCatalogItem(
-        code="starter_99",
-        name="Starter",
-        price_display="€99",
-        price_period="per maand",
-        quote_limit_label="Tot 25 offertes per maand",
-        monthly_offer_limit=25,
-        tagline_nl="Voor zelfstandige schilders die snel professioneel willen starten.",
-        ui_features=(
-            "Basis offertegeneratie voor dagelijkse aanvragen",
-            "Duidelijke offertes waarmee je sneller kunt opvolgen",
-            "Ideaal voor kleinere volumes",
-        ),
-        entitlement_features=frozenset(
-            {
-                "BASIC_SENDING",
-            }
-        ),
-        stripe_price_env_key="STRIPE_PRICE_STARTER_99",
-    ),
-    "pro_199": PlanCatalogItem(
-        code="pro_199",
-        name="Pro",
-        price_display="€199",
-        price_period="per maand",
-        quote_limit_label="Onbeperkt offertes",
-        monthly_offer_limit=None,
-        tagline_nl="Voor groeiende teams die meer conversie en minder handwerk willen.",
-        ui_features=(
-            "Alles uit Starter",
-            "Branding, professionele lay-out en slimme prijsvoorstellen",
-            "Notificaties en planning met kalender voor strakke opvolging",
-        ),
-        entitlement_features=frozenset(
-            {
-                "BASIC_SENDING",
-                "PDF_EXPORT",
-                "BRANDING",
-                "PROFESSIONAL_LAYOUT",
-                "SMART_PRICING",
-                "NOTIFICATIONS",
-                "PLANNING_CALENDAR",
-            }
-        ),
-        stripe_price_env_key="STRIPE_PRICE_PRO_199",
-    ),
-    "business_399": PlanCatalogItem(
-        code="business_399",
-        name="Business",
+    "core": PlanCatalogItem(
+        code="core",
+        name="Core",
+        price_cents=39900,
         price_display="€399",
         price_period="per maand",
-        quote_limit_label="Onbeperkt offertes",
-        monthly_offer_limit=None,
-        tagline_nl="Voor teams die maximaal willen schalen met minimale operationele frictie.",
+        quote_limit_label="30 aanvragen / maand",
+        monthly_request_limit=30,
+        tagline_nl="Lage drempel · snelle adoptie",
         ui_features=(
-            "Alles van Pro, inclusief white-label ervaring",
-            "Automatisering en prioriteitsverwerking",
-            "Prioritaire ondersteuning voor je team",
+            "30 aanvragen / maand",
+            "1 workflow",
+            "Standaard rules",
+            "Standaard output",
+            "+ €30 per 10 extra aanvragen",
         ),
         entitlement_features=frozenset(
             {
                 "BASIC_SENDING",
-                "PDF_EXPORT",
-                "BRANDING",
-                "PROFESSIONAL_LAYOUT",
-                "SMART_PRICING",
-                "NOTIFICATIONS",
-                "PLANNING_CALENDAR",
-                "AUTOMATION",
-                "PRIORITY_PROCESSING",
-                "WHITELABEL",
-                "PRIORITY_SUPPORT",
+                "TOPUP",
             }
         ),
-        stripe_price_env_key="STRIPE_PRICE_BUSINESS_399",
+        stripe_price_env_key="STRIPE_PRICE_CORE",
+        founding_price_cents=19900,
+        founding_stripe_price_env_key="STRIPE_PRICE_CORE_FOUNDING",
+    ),
+    "growth": PlanCatalogItem(
+        code="growth",
+        name="Growth",
+        price_cents=89900,
+        price_display="€899",
+        price_period="per maand",
+        quote_limit_label="150 aanvragen / maand",
+        monthly_request_limit=150,
+        tagline_nl="Core business — hier wil je iedereen",
+        ui_features=(
+            "150 aanvragen / maand",
+            "1–2 workflows",
+            "Advanced rules",
+            "Automation",
+        ),
+        entitlement_features=frozenset(
+            {
+                "BASIC_SENDING",
+                "SMART_PRICING",
+                "AUTOMATION",
+                "TOPUP",
+            }
+        ),
+        stripe_price_env_key="STRIPE_PRICE_GROWTH",
+    ),
+    "pro": PlanCatalogItem(
+        code="pro",
+        name="Pro",
+        price_cents=249900,
+        price_display="€2.499",
+        price_period="per maand",
+        quote_limit_label="750 aanvragen / maand",
+        monthly_request_limit=750,
+        tagline_nl="Hoge marge · grotere bedrijven",
+        ui_features=(
+            "750 aanvragen / maand",
+            "Meerdere workflows",
+            "Complexe logic",
+            "Integraties",
+        ),
+        entitlement_features=frozenset(
+            {
+                "BASIC_SENDING",
+                "SMART_PRICING",
+                "AUTOMATION",
+                "CUSTOM_INTEGRATIONS",
+                "TOPUP",
+            }
+        ),
+        stripe_price_env_key="STRIPE_PRICE_PRO",
+    ),
+    "scale": PlanCatalogItem(
+        code="scale",
+        name="Scale",
+        price_cents=None,
+        price_display="Op aanvraag",
+        price_period="per maand",
+        quote_limit_label="Onbeperkt volume",
+        monthly_request_limit=None,
+        tagline_nl="Enterprise · insurance · logistiek",
+        ui_features=(
+            "Onbeperkt volume",
+            "Custom rules",
+            "API / infra",
+            "SLA + support",
+        ),
+        entitlement_features=frozenset(
+            {
+                "BASIC_SENDING",
+                "SMART_PRICING",
+                "AUTOMATION",
+                "CUSTOM_INTEGRATIONS",
+                "DEDICATED_SLA",
+                "PRIORITY_SUPPORT",
+                "TOPUP",
+            }
+        ),
+        stripe_price_env_key="STRIPE_PRICE_SCALE",
     ),
 }
+
+# Top-up product: €30 per 10 requests, only available with active subscription
+TOPUP_PRICE_CENTS = 3000
+TOPUP_REQUEST_COUNT = 10
+TOPUP_STRIPE_PRICE_ENV_KEY = "STRIPE_PRICE_TOPUP"
+
+# Trial defaults
+TRIAL_DAYS = 14
+TRIAL_REQUEST_LIMIT = 10
+TRIAL_DEFAULT_PLAN_CODE = "core"
 
 
 def resolve_plan_code(plan_code: str | None, *, allow_aliases: bool = True) -> str | None:
@@ -138,3 +188,11 @@ def get_stripe_price_id(plan_code: str | None) -> tuple[str | None, str | None]:
     if not item:
         return None, None
     return item.code, (os.getenv(item.stripe_price_env_key) or "").strip() or None
+
+
+def get_founding_stripe_price_id(plan_code: str | None) -> tuple[str | None, str | None]:
+    """Return the founding price Stripe ID for a plan, if configured."""
+    item = get_plan_item(plan_code, allow_aliases=True)
+    if not item or not item.founding_stripe_price_env_key:
+        return None, None
+    return item.code, (os.getenv(item.founding_stripe_price_env_key) or "").strip() or None

@@ -1,0 +1,70 @@
+{% if intake_url %}
+  <section
+    class="border-b border-[#f0f2f5] pb-5"
+    aria-labelledby="intake-link-heading"
+  >
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <h2 id="intake-link-heading" class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#b0b5bf]">
+            Intake-link
+          </h2>
+        </div>
+        <div class="mt-1.5 flex items-center rounded border border-[#e8eaee] bg-[#f8f9fb] px-3 py-1.5">
+          <p class="min-w-0 truncate font-mono text-[12px] text-[#374151]">{{ intake_url }}</p>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-1.5">
+        <button
+          type="button"
+          class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+          data-intake-url="{{ intake_url|e }}"
+          data-copy-label="Kopieer"
+          data-intake-copy-btn
+          aria-live="polite"
+        >
+          Kopieer
+        </button>
+
+        <a
+          href="{{ intake_url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        >
+          Open
+        </a>
+
+        {% set wa_intake_message = "Hallo, via deze link kun je jouw schilderaanvraag invullen: " ~ intake_url %}
+        <a
+          href="https://wa.me/?text={{ wa_intake_message|url_query_quote }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex h-7 items-center justify-center rounded border border-emerald-200 bg-white px-3 text-[11px] font-medium text-emerald-700 transition hover:bg-emerald-50"
+        >
+          WhatsApp
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      document.querySelectorAll("[data-intake-copy-btn]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var url = btn.getAttribute("data-intake-url");
+          if (!url) return;
+          var label = btn.getAttribute("data-copy-label") || "Kopieer";
+          navigator.clipboard.writeText(url).then(function () {
+            btn.textContent = "Gekopieerd!";
+            setTimeout(function () {
+              btn.textContent = label;
+            }, 2000);
+          }).catch(function () {});
+        });
+      });
+    })();
+  </script>
+{% endif %}

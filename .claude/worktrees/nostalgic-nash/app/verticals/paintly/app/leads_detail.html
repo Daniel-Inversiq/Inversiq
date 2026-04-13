@@ -1,0 +1,56 @@
+{% extends "app/layout.html" %}
+{% block content %}
+
+<a class="btn" href="/app/leads">← Back</a>
+
+<div style="margin-top:12px;">
+  <div style="display:flex; gap:12px; align-items:center;">
+    <h2 style="margin:0;">Lead {{ lead.id }}</h2>
+    <span class="badge {{ lead.status }}">{{ lead.status }}</span>
+  </div>
+
+  <div style="margin-top:10px;">
+    <div><strong>Customer:</strong> {{ lead.customer_name or "—" }}</div>
+    <div><strong>Address:</strong> {{ lead.address or "—" }}</div>
+  </div>
+
+  <div style="margin-top:10px;">
+    <div><strong>Description:</strong></div>
+    <div class="muted">{{ lead.project_description or "—" }}</div>
+  </div>
+
+  <div style="margin-top:10px;">
+    <div class="muted"><strong>estimate_html_key:</strong> {{ lead.estimate_html_key or "—" }}</div>
+  </div>
+
+  {% if lead.needs_review_reasons %}
+  <div style="margin-top:14px;">
+    <strong>Needs review reasons</strong>
+    <pre style="background:#f8f8f8; padding:12px; border-radius:12px; overflow:auto;">{{ lead.needs_review_reasons }}</pre>
+  </div>
+  {% endif %}
+  
+{% if job %}
+  <div style="margin-top:14px;">
+    <div><strong>Job</strong></div>
+    <div>Job ID: {{ job.id }}</div>
+    <div>Status: <span class="badge JOB_{{ job.status }}">{{ job.status }}</span></div>
+
+    <form method="post" action="/app/jobs/{{ job.id }}/status" style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+      <select name="status" style="padding:8px;border-radius:10px;border:1px solid #ddd;">
+        {% for s in ["NEW","SCHEDULED","IN_PROGRESS","DONE","CANCELLED"] %}
+          <option value="{{ s }}" {% if job.status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn" type="submit">Update</button>
+    </form>
+  </div>
+{% endif %}
+
+{% if job and job.status not in ["DONE", "CANCELLED"] %}
+<script>
+  setInterval(() => window.location.reload(), 4000);
+</script>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,28 @@
+<div class="overflow-hidden border border-[#e8eaee] bg-white rounded-md">
+  <div class="flex items-center justify-between border-b border-[#e8eaee] px-4 py-2.5">
+    <h3 class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">{{ t('lead_detail.timeline.title') }}</h3>
+    <span class="text-[10px] text-[#9ca3af]">{{ t('lead_detail.timeline.subtitle') }}</span>
+  </div>
+
+  <ol class="max-h-44 space-y-0 overflow-y-auto divide-y divide-[#f3f4f6]">
+    {% for row in timeline_rows %}
+      {% set tone = row.tone or 'slate' %}
+      {% set dot = {
+        'slate': 'bg-[#d0d4dd]',
+        'sky': 'bg-sky-400',
+        'amber': 'bg-amber-400',
+        'emerald': 'bg-emerald-500',
+        'rose': 'bg-rose-400'
+      }.get(tone, 'bg-[#d0d4dd]') %}
+      <li class="flex gap-2.5 px-4 py-2.5">
+        <div class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ dot }}"></div>
+        <div class="min-w-0 flex-1">
+          <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">{{ row.label }}</div>
+          <div class="mt-0.5 text-[11px] leading-snug text-[#374151] whitespace-pre-wrap break-words">{{ row.value }}</div>
+        </div>
+      </li>
+    {% else %}
+      <li class="px-4 py-3 text-[11px] text-[#9ca3af]">{{ t('lead_detail.timeline.empty') }}</li>
+    {% endfor %}
+  </ol>
+</div>

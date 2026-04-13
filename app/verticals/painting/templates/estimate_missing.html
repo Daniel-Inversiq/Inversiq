@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Offerte niet beschikbaar — Inversiq</title>
+
+  <link rel="icon" href="https://offers.getpaintly.com/static/v1/favicon.ico">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-[#eef4fb] text-slate-900 antialiased flex items-center justify-center p-4">
+
+  <div class="w-full max-w-md">
+
+    <!-- Logo -->
+    <div class="mb-8 flex justify-center">
+      <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-sm">
+        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-sm">
+
+      <!-- Header -->
+      <div class="border-b border-slate-100 px-6 py-6 text-center">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+
+        <div class="text-sm text-slate-400">Offerte</div>
+        <h1 class="mt-1 text-[26px] font-semibold tracking-tight text-slate-900">Offerte niet beschikbaar</h1>
+        <p class="mt-2 text-sm text-slate-500">Dit offertebestand ontbreekt of wordt nog verwerkt.</p>
+      </div>
+
+      <!-- Body -->
+      <div class="px-6 py-5">
+
+        <!-- Info box -->
+        <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div class="flex items-start gap-3">
+            <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="text-sm text-amber-800">
+              Neem contact op met support of genereer de offerte opnieuw vanuit de leadpagina.
+            </div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between gap-4">
+              <span class="text-slate-500">Offerte ID</span>
+              <span class="font-mono font-medium text-slate-700">#{{ lead_id }}</span>
+            </div>
+            <div class="flex justify-between gap-4">
+              <span class="text-slate-500">Tenant</span>
+              <span class="font-medium text-slate-700">{{ tenant_id }}</span>
+            </div>
+            {% if missing_key %}
+              <div class="flex justify-between gap-4">
+                <span class="text-slate-500">Bestandssleutel</span>
+                <span class="max-w-[170px] truncate font-mono text-slate-600" title="{{ missing_key }}">{{ missing_key }}</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-2">
+          <a href="/app/leads/{{ lead_id }}"
+             class="inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800">
+            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Terug naar offerte
+          </a>
+
+          <a href="/app/dashboard"
+             class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+            Ga naar dashboard
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-6 text-center">
+      <p class="text-xs text-slate-400">Inversiq • AI-offertesysteem</p>
+    </div>
+
+  </div>
+
+</body>
+</html>

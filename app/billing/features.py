@@ -21,16 +21,12 @@ class Feature(StrEnum):
     """
 
     BASIC_SENDING = "BASIC_SENDING"
-    PDF_EXPORT = "PDF_EXPORT"
-    BRANDING = "BRANDING"
-    PROFESSIONAL_LAYOUT = "PROFESSIONAL_LAYOUT"
     SMART_PRICING = "SMART_PRICING"
-    NOTIFICATIONS = "NOTIFICATIONS"
-    PLANNING_CALENDAR = "PLANNING_CALENDAR"
     AUTOMATION = "AUTOMATION"
-    PRIORITY_PROCESSING = "PRIORITY_PROCESSING"
-    WHITELABEL = "WHITELABEL"
+    CUSTOM_INTEGRATIONS = "CUSTOM_INTEGRATIONS"
+    DEDICATED_SLA = "DEDICATED_SLA"
     PRIORITY_SUPPORT = "PRIORITY_SUPPORT"
+    TOPUP = "TOPUP"
 
 
 FeatureName = str
@@ -91,7 +87,7 @@ def get_plan_features(plan_code: str | None) -> set[FeatureName]:
     - Whitespace is ignored
     """
 
-    # Default to Starter when plan code is missing in dev/runtime records.
+    # Default to core when plan code is missing in dev/runtime records.
     normalized = resolve_plan_code(plan_code, allow_aliases=True) or DEFAULT_PLAN_CODE
     features = PLAN_FEATURES.get(normalized)
     return set(features) if features else set()
@@ -140,4 +136,3 @@ def tenant_missing_features(tenant: TenantLike, features: Iterable[str]) -> list
     """
 
     return [f for f in features if not tenant_has_feature(tenant, f)]
-

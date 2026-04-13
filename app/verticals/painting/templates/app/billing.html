@@ -1,0 +1,550 @@
+{% extends "app/layout.html" %}
+{% block content %}
+
+{# ── Catalog-derived fallbacks (bypass broken translate() calls) ─────────── #}
+{% set _plan_names = {
+  'core':   'Core',
+  'growth': 'Growth',
+  'pro':    'Pro',
+  'scale':  'Scale'
+} %}
+
+{% set _plan_taglines = {
+  'core':   'Voor kleinere teams die snel willen starten',
+  'growth': 'Voor groeiende teams met meer volume en automatisering',
+  'pro':    'Voor bedrijven met meerdere workflows en complexere processen',
+  'scale':  'Voor enterprise teams met maatwerk, API en SLA'
+} %}
+
+{% set _plan_limits = {
+  'core':   '30 aanvragen / maand',
+  'growth': '150 aanvragen / maand',
+  'pro':    '750 aanvragen / maand',
+  'scale':  'Onbeperkt volume'
+} %}
+
+{% set _plan_prices = {
+  'core':   '€399',
+  'growth': '€899',
+  'pro':    '€2.499',
+  'scale':  'Op aanvraag'
+} %}
+
+{# CTA labels per plan #}
+{% set _plan_ctas = {
+  'core':   'Start met Core',
+  'growth': 'Start met Growth',
+  'pro':    'Upgrade naar Pro',
+  'scale':  'Contact opnemen'
+} %}
+
+{% set _status_labels = {
+  'trialing':  'Proefperiode',
+  'active':    'Actief',
+  'inactive':  'Geen actief abonnement',
+  'past_due':  'Betaling achterstallig',
+  'canceled':  'Geannuleerd',
+  'unpaid':    'Onbetaald'
+} %}
+
+{% set _current_plan_name = _plan_names.get(current_plan_code, current_plan_code | capitalize) %}
+{% set _current_plan_price = _plan_prices.get(current_plan_code, '') %}
+{% set _status_label = _status_labels.get(subscription_status, subscription_status | replace('_', ' ') | capitalize) %}
+{% set _is_active = subscription_status in ('active', 'trialing') %}
+
+<div class="space-y-3">
+
+  <!-- Page header -->
+  <div class="flex items-center justify-between gap-4 pb-1">
+    <div>
+      <h1 class="text-[14px] font-semibold text-[#111318]">Billing</h1>
+      <p class="mt-0.5 text-[12px] text-[#9ca3af]">
+        {% if _is_active %}
+          {{ _current_plan_name }} · {{ _status_label }}
+          {% if subscription_status == "trialing" and trial_days_left is not none %}
+            · nog {{ trial_days_left }} dag{% if trial_days_left != 1 %}en{% endif %} gratis
+          {% endif %}
+        {% else %}
+          Geen actief abonnement · kies een plan hieronder om te starten
+        {% endif %}
+      </p>
+    </div>
+    {% if not _is_active %}
+    <div class="flex items-center gap-2">
+      <a href="#plan-comparison"
+        class="inline-flex h-7 items-center justify-center rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e232e]"
+      >
+        Kies een plan ↓
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Alerts -->
+  {% if billing_status_error %}
+    <div class="flex items-start gap-2.5 border border-amber-300 bg-amber-50 px-3 py-2.5">
+      <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <span class="text-[12px] text-amber-800">Je abonnement is niet actief. Kies een plan hieronder om offertes te kunnen versturen.</span>
+    </div>
+  {% endif %}
+
+  {% if portal_error_no_customer %}
+    <div class="flex items-start gap-2.5 border border-amber-300 bg-amber-50 px-3 py-2.5">
+      <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <span class="text-[12px] text-amber-800">Nog geen betaalmethode gekoppeld. Kies een plan hieronder om te starten.</span>
+    </div>
+  {% endif %}
+
+  <!-- Main grid -->
+  <div class="grid grid-cols-1 gap-3 xl:grid-cols-12">
+
+    <!-- LEFT: plan info, usage, plan comparison -->
+    <div class="space-y-3 xl:col-span-8">
+
+      <!-- Current plan + status row -->
+      <section class="border border-[#d0d4dd] bg-white">
+        <div class="border-b border-[#e8eaee] px-5 py-3">
+          <span class="text-[12px] font-semibold text-[#111318]">Huidig abonnement</span>
+        </div>
+        <div class="grid grid-cols-2 divide-x divide-[#e8eaee] sm:grid-cols-4">
+          <div class="px-5 py-4">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Plan</div>
+            <div class="mt-1.5 text-[13px] font-semibold text-[#111318]">{{ _current_plan_name }}</div>
+          </div>
+          <div class="px-5 py-4">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Status</div>
+            <div class="mt-1.5">
+              {% if subscription_status == "trialing" %}
+                <span class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Proefperiode</span>
+              {% elif subscription_status == "active" %}
+                <span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Actief</span>
+              {% else %}
+                <span class="inline-flex items-center rounded border border-[#e8eaee] bg-[#f6f7f9] px-2 py-0.5 text-[11px] font-medium text-[#6b7280]">{{ _status_label }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="px-5 py-4">
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Prijs</div>
+            <div class="mt-1.5">
+              {% if _is_active %}
+                <span class="text-[13px] font-semibold text-[#111318]">{{ _current_plan_price }}</span>
+                <span class="text-[11px] text-[#9ca3af]"> / maand</span>
+              {% else %}
+                <span class="text-[12px] text-[#9ca3af]">—</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if subscription_status == "trialing" and trial_days_left is not none %}
+            <div class="px-5 py-4">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Proefperiode</div>
+              <div class="mt-1.5 text-[13px] font-semibold text-[#111318]">
+                {{ trial_days_left }} dag{% if trial_days_left != 1 %}en{% endif %}
+              </div>
+              {% if trial_ends_at_display %}
+                <div class="mt-0.5 text-[11px] text-[#9ca3af]">tot {{ trial_ends_at_display }}</div>
+              {% endif %}
+            </div>
+          {% elif _is_active %}
+            <div class="px-5 py-4">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Facturatie</div>
+              <div class="mt-1.5">
+                <button
+                  type="button"
+                  onclick="openBillingPortal()"
+                  class="text-[12px] font-medium text-[#4a90d9] underline-offset-2 hover:underline"
+                >
+                  Beheer →
+                </button>
+              </div>
+            </div>
+          {% else %}
+            <div class="px-5 py-4">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Aan de slag</div>
+              <div class="mt-1.5">
+                <a href="#plan-comparison" class="text-[12px] font-medium text-[#4a90d9] underline-offset-2 hover:underline">
+                  Kies een plan ↓
+                </a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Usage meter -->
+      {% if billing_offer_usage %}
+        <section class="border border-[#d0d4dd] bg-white">
+          <div class="border-b border-[#e8eaee] px-5 py-3 flex items-center justify-between gap-3">
+            <span class="text-[12px] font-semibold text-[#111318]">Gebruik deze maand</span>
+            {% if billing_offer_usage.unlimited %}
+              <span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Onbeperkt</span>
+            {% endif %}
+          </div>
+          <div class="px-5 py-4">
+            {% if billing_offer_usage.unlimited %}
+              <p class="text-[12px] text-[#374151]">Onbeperkt aanvragen beschikbaar op dit plan.</p>
+            {% else %}
+              {% set pct = ((billing_offer_usage.used_this_month / billing_offer_usage.limit_for_plan) * 100) | int if billing_offer_usage.limit_for_plan else 0 %}
+              {% set pct_clamped = [pct, 100] | min %}
+              <div class="flex items-end justify-between gap-6">
+                <div class="min-w-0 flex-1">
+                  <div class="mb-1.5 flex items-center justify-between text-[11px] text-[#9ca3af]">
+                    <span>{{ billing_offer_usage.used_this_month }} gebruikt</span>
+                    <span>{{ billing_offer_usage.limit_for_plan }} max</span>
+                  </div>
+                  <div class="h-1.5 w-full overflow-hidden rounded-full bg-[#f0f2f5]">
+                    <div
+                      class="h-1.5 rounded-full transition-all
+                        {% if pct_clamped >= 90 %}bg-red-500
+                        {% elif pct_clamped >= 70 %}bg-amber-400
+                        {% else %}bg-[#4a90d9]{% endif %}"
+                      style="width: {{ pct_clamped }}%"
+                    ></div>
+                  </div>
+                </div>
+                <div class="shrink-0 text-right">
+                  <div class="text-[12px] font-medium text-[#374151]">
+                    {{ billing_offer_usage.remaining_this_month }} resterend
+                  </div>
+                </div>
+              </div>
+
+              {% if billing_offer_usage.usage_warning_nl %}
+                <div class="mt-3 flex items-start gap-2 border border-amber-300 bg-amber-50 px-3 py-2">
+                  <svg class="mt-0.5 h-3 w-3 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  </svg>
+                  <span class="text-[11px] text-amber-800">
+                    {% if pct_clamped >= 100 %}
+                      Maandlimiet bereikt. Upgrade je plan of koop extra aanvragen.
+                    {% elif pct_clamped >= 90 %}
+                      Bijna op — nog {{ billing_offer_usage.remaining_this_month }} aanvra{% if billing_offer_usage.remaining_this_month == 1 %}ag{% else %}gen{% endif %} over.
+                    {% else %}
+                      {{ billing_offer_usage.usage_warning_nl }}
+                    {% endif %}
+                  </span>
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
+      <!-- Plan comparison -->
+      <section id="plan-comparison" class="border border-[#d0d4dd] bg-white">
+        <div class="flex items-center justify-between gap-3 border-b border-[#e8eaee] px-5 py-3">
+          <span class="text-[12px] font-semibold text-[#111318]">Beschikbare plannen</span>
+          <span class="text-[11px] text-[#9ca3af]">Excl. btw</span>
+        </div>
+
+        <div class="divide-y divide-[#e8eaee]">
+          {% for plan in plans %}
+            {% set is_current     = (plan.code == current_plan_code) and _is_active %}
+            {% set is_recommended = plan.is_recommended %}
+            {% set _name          = _plan_names.get(plan.code, plan.code | capitalize) %}
+            {% set _tagline       = _plan_taglines.get(plan.code, '') %}
+            {% set _limit         = _plan_limits.get(plan.code, '') %}
+            {# Inactive users see "Start met X" instead of "Upgrade naar X" for all non-scale plans #}
+            {% if not _is_active and plan.code != 'scale' %}
+              {% set _cta = 'Start met ' + _name %}
+            {% else %}
+              {% set _cta = _plan_ctas.get(plan.code, 'Kiezen') %}
+            {% endif %}
+
+            <div class="flex items-start gap-5 px-5 py-4 {% if is_recommended %}bg-[#fafbff]{% endif %}">
+              <!-- Plan info -->
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-[13px] font-semibold text-[#111318]">{{ _name }}</span>
+                  {% if is_current %}
+                    <span class="inline-flex items-center rounded border border-[#4a90d9]/40 bg-[#eef5fd] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#4a90d9]">Huidig</span>
+                  {% endif %}
+                  {% if is_recommended %}
+                    <span class="inline-flex items-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#374151]">Aanbevolen</span>
+                  {% endif %}
+                </div>
+                {% if _tagline %}
+                  <p class="mt-0.5 text-[11px] text-[#9ca3af]">{{ _tagline }}</p>
+                {% endif %}
+                <p class="mt-0.5 text-[11px] text-[#6b7280]">{{ _limit }}</p>
+                <ul class="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                  {% if plan.code == 'core' %}
+                    {% set _feats = ['30 aanvragen / maand', '1 workflow', 'Standaard rules', 'Standaard output'] %}
+                  {% elif plan.code == 'growth' %}
+                    {% set _feats = ['150 aanvragen / maand', '1–2 workflows', 'Advanced rules', 'Automation'] %}
+                  {% elif plan.code == 'pro' %}
+                    {% set _feats = ['750 aanvragen / maand', 'Meerdere workflows', 'Complexe logic', 'Integraties'] %}
+                  {% elif plan.code == 'scale' %}
+                    {% set _feats = ['Onbeperkt volume', 'Custom rules', 'API / infra', 'SLA + support'] %}
+                  {% else %}
+                    {% set _feats = [] %}
+                  {% endif %}
+                  {% for feat in _feats %}
+                    <li class="flex items-center gap-1 text-[11px] text-[#6b7280]">
+                      <svg class="h-3 w-3 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      {{ feat }}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+
+              <!-- Price + CTA -->
+              <div class="shrink-0 text-right">
+                <div class="text-[20px] font-bold tabular-nums text-[#111318] leading-none">{{ plan.price_display }}</div>
+                <div class="mt-0.5 text-[11px] text-[#9ca3af]">per maand</div>
+                <div class="mt-3">
+                  {% if is_current %}
+                    <button
+                      type="button"
+                      disabled
+                      class="inline-flex h-7 cursor-not-allowed items-center justify-center rounded border border-[#e8eaee] bg-[#f6f7f9] px-3 text-[11px] font-medium text-[#9ca3af]"
+                    >
+                      Huidig plan
+                    </button>
+                  {% else %}
+                    <button
+                      type="button"
+                      onclick="upgradePlan('{{ plan.code }}')"
+                      class="inline-flex h-7 items-center justify-center rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e232e]"
+                    >
+                      {{ _cta }}
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="border-t border-[#e8eaee] px-5 py-3 text-[11px] text-[#9ca3af]">
+          Prijzen zijn exclusief btw.
+          {% if _is_active %}
+            Facturen en betaalmethode via
+            <button type="button" onclick="openBillingPortal()" class="font-medium text-[#374151] underline-offset-2 hover:underline">beheer abonnement</button>.
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Top-up upsell -->
+      {% if _is_active %}
+        <section class="border border-[#d0d4dd] bg-white">
+          <div class="flex items-center justify-between gap-3 border-b border-[#e8eaee] px-5 py-3">
+            <span class="text-[12px] font-semibold text-[#111318]">Extra aanvragen</span>
+            <span class="inline-flex items-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#374151]">Add-on</span>
+          </div>
+          <div class="flex items-center justify-between gap-6 px-5 py-4">
+            <div class="min-w-0">
+              <p class="text-[12px] text-[#374151]">Koop 10 extra aanvragen voor €30. Handig als tijdelijke uitbreiding zonder direct te upgraden.</p>
+            </div>
+            <div class="shrink-0">
+              <a
+                href="/app/billing?action=topup"
+                class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-3 text-[11px] font-semibold text-[#374151] transition hover:bg-[#edf0f4]"
+              >
+                Koop extra aanvragen
+              </a>
+            </div>
+          </div>
+        </section>
+      {% endif %}
+
+    </div><!-- /LEFT -->
+
+    <!-- RIGHT: control panel -->
+    <aside class="space-y-3 xl:col-span-4">
+
+      <!-- Account / subscription actions -->
+      <article class="border border-[#d0d4dd] bg-white">
+        <div class="border-b border-[#e8eaee] px-5 py-3">
+          <span class="text-[12px] font-semibold text-[#111318]">Abonnement</span>
+        </div>
+        <div class="space-y-3 px-5 py-4">
+          <div>
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Plan</div>
+            <div class="mt-1 text-[13px] font-semibold text-[#111318]">{{ _current_plan_name }}</div>
+          </div>
+          <div>
+            <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Status</div>
+            <div class="mt-1">
+              {% if subscription_status == "trialing" %}
+                <span class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Proefperiode</span>
+              {% elif subscription_status == "active" %}
+                <span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Actief</span>
+              {% else %}
+                <span class="inline-flex items-center rounded border border-[#e8eaee] bg-[#f6f7f9] px-2 py-0.5 text-[11px] font-medium text-[#6b7280]">{{ _status_label }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if subscription_status == "trialing" and trial_days_left is not none %}
+            <div>
+              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Proefperiode</div>
+              <div class="mt-1 text-[13px] font-semibold text-[#111318]">
+                Nog {{ trial_days_left }} dag{% if trial_days_left != 1 %}en{% endif %}
+              </div>
+              {% if trial_ends_at_display %}
+                <div class="mt-0.5 text-[11px] text-[#9ca3af]">Eindigt op {{ trial_ends_at_display }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+          <div class="space-y-2 border-t border-[#e8eaee] pt-3">
+            {% if _is_active %}
+              <button
+                type="button"
+                onclick="openBillingPortal()"
+                class="inline-flex w-full h-7 items-center justify-center rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e232e]"
+              >
+                Beheer abonnement
+              </button>
+            {% else %}
+              <a
+                href="#plan-comparison"
+                class="inline-flex w-full h-7 items-center justify-center rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e232e]"
+              >
+                Kies een plan ↓
+              </a>
+              <p class="text-[11px] text-[#9ca3af]">Na het kiezen van een plan kun je je abonnement hier beheren.</p>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+
+      <!-- Usage summary (compact, only when limited) -->
+      {% if billing_offer_usage and not billing_offer_usage.unlimited %}
+        {% set pct2 = ((billing_offer_usage.used_this_month / billing_offer_usage.limit_for_plan) * 100) | int if billing_offer_usage.limit_for_plan else 0 %}
+        {% set pct2_clamped = [pct2, 100] | min %}
+        <article class="border border-[#d0d4dd] bg-white">
+          <div class="border-b border-[#e8eaee] px-5 py-3">
+            <span class="text-[12px] font-semibold text-[#111318]">Gebruik</span>
+          </div>
+          <div class="px-5 py-4">
+            <div class="flex items-end justify-between gap-2">
+              <div>
+                <span class="text-[22px] font-bold tabular-nums leading-none text-[#111318]">{{ billing_offer_usage.used_this_month }}</span>
+                <span class="text-[13px] font-normal text-[#9ca3af]">/{{ billing_offer_usage.limit_for_plan }}</span>
+              </div>
+              <div class="text-right">
+                <div class="text-[11px] text-[#9ca3af]">{{ billing_offer_usage.remaining_this_month }} resterend</div>
+              </div>
+            </div>
+            <div class="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-[#f0f2f5]">
+              <div
+                class="h-1.5 rounded-full transition-all
+                  {% if pct2_clamped >= 90 %}bg-red-500
+                  {% elif pct2_clamped >= 70 %}bg-amber-400
+                  {% else %}bg-[#4a90d9]{% endif %}"
+                style="width: {{ pct2_clamped }}%"
+              ></div>
+            </div>
+            <div class="mt-1 text-[10px] text-[#9ca3af]">{{ pct2_clamped }}% gebruikt deze maand</div>
+          </div>
+        </article>
+      {% endif %}
+
+      <!-- Help note -->
+      <article class="border border-[#d0d4dd] bg-white px-5 py-4">
+        <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Hulp</div>
+        {% if _is_active %}
+          <p class="mt-2 text-[12px] text-[#374151]">Vragen over je factuur of abonnement? Wijzigingen gaan direct in via abonnementsbeheer.</p>
+          <button
+            type="button"
+            onclick="openBillingPortal()"
+            class="mt-2.5 inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#edf0f4]"
+          >
+            Open facturatie →
+          </button>
+        {% else %}
+          <p class="mt-2 text-[12px] text-[#374151]">Kies een plan om te starten. Je wordt doorgestuurd naar een beveiligde betaalpagina.</p>
+        {% endif %}
+      </article>
+
+    </aside><!-- /RIGHT -->
+
+  </div><!-- /grid -->
+
+</div>
+
+<script>
+  async function upgradePlan(planCode) {
+    try {
+      const response = await fetch(`/app/billing/upgrade/${planCode}`, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (!response.ok) {
+        let message = "Kiezen van abonnement mislukt. Probeer het later opnieuw.";
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.detail) {
+            message = `Kiezen van abonnement mislukt: ${errorData.detail}`;
+          }
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+        alert(message);
+        return;
+      }
+
+      const data = await response.json();
+      if (data && data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+      if (data && data.redirect_url) {
+        window.location.href = data.redirect_url;
+        return;
+      }
+      alert("Geen geldige URL ontvangen van de server.");
+    } catch (err) {
+      alert("Er ging iets mis bij het kiezen van je abonnement.");
+    }
+  }
+
+  async function openBillingPortal() {
+    try {
+      const response = await fetch(`/app/billing/portal`, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const errorData = await response.json();
+          detail = (errorData && errorData.detail) ? String(errorData.detail) : "";
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+
+        if (detail === "no_customer") {
+          window.location.href = "/app/billing?portal_error=no_customer";
+          return;
+        }
+
+        alert("Kon abonnementsbeheer niet openen. Probeer het later opnieuw.");
+        return;
+      }
+
+      const data = await response.json();
+      if (!data || !data.portal_url) {
+        alert("Geen geldige portal URL ontvangen van de server.");
+        return;
+      }
+
+      window.location.href = data.portal_url;
+    } catch (err) {
+      alert("Er ging iets mis bij het openen van abonnementsbeheer.");
+    }
+  }
+</script>
+
+{% endblock %}

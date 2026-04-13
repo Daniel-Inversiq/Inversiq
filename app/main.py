@@ -12,9 +12,9 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.routers.auth import router as auth_router
-from app.verticals.paintly.router_app import router as paintly_app_router
-from app.verticals.paintly.router_htmx import router as paintly_htmx_router
-from app.verticals.paintly.router_integrations import router as paintly_integrations_router
+from app.verticals.painting.router_app import router as paintly_app_router
+from app.verticals.painting.router_htmx import router as paintly_htmx_router
+from app.verticals.painting.router_integrations import router as paintly_integrations_router
 from app.routers.public_estimate import router as public_estimate_router
 from app.models.job import Job
 from app.jobs.runner import start_worker
@@ -125,7 +125,7 @@ def ratelimit_handler(request: Request, exc: RateLimitExceeded):
 # ----------------------------------------------------
 @app.get("/health", include_in_schema=False)
 def health() -> dict:
-    return {"status": "ok", "service": "paintly-api"}
+    return {"status": "ok", "service": "inversiq"}
 
 
 # ----------------------------------------------------

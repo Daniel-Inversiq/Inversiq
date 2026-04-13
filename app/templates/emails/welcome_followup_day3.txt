@@ -2,17 +2,18 @@ Is het gelukt met je intake-link{% if first_name %}, {{ first_name }}{% endif %}
 
 Even een korte check-in — geen haast. We weten dat je het druk hebt op de klus.
 
-Zo werkt je link in het kort: de klant vult de intake in, en Paintly zet automatisch een offerte voor je klaar in jouw omgeving.
+Zo werkt je link in het kort: de klant vult de intake in, en Inversiq zet automatisch een offerte voor je klaar in jouw omgeving.
 
 Je kunt de link via WhatsApp of e-mail doorsturen, of op je website zetten zodat klanten zelf kunnen starten.
 
 Jouw intake-link:
 {{ intake_url }}
 
-{% if support_email %}Lukte het niet zoals je wilde, of wil je hulp — bijvoorbeeld om de intake-link netjes op je website te zetten? Mail ons op {{ support_email }} — we helpen je graag verder.{% if support_whatsapp_url %} Je kunt ook een WhatsApp sturen: {{ support_whatsapp }} ({{ support_whatsapp_url }}){% endif %}
+{% if support_email %}Lukte het niet zoals je wilde, of wil je hulp? Mail ons op {{ support_email }}{% if support_whatsapp_url %} of stuur ons een WhatsApp: {{ support_whatsapp }} ({{ support_whatsapp_url }}){% endif %} — we helpen je graag verder.
 {% elif support_whatsapp_url %}Lukte het niet of wil je even sparren? WhatsApp: {{ support_whatsapp }} — {{ support_whatsapp_url }}
 {% else %}We helpen je graag als je vragen hebt of iets niet lukt.
 {% endif %}
 
 —
-Deze mail is verstuurd naar {{ recipient_email }} voor {{ company_name }} ({{ tenant_slug }}).
+Verstuurd naar {{ recipient_email }} voor {{ company_name }} ({{ tenant_slug }}).
+Inversiq

@@ -4,15 +4,18 @@ import hashlib
 import json
 from typing import Any
 
-from app.billing.features import Feature, plan_supports_feature
+from app.billing.features import plan_supports_feature
 
 _PLAN_NORMALIZATION_MAP = {
-    "pro_199": "pro",
-    "business_399": "business",
-    "starter_99": "starter",
-    "starter": "starter",
+    "starter_99": "core",
+    "starter": "core",
+    "pro_199": "growth",
+    "business_399": "pro",
+    "business": "pro",
+    "core": "core",
+    "growth": "growth",
     "pro": "pro",
-    "business": "business",
+    "scale": "scale",
 }
 
 
@@ -24,8 +27,8 @@ def normalize_plan(plan: str | None) -> str:
 
 
 def is_custom_branding_allowed(plan: str | None) -> bool:
-    # Use centralized feature matrix instead of hardcoded tier names.
-    return plan_supports_feature(plan, Feature.BRANDING.value)
+    # Branding is no longer plan-gated.
+    return True
 
 
 def log_branding_state(logger: Any, stage: str, data: dict[str, Any]) -> None:

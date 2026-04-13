@@ -1,0 +1,15 @@
+# app/models/__init__.py
+from app.models.lead import Lead, LeadFile  # noqa
+from app.models.tenant import Tenant  # noqa
+from app.models.tenant_settings import TenantSettings  # noqa
+from app.models.user import User  # noqa
+from app.models.job import Job  # noqa
+from app.models.tenant_usage import TenantUsage  # noqa
+from app.models.lead_training_record import LeadTrainingRecord  # noqa
+from app.models.calendar_connection import CalendarConnection  # noqa
+from app.models.quote_calendar_link import QuoteCalendarLink  # noqa
+from app.models.calendar_event import CalendarEvent  # noqa
+from app.models.password_reset_token import PasswordResetToken  # noqa
+
+# (als je dit al had)
+from app.models.upload_record import UploadRecord  # noqa  (alleen als die bestaat)

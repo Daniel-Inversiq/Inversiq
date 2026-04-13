@@ -1,0 +1,110 @@
+{% extends "app/layout.html" %}
+{% block content %}
+
+<div class="flex min-h-[80vh] items-center justify-center bg-[#f8f9fa] px-4 py-10">
+  <div class="w-full max-w-sm">
+
+    <!-- Brand -->
+    <div class="mb-7 text-center">
+      <div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Inversiq</div>
+      <h1 class="text-xl font-semibold text-gray-900">Inloggen</h1>
+      <p class="mt-1 text-sm text-gray-500">Log in op je account</p>
+    </div>
+
+    <!-- Card -->
+    <div class="rounded-md border border-[#e8eaee] bg-white px-6 py-6">
+
+      {% if reset %}
+      <div class="mb-4 rounded border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-700">
+        Je wachtwoord is bijgewerkt. Log in met je nieuwe wachtwoord.
+      </div>
+      {% endif %}
+
+      {% if error %}
+      <div class="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+        Onjuiste e-mail of wachtwoord.
+      </div>
+      {% endif %}
+
+      <form method="post" action="/auth/login" class="space-y-4">
+        <input type="hidden" name="next" value="{{ next }}" />
+
+        <!-- Email -->
+        <div>
+          <label for="email" class="mb-1 block text-xs text-gray-500">E-mailadres</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="jij@bedrijf.nl"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <!-- Password -->
+        <div>
+          <div class="mb-1 flex items-center justify-between">
+            <label for="password" class="text-xs text-gray-500">Wachtwoord</label>
+            <a href="/auth/forgot-password" class="text-xs text-gray-400 transition hover:text-gray-700">
+              Vergeten?
+            </a>
+          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            placeholder="••••••••"
+            class="h-9 w-full rounded border border-[#d0d4dd] bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-gray-400"
+          />
+        </div>
+
+        <!-- Remember me -->
+        <div class="flex items-center gap-2">
+          <input
+            id="remember"
+            name="remember"
+            type="checkbox"
+            class="h-3.5 w-3.5 rounded border-[#d0d4dd] text-gray-900 focus:ring-gray-200"
+          />
+          <label for="remember" class="text-sm text-gray-600">Onthoud mij 30 dagen</label>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="h-9 w-full rounded bg-[#111318] text-sm font-medium text-white transition hover:bg-[#1d2330]"
+        >
+          Inloggen
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="relative my-5">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-[#e8eaee]"></div>
+        </div>
+        <div class="relative flex justify-center">
+          <span class="bg-white px-3 text-xs text-gray-400">of</span>
+        </div>
+      </div>
+
+      <!-- Register link -->
+      <p class="text-center text-sm text-gray-500">
+        Nog geen account?
+        <a href="/auth/register" class="font-medium text-gray-900 transition hover:underline">Maak er een aan</a>
+      </p>
+
+    </div>
+
+    <!-- Footer -->
+    <p class="mt-6 text-center text-xs text-gray-400">
+      Beveiligd en onderhevig aan ons
+      <a href="#" class="underline underline-offset-2 hover:text-gray-600">privacybeleid</a>
+    </p>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     EMAILS_FROM: str = ""
     POSTMARK_FROM: str = ""
     POSTMARK_FROM_EMAIL: str = ""
-    POSTMARK_FROM_NAME: str = "Paintly"
+    POSTMARK_FROM_NAME: str = "Inversiq"
     POSTMARK_MESSAGE_STREAM: str = "outbound"
     POSTMARK_HTTP_TIMEOUT_SECONDS: float = 20.0
     POSTMARK_REPLY_TO: str = ""

@@ -1,0 +1,46 @@
+# Core framework
+fastapi
+uvicorn[standard]
+gunicorn
+SQLAlchemy>=2.0
+sentry-sdk
+
+# Metrics / Prometheus
+prometheus-client==0.20.0
+prometheus-fastapi-instrumentator==7.0.0
+
+# Config / settings
+pydantic-settings
+python-dotenv
+
+# Templates / uploads
+jinja2
+python-multipart
+requests
+email-validator
+
+# Cloud
+boto3
+google-cloud-storage
+
+# ML / Data science (alleen laten staan als je het echt nodig hebt)
+numpy
+pandas
+scikit-learn
+scipy
+
+# Image processing
+Pillow
+opencv-python-headless
+
+# Security / Auth
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Rate limiting / utils
+slowapi
+redis
+loguru
+
+# Logging
+structlog

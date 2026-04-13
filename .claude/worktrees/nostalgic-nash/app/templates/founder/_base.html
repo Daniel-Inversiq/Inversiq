@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Founder Admin{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+  {% set path = request.url.path %}
+  <header class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Internal</p>
+        <h1 class="text-lg font-semibold tracking-tight text-slate-900">Founder Backoffice</h1>
+      </div>
+      <nav class="flex items-center gap-1 text-sm" aria-label="Founder navigation">
+        <a
+          href="{{ url_for('founder_dashboard') }}"
+          class="rounded-md px-3 py-1.5 transition-colors {% if path == '/founder' or path == '/founder/' %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
+        >Dashboard</a>
+        <a
+          href="{{ url_for('founder_tenants') }}"
+          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/founder/tenants') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
+        >Tenants</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

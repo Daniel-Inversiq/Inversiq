@@ -26,6 +26,14 @@ def _to_float(value: object) -> float:
         return 0.0
 
 
+def _status_to_str(value: object) -> str:
+    if value is None:
+        return ""
+    if hasattr(value, "value"):
+        return str(value.value).strip().upper()
+    return str(value).strip().upper()
+
+
 def _normalize_status(raw_status: str | None) -> str:
     status = (raw_status or "").strip().upper()
     if status in SIGNED_STATUSES:
@@ -38,7 +46,6 @@ def _normalize_status(raw_status: str | None) -> str:
 
 
 def _lead_amount(lead: Lead) -> float:
-    # Prefer explicit final_price; fallback to rendered estimate totals.
     final_price = _to_float(getattr(lead, "final_price", None))
     if final_price > 0:
         return final_price
@@ -108,7 +115,7 @@ def get_dashboard_summary(db: Session, tenant_id: str) -> dict:
     }
 
     for lead in leads:
-        raw_status = (getattr(lead, "status", None) or "").strip().upper()
+        raw_status = _status_to_str(getattr(lead, "status", None))
         status_key = _normalize_status(raw_status)
         status_breakdown[status_key] += 1
 
@@ -116,18 +123,21 @@ def get_dashboard_summary(db: Session, tenant_id: str) -> dict:
         if status_key != "rejected":
             pipeline_value += amount
 
+        accepted_at_utc = _as_utc(getattr(lead, "accepted_at", None))
+        sent_at_utc = _as_utc(getattr(lead, "sent_at", None))
+
         if status_key == "signed":
             signed_count += 1
             won_revenue += amount
 
-            accepted_at = getattr(lead, "accepted_at", None)
-            if accepted_at:
-                month_key = accepted_at.strftime("%Y-%m")
-                revenue_by_month_map[month_key] = revenue_by_month_map.get(month_key, 0.0) + amount
+            if accepted_at_utc:
+                month_key = accepted_at_utc.strftime("%Y-%m")
+                revenue_by_month_map[month_key] = (
+                    revenue_by_month_map.get(month_key, 0.0) + amount
+                )
 
-            sent_at = getattr(lead, "sent_at", None)
-            if accepted_at and sent_at and accepted_at >= sent_at:
-                days = (accepted_at - sent_at).total_seconds() / 86400
+            if accepted_at_utc and sent_at_utc and accepted_at_utc >= sent_at_utc:
+                days = (accepted_at_utc - sent_at_utc).total_seconds() / 86400
                 signed_durations_days.append(days)
                 if days <= 1:
                     time_to_sign_buckets["0-1_days"] += 1
@@ -141,17 +151,17 @@ def get_dashboard_summary(db: Session, tenant_id: str) -> dict:
                     time_to_sign_buckets["15+_days"] += 1
         elif status_key == "pending":
             pending_count += 1
-            sent_at = getattr(lead, "sent_at", None)
-            if sent_at and sent_at <= overdue_after:
+            if sent_at_utc and sent_at_utc <= overdue_after:
                 overdue_count += 1
         elif status_key == "rejected":
             rejected_count += 1
 
-        sent_at_utc = _as_utc(getattr(lead, "sent_at", None))
         created_at_utc = _as_utc(getattr(lead, "created_at", None))
         reference_dt = sent_at_utc or created_at_utc
-        if raw_status in NO_RESPONSE_STATUSES and reference_dt and reference_dt <= (
-            now_utc - timedelta(days=3)
+        if (
+            raw_status in NO_RESPONSE_STATUSES
+            and reference_dt
+            and reference_dt <= (now_utc - timedelta(days=3))
         ):
             no_response_value += amount
             action_needed_today_count += 1
@@ -165,10 +175,32 @@ def get_dashboard_summary(db: Session, tenant_id: str) -> dict:
     )
 
     month_keys = _last_month_keys(6, now_utc)
-    revenue_by_month = [
-        {"month": month, "value": round(revenue_by_month_map.get(month, 0.0), 2)}
+    revenue_series = [
+        {"label": month, "value": round(revenue_by_month_map.get(month, 0.0), 2)}
         for month in month_keys
     ]
+
+    status_distribution = [
+        {"label": key, "value": value} for key, value in status_breakdown.items()
+    ]
+
+    print("DASHBOARD revenue_series:", revenue_series)
+    print("DASHBOARD status_distribution:", status_distribution)
+    print(
+        "DASHBOARD kpis:",
+        {
+            "pipeline_value": round(pipeline_value, 2),
+            "won_revenue": round(won_revenue, 2),
+            "pending_count": pending_count,
+            "signed_count": signed_count,
+            "rejected_count": rejected_count,
+            "overdue_count": overdue_count,
+            "no_response_value": round(no_response_value, 2),
+            "action_needed_today_count": action_needed_today_count,
+            "sign_rate": sign_rate,
+            "avg_time_to_sign_days": avg_time_to_sign_days,
+        },
+    )
 
     return {
         "kpis": {
@@ -183,7 +215,7 @@ def get_dashboard_summary(db: Session, tenant_id: str) -> dict:
             "sign_rate": sign_rate,
             "avg_time_to_sign_days": avg_time_to_sign_days,
         },
-        "revenue_by_month": revenue_by_month,
-        "status_breakdown": status_breakdown,
+        "revenue_series": revenue_series,
+        "status_distribution": status_distribution,
         "time_to_sign_buckets": time_to_sign_buckets,
     }

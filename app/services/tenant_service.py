@@ -128,7 +128,7 @@ class TenantService:
             company_name = (
                 (tenant_db.company_name or "").strip()
                 or (tenant_db.name or "").strip()
-                or "Paintly"
+                or "Inversiq"
             )
             ts = TenantSettings(
                 tenant_id=tenant_db.id,

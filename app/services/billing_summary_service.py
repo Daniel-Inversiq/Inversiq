@@ -11,9 +11,10 @@ from app.services.usage_service import get_or_create_usage
 
 
 PLAN_LABELS: Dict[str, str] = {
-    "starter_99": "Starter",
-    "pro_199": "Pro",
-    "business_399": "Business",
+    "core": "Core",
+    "growth": "Growth",
+    "pro": "Pro",
+    "scale": "Scale",
 }
 
 
@@ -40,7 +41,7 @@ def get_billing_offer_usage_view(
 ) -> BillingOfferUsageView:
     resolved_plan_code = resolve_plan_code(getattr(tenant, "plan_code", None)) or DEFAULT_PLAN_CODE
     plan_item = get_plan_item(resolved_plan_code) or get_plan_item(DEFAULT_PLAN_CODE)
-    limit_for_plan = None if plan_item is None else plan_item.monthly_offer_limit
+    limit_for_plan = None if plan_item is None else plan_item.monthly_request_limit
 
     usage = get_or_create_usage(db, str(tenant.id))
     used_this_month = int(getattr(usage, "quotes_sent", 0) or 0)

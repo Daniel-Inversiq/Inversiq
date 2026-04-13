@@ -1,0 +1,16 @@
+﻿# Architecture
+
+High-level overview of the system.
+
+## Components
+- API (FastAPI)
+- Database
+- Worker/Jobs
+- (AI module)
+
+## Data flow
+1. Request enters API
+2. Validation + service layer
+3. DB write/read
+4. Optional AI step
+5. Response

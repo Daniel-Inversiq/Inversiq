@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Bevestiging ontvangen — {{ company_name or "Inversiq" }}</title>
+  <style>
+    @media only screen and (max-width:600px) {
+      .container { width:100% !important; }
+      .card { padding:24px 18px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="560" class="container" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;">
+
+          <!-- Brand header -->
+          <tr>
+            <td align="center" style="padding-bottom:18px;">
+              <span style="font-size:13px;font-weight:700;color:#111827;">{{ company_name or "Inversiq" }}</span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td class="card" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:6px;padding:28px 28px 24px;">
+
+              <!-- Status badge -->
+              <div style="margin-bottom:16px;">
+                <span style="display:inline-block;background:#f0fdf4;color:#15803d;font-size:12px;font-weight:700;padding:4px 10px;border-radius:3px;border:1px solid #bbf7d0;">
+                  Bevestiging ontvangen
+                </span>
+              </div>
+
+              <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;line-height:1.3;color:#111827;">
+                Bedankt — uw akkoord is ontvangen
+              </h1>
+              <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#374151;">
+                Beste {{ customer_name or "klant" }},
+              </p>
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#374151;">
+                Bedankt voor het accepteren van de offerte. Wij hebben uw bevestiging ontvangen en nemen binnenkort contact met u op om de planning definitief af te stemmen.
+              </p>
+
+              <!-- CTA -->
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
+                <tr>
+                  <td>
+                    <a href="{{ quote_url }}" style="display:inline-block;background:#111318;color:#ffffff;text-decoration:none;padding:11px 22px;font-size:14px;font-weight:600;border-radius:4px;">
+                      Bekijk uw offerte
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Next steps -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;">
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#111827;">Wat gebeurt er nu?</p>
+                    <ul style="margin:0;padding-left:18px;font-size:13px;color:#374151;line-height:1.8;">
+                      <li>Wij bevestigen beschikbaarheid en startdatum</li>
+                      <li>U ontvangt de definitieve planning per e-mail of telefoon</li>
+                      <li>Wij starten op de afgesproken datum</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#374151;">
+                Heeft u vragen? Antwoord gerust op deze e-mail — wij helpen u graag.
+              </p>
+
+              <!-- Fallback link -->
+              <p style="margin:0 0 4px;font-size:12px;color:#6b7280;">Werkt de knop niet? Kopieer en plak deze link in uw browser:</p>
+              <p style="margin:0;font-size:12px;color:#374151;word-break:break-all;">
+                <a href="{{ quote_url }}" style="color:#374151;">{{ quote_url }}</a>
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="text-align:center;padding-top:20px;font-size:12px;color:#9ca3af;line-height:1.6;">
+              {{ company_name or "Inversiq" }}
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
