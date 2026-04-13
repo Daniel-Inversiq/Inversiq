@@ -11,6 +11,10 @@
 .envrc
 .direnv/
 
+# Gmail OAuth tokens
+gmail_token.json
+token.json
+
 # Cloud credentials & keys
 .aws/
 *.pem

@@ -42,7 +42,10 @@
       "Bash(grep -l \"render_intake_form\" C:/Users/dvanl/Inversiq/app/verticals/*/adapter.py)",
       "Bash(grep -n \"Jinja2Templates\" C:/Users/dvanl/Inversiq/app/verticals/roofing/*.py)",
       "Bash(find /c/Users/dvanl/Inversiq/app/templates -name \"*.html\" -type f ! -path \"*/.claude/*\" -exec grep -l \">\\\\|<\\\\|placeholder\" {} \\\\;)",
-      "Bash(grep -E \"\\\\.\\(html|py\\)$\")"
+      "Bash(grep -E \"\\\\.\\(html|py\\)$\")",
+      "Bash(grep -l \"Session\" /c/Users/dvanl/Inversiq/app/services/*.py)",
+      "Bash(find /c/Users/dvanl/Inversiq/app -type f -name \"*.py\" -exec grep -l \"send_and_log\\\\|send_email\" {} \\\\;)",
+      "Bash(find /c/Users/dvanl/Inversiq/app -type f -name \"*.py\" -exec grep -l \"campaign\\\\|Campaign\" {} \\\\;)"
     ]
   }
 }

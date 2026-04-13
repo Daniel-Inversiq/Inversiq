@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     GOOGLE_OAUTH_REDIRECT_URI: str = ""
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar.events"
 
+    # Gmail outreach (Openclaw)
+    GMAIL_TOKEN_PATH: str = "gmail_token.json"
+    GMAIL_SENDER_EMAIL: str = ""
+
     # Public estimate flow
     SEND_ACCEPT_CONFIRMATION_EMAIL: bool = True
     PAINTER_NOTIFICATION_OVERRIDE_EMAIL: Optional[str] = None
