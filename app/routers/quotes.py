@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -419,6 +419,60 @@ def quote_status_json(
 
 
 # =========================
+# Idempotency helpers
+# =========================
+
+def _normalize_vertical_id(raw: str | None) -> str:
+    """Return the canonical vertical_id for a lead, matching publish_quote logic."""
+    vid = (raw or "paintly").strip() or "paintly"
+    if vid == "painters_us":
+        vid = "paintly"
+    return vid
+
+
+def _has_active_pipeline_run(
+    db: Session,
+    tenant_id: str,
+    lead_id: str,
+    vertical_id: str,
+    *,
+    dedup_window_seconds: int = 60,
+) -> bool:
+    """
+    Return True if an active PipelineRun exists for (tenant_id, lead_id, vertical_id).
+
+    "Active" means one of:
+      - status=RUNNING  : engine is still executing
+      - status in (COMPLETED, NEEDS_REVIEW) and completed_at is within the last
+        `dedup_window_seconds` seconds — absorbs double-clicks and HTTP retries.
+
+    Idempotency key: (tenant_id, lead_id, vertical_id)
+    """
+    from app.models.pipeline_run import PipelineRun
+    from sqlalchemy import or_, and_
+
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=dedup_window_seconds)
+
+    run = (
+        db.query(PipelineRun)
+        .filter(
+            PipelineRun.tenant_id == str(tenant_id),
+            PipelineRun.lead_id == str(lead_id),
+            PipelineRun.vertical_id == str(vertical_id),
+            or_(
+                PipelineRun.status == "RUNNING",
+                and_(
+                    PipelineRun.status.in_(["COMPLETED", "NEEDS_REVIEW"]),
+                    PipelineRun.completed_at >= cutoff,
+                ),
+            ),
+        )
+        .first()
+    )
+    return run is not None
+
+
+# =========================
 # PUBLISH (sync compute)
 # =========================
 @router.post("/publish/{lead_id}")
@@ -507,6 +561,25 @@ def publish_quote(
             url=redirect_target,
             status_code=303,
         )
+
+    # Idempotency guard: check for an active PipelineRun before starting the engine.
+    # This is a second-layer defence that catches duplicate triggers even when
+    # lead.status hasn't been updated yet (e.g. concurrent requests, HTTP retries).
+    # The check is cheap — one indexed query on (tenant_id, lead_id, vertical_id, status).
+    _vid_for_guard = _normalize_vertical_id(getattr(lead, "vertical", None))
+    if _has_active_pipeline_run(db, str(lead.tenant_id), str(lead.id), _vid_for_guard):
+        inc("publish_idempotent_pipeline_run_total")
+        logger.info(
+            "PUBLISH_IDEMPOTENT_PIPELINE_RUN lead=%s vertical=%s — skipping duplicate trigger",
+            lead.id,
+            _vid_for_guard,
+        )
+        redirect_target = _publish_redirect_target(
+            lead_id=str(lead.id),
+            status=str(lead.status),
+            is_public_flow=is_public_flow,
+        )
+        return RedirectResponse(url=redirect_target, status_code=303)
 
     files = db.query(LeadFile).filter(LeadFile.lead_id == lead.id).all()
     if not files:

@@ -48,3 +48,24 @@ class EmailSenderService:
         )
 
         return record
+
+    def create_draft(
+        self,
+        *,
+        recipient_email: str,
+        subject: str,
+        body: str,
+        lead_id: Optional[str] = None,
+        campaign_id: Optional[str] = None,
+        sender_email: Optional[str] = None,
+        prompt_version: Optional[str] = None,
+        soul_version: Optional[str] = None,
+        variant_id: Optional[str] = None,
+    ) -> dict:
+        # Keep parity with send payload; metadata is intentionally not persisted for drafts.
+        _ = lead_id, campaign_id, sender_email, prompt_version, soul_version, variant_id
+        return self.gmail.create_draft(
+            to_email=recipient_email,
+            subject=subject,
+            body=body,
+        )

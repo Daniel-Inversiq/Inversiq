@@ -14,6 +14,7 @@
 # Gmail OAuth tokens
 gmail_token.json
 token.json
+credentials.json
 
 # Cloud credentials & keys
 .aws/

@@ -11,10 +11,10 @@
     {% endif %}
   </title>
 
-  <!-- Inter -->
+  <!-- Inter Display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -22,12 +22,41 @@
 
   <link rel="stylesheet" href="/static/app.css">
 
+  <!-- Tailwind design tokens aligned with the React frontend -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            sans: ['Inter Display', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50:  '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+          },
+          borderRadius: {
+            DEFAULT: '8px',
+            sm:  '4px',
+            md:  '8px',
+            lg:  '10px',
+            xl:  '12px',
+            '2xl': '14px',
+            '3xl': '18px',
+            full: '9999px',
+          },
+          boxShadow: {
+            card:    '0 1px 2px rgba(15,23,42,0.04), 0 6px 14px -10px rgba(15,23,42,0.16)',
+            'card-md': '0 2px 6px rgba(15,23,42,0.06), 0 14px 28px -18px rgba(15,23,42,0.22)',
           },
         }
       }
@@ -40,7 +69,7 @@
     html, body { height: 100%; }
 
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter Display', 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 13px;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
@@ -48,218 +77,335 @@
     }
 
     button, input, textarea, select { font-family: inherit; }
+    h1, h2, h3 {
+      color: #0B0B0C;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
 
-    /* HTMX */
+    .dashboard-typography {
+      color: #737373;
+    }
+    .dashboard-typography .section-title {
+      color: #0a0a0a;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .dashboard-typography .body-muted {
+      color: #a3a3a3;
+      font-weight: 400;
+    }
+    .dashboard-typography .kpi-value {
+      color: #0a0a0a;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    /* HTMX loading indicator */
     .htmx-indicator { opacity: 0; transition: opacity 120ms ease; }
     .htmx-indicator.htmx-request { opacity: 1; }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    /* Thin scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #3a3e4a; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #4a4f5c; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    /* Status dot */
-    @keyframes soft-pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
+    /* Reusable card style — child templates can apply .ui-card */
+    .ui-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04);
     }
+
+    /* Reusable btn styles */
+    .ui-btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 28px; padding: 0 12px;
+      background: #0B0B0C; color: #ffffff;
+      border: 1px solid #0B0B0C;
+      border-radius: 8px;
+      font-size: 11px; font-weight: 600;
+      transition: background 100ms ease;
+      cursor: pointer; text-decoration: none;
+    }
+    .ui-btn-primary:hover { background: #1b1b1d; border-color: #1b1b1d; }
+
+    .ui-btn-secondary {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 28px; padding: 0 12px;
+      background: #ffffff; color: #404040;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-size: 11px; font-weight: 500;
+      transition: background 100ms ease, border-color 100ms ease;
+      cursor: pointer; text-decoration: none;
+    }
+    .ui-btn-secondary:hover { background: #fafafa; border-color: #d4d4d4; }
+
+    /* Section header pattern */
+    .ui-section-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* Status badges */
+    .ui-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.01em;
+      border: 1px solid transparent;
+      line-height: 1.2;
+    }
+    .ui-badge-open     { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+    .ui-badge-akkoord  { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .ui-badge-verloren { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+    .ui-badge-pending  { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .ui-badge-neutral  { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+
+    /* Pulsing status dot */
+    @keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .status-dot { animation: soft-pulse 3s ease-in-out infinite; }
   </style>
 </head>
 
-<!-- Outer body: dark void frame -->
-<body class="min-h-screen bg-[#111318] font-sans text-[#374151] antialiased">
+<body class="min-h-screen bg-[#f5f5f5] font-sans text-neutral-900 antialiased">
   {% set path = request.url.path if request else "" %}
 
-  <!-- Full-bleed workspace shell — no rounded card, no floating margin -->
+  {# ── Sidebar nav-item macro ─────────────────────────────── #}
+  {% macro nav_item(href, label, icon_path, active, badge=none) %}
+  <a href="{{ href }}"
+     class="group flex items-center gap-2.5 px-3 py-2.5 text-[12px] rounded-md transition-colors duration-100
+      {% if active %}bg-slate-200/80 text-slate-950 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]{% else %}text-slate-500 font-medium hover:text-slate-800 hover:bg-slate-50{% endif %}">
+    <span class="flex h-[19px] w-[19px] shrink-0 items-center justify-center">
+      <svg class="h-[15px] w-[15px] {% if active %}text-slate-800{% else %}text-slate-400 group-hover:text-slate-600{% endif %}"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="{{ icon_path }}"/>
+      </svg>
+    </span>
+    <span class="flex-1 truncate">{{ label }}</span>
+    {% if badge is not none and badge | int > 0 %}
+      <span class="flex items-center justify-center min-w-[16px] h-4 px-1 rounded bg-slate-200 text-[9px] font-semibold text-slate-600">{{ badge }}</span>
+    {% endif %}
+  </a>
+  {% endmacro %}
+
   <div class="flex min-h-screen">
 
-    <!-- ── Sidebar ─────────────────────────────────────────────── -->
-    <aside class="hidden bg-[#191c23] border-r border-[#262b35] lg:flex lg:w-56 lg:flex-col shrink-0">
+    <!-- ════════════════════════════════════════════════════════
+         SIDEBAR — light, minimal, B2B SaaS
+    ════════════════════════════════════════════════════════ -->
+    <aside class="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-white border-r border-neutral-200/90 z-40 shrink-0">
 
-      <!-- Logo / brand -->
-      <div class="px-4 pb-3 pt-5 border-b border-[#262b35]">
-        <div class="flex items-center gap-2.5">
-          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#252931] text-[#6b7280]">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+      <!-- Logo / workspace -->
+      <div class="flex items-center gap-3 px-4 h-12 border-b border-neutral-200/90 shrink-0">
+        <div class="flex items-center justify-center w-6 h-6 rounded-md bg-slate-900 shrink-0">
+          <!-- Bolt / Zap icon -->
+          <svg class="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[13px] font-semibold text-neutral-900 tracking-tight leading-none">Inversiq</p>
+          <p class="text-[10px] text-neutral-400 truncate mt-0.5 leading-none">
+            {{ company_name or "Schildersbedrijf" }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Main navigation -->
+      <div class="flex-1 overflow-y-auto px-3 py-4">
+        <p class="px-2 mb-2 text-[9px] font-semibold tracking-widest uppercase text-neutral-400">Menu</p>
+        <nav class="space-y-1">
+          {{ nav_item(
+            '/app/dashboard', 'Overzicht',
+            'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+            path.startswith('/app/dashboard'))
+          }}
+
+          {{ nav_item(
+            '/app/leads', 'Offertes',
+            'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+            path.startswith('/app/leads'),
+            (open_quotes | length) if (open_quotes is defined and open_quotes) else none)
+          }}
+
+          {{ nav_item(
+            '/app/jobs', 'Klussen',
+            'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+            path.startswith('/app/jobs'))
+          }}
+
+          {{ nav_item(
+            '/app/reviews', 'Review',
+            'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z',
+            path.startswith('/app/reviews'))
+          }}
+
+          {{ nav_item(
+            '/app/calendar', 'Agenda',
+            'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+            path.startswith('/app/calendar'))
+          }}
+        </nav>
+      </div>
+
+      {% set _plan_names = {'core': 'Core', 'growth': 'Growth', 'pro': 'Pro', 'scale': 'Scale'} %}
+      {% set _workspace_plan = _plan_names.get(current_plan_code, current_plan_code | capitalize) if current_plan_code else 'Core' %}
+
+      <!-- Bottom utility -->
+      <div class="border-t border-neutral-200/90 px-3 py-3 space-y-3 shrink-0 bg-white">
+        <div class="space-y-px">
+        {{ nav_item(
+          '/app/billing', 'Abonnement',
+          'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
+          path.startswith('/app/billing'))
+        }}
+
+        <a href="mailto:support@inversiq.nl?subject=Support%20request%20-%20Inversiq"
+           class="group flex items-center gap-2.5 px-2 py-1.5 text-[12px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors duration-100 rounded">
+          <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+            <svg class="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-          </div>
-          <div class="min-w-0">
-            <div class="text-[13px] font-semibold leading-none text-[#dde2ec]">Inversiq</div>
-            <div class="mt-1 truncate text-[11px] leading-none text-[#464d5c]">
-              {{ company_name or "Offertes voor schilders" }}
-            </div>
-          </div>
-        </div>
-      </div>
+          </span>
+          <span class="flex-1 truncate">Contact support</span>
+        </a>
 
-      <!-- Nav label -->
-      <div class="px-4 pb-1 pt-4">
-        <div class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#363c4a]">Werkruimte</div>
-      </div>
+        {{ nav_item(
+          '/app/settings', 'Instellingen',
+          'M10.325 4.317a1 1 0 011.35-.936l.527.211a1 1 0 001.357-.556l.21-.527a1 1 0 011.873 0l.21.527a1 1 0 001.357.556l.527-.211a1 1 0 011.35.936l-.05.566a1 1 0 00.873 1.114l.566.05a1 1 0 01.936 1.35l-.211.527a1 1 0 00.556 1.357l.527.21a1 1 0 010 1.873l-.527.21a1 1 0 00-.556 1.357l.211.527a1 1 0 01-.936 1.35l-.566-.05a1 1 0 00-1.114.873l-.05.566a1 1 0 01-1.35.936l-.527-.211a1 1 0 00-1.357.556l-.21.527a1 1 0 01-1.873 0l-.21-.527a1 1 0 00-1.357-.556l-.527.211a1 1 0 01-1.35-.936l.05-.566a1 1 0 00-.873-1.114l-.566-.05a1 1 0 01-.936-1.35l.211-.527a1 1 0 00-.556-1.357l-.527-.21a1 1 0 010-1.873l.527-.21a1 1 0 00.556-1.357l-.211-.527a1 1 0 01.936-1.35l.566.05a1 1 0 001.114-.873l.05-.566z M12 15a3 3 0 100-6 3 3 0 000 6z',
+          path.startswith('/app/settings'))
+        }}
 
-      <!-- Navigation -->
-      <nav class="flex-1 space-y-px px-2 py-1">
-        {% macro nav_link(href, label, icon_path, active_condition) %}
-<a href="{{ href }}"
-   class="group flex items-center gap-2.5 border-l-2 px-3 py-[7px] text-[12px] font-medium leading-none transition-all duration-100
-     {% if active_condition %}
-       border-[#4a90d9] bg-[#22262f] text-[#dde2ec]
-     {% else %}
-       border-transparent text-[#737a8a] hover:bg-[#1e2129] hover:text-[#b0b8c8]
-     {% endif %}">
-
-  <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center transition-colors
-    {% if active_condition %}
-      text-[#4a90d9]
-    {% else %}
-      text-[#4a5060] group-hover:text-[#737a8a]
-    {% endif %}">
-    <svg class="h-[14px] w-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="{{ icon_path }}"/>
-    </svg>
-  </span>
-
-  <span class="truncate">{{ label }}</span>
-</a>
-{% endmacro %}
-
-        {{ nav_link('/app/dashboard', 'Overzicht',
-          'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
-          path.startswith('/app/dashboard')) }}
-
-        {{ nav_link('/app/leads', 'Offertes',
-          'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
-          path.startswith('/app/leads')) }}
-
-        {{ nav_link('/app/jobs', 'Klussen',
-          'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-          path.startswith('/app/jobs')) }}
-
-        {{ nav_link('/app/reviews', 'Review',
-          'M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h5l2 2h3a2 2 0 012 2v10a2 2 0 01-2 2z',
-          path.startswith('/app/reviews')) }}
-
-        {{ nav_link('/app/calendar', 'Agenda',
-          'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-          path.startswith('/app/calendar')) }}
-
-        <div class="mx-2 my-2 border-t border-[#262b35]"></div>
-
-        {{ nav_link('/app/settings', 'Instellingen',
-          'M10.325 4.317a1 1 0 011.35-.936l.527.211a1 1 0 001.357-.556l.21-.527a1 1 0 011.873 0l.21.527a1 1 0 001.357.556l.527-.211a1 1 0 011.35.936l.05.566a1 1 0 001.114.873l.566-.05a1 1 0 01.936 1.35l-.211.527a1 1 0 00.556 1.357l.527.21a1 1 0 010 1.873l-.527.21a1 1 0 00-.556 1.357l.211.527a1 1 0 01-.936 1.35l-.566-.05a1 1 0 00-1.114.873l-.05.566a1 1 0 01-1.35.936l-.527-.211a1 1 0 00-1.357.556l-.21.527a1 1 0 01-1.873 0l-.21-.527a1 1 0 00-1.357-.556l-.527.211a1 1 0 01-1.35-.936l-.05-.566a1 1 0 00-1.114-.873l-.566.05a1 1 0 01-.936-1.35l.211-.527a1 1 0 00-.556-1.357l-.527-.21a1 1 0 010-1.873l.527-.21a1 1 0 00.556-1.357l-.211-.527a1 1 0 01.936-1.35l.566.05a1 1 0 001.114-.873l.05-.566z M12 15a3 3 0 100-6 3 3 0 000 6z',
-          path.startswith('/app/settings')) }}
-      </nav>
-
-      <!-- Bottom -->
-      <div class="mt-auto border-t border-[#262b35] p-3 space-y-1">
-        <!-- Status -->
-        <div class="rounded bg-[#14171e] px-3 py-2.5">
-          <div class="flex items-center gap-2">
-            <div class="status-dot h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-            <span class="text-[11px] font-medium text-[#5a6070]">Systeem online</span>
-          </div>
-        </div>
-
-        <!-- Logout -->
-        <form method="post" action="/auth/logout">
+        <form method="post" action="/auth/logout" class="pt-1">
           <button type="submit"
-            class="group flex w-full items-center gap-2 border-l-2 border-transparent px-3 py-[7px] text-[12px] font-medium text-[#4d5463] transition-all hover:bg-[#1e2129] hover:text-[#737a8a]">
-            <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-[#3d4350] transition-colors group-hover:text-[#5a6070]">
-              <svg class="h-[14px] w-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                  class="group flex w-full items-center gap-2.5 rounded-md border border-rose-200/80 bg-rose-50/50 px-3 py-2 text-left text-[12px] font-medium text-rose-700 transition-colors duration-100 hover:bg-rose-50 hover:text-rose-800">
+            <span class="flex h-[19px] w-[19px] shrink-0 items-center justify-center">
+              <svg class="h-[15px] w-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 16l4-4m0 0l-4-4m4 4H9m4 8H7a2 2 0 01-2-2V6a2 2 0 012-2h6"/>
               </svg>
             </span>
-            <span>Uitloggen</span>
+            <span class="flex-1 truncate">Uitloggen</span>
           </button>
         </form>
+        </div>
+
+        <div class="border-t border-neutral-200/80 pt-3">
+        <div class="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3.5">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-white text-[11px] font-semibold text-neutral-800">
+              {{ (company_name or "IW")[:2] | upper }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-[12px] font-semibold text-neutral-900 tracking-tight">
+                {{ company_name or "Inversiq Workspace" }}
+              </p>
+              <div class="mt-1.5 flex items-center gap-2">
+                <span class="inline-flex items-center rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-neutral-500">
+                  {{ _workspace_plan }}
+                </span>
+                <span class="text-[10px] text-neutral-400">Plan</span>
+              </div>
+            </div>
+            <a href="/app/settings"
+               class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 transition-colors"
+               aria-label="Account instellingen">
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317a1 1 0 011.35-.936l.527.211a1 1 0 001.357-.556l.21-.527a1 1 0 011.873 0l.21.527a1 1 0 001.357.556l.527-.211a1 1 0 011.35.936l-.05.566a1 1 0 00.873 1.114l.566.05a1 1 0 01.936 1.35l-.211.527a1 1 0 00.556 1.357l.527.21a1 1 0 010 1.873l-.527.21a1 1 0 00-.556 1.357l.211.527a1 1 0 01-.936 1.35l-.566-.05a1 1 0 00-1.114.873l-.05.566a1 1 0 01-1.35.936l-.527-.211a1 1 0 00-1.357.556l-.21.527a1 1 0 01-1.873 0l-.21-.527a1 1 0 00-1.357-.556l-.527.211a1 1 0 01-1.35-.936l.05-.566a1 1 0 00-.873-1.114l-.566-.05a1 1 0 01-.936-1.35l.211-.527a1 1 0 00-.556-1.357l-.527-.21a1 1 0 010-1.873l.527-.21a1 1 0 00.556-1.357l-.211-.527a1 1 0 01.936-1.35l.566.05a1 1 0 001.114-.873l.05-.566z M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+        </div>
       </div>
     </aside>
 
-    <!-- ── Main ──────────────────────────────────────────────── -->
-    <div class="flex min-w-0 flex-1 flex-col bg-[#f0f2f5]">
+    <!-- ════════════════════════════════════════════════════════
+         MAIN SHELL
+    ════════════════════════════════════════════════════════ -->
+    <div class="flex min-w-0 flex-1 flex-col lg:pl-60">
 
-      <!-- Topbar -->
-      <header class="sticky top-0 z-40 border-b border-[#d0d4dd] bg-white">
-        <div class="px-5 sm:px-6">
-          <div class="flex h-[52px] items-center justify-between gap-4">
+      <!-- Top header -->
+      <header class="sticky top-0 z-30 flex items-center justify-between h-12 px-6 bg-white border-b border-neutral-200/90">
+        <div class="flex items-center gap-3">
 
-            <!-- Left -->
-            <div class="flex min-w-0 items-center gap-3">
-              <!-- Mobile hamburger -->
-              <button type="button"
-                      onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
-                      class="inline-flex items-center justify-center rounded border border-[#d0d4dd] bg-white p-1.5 text-[#6b7280] transition hover:bg-[#f0f2f5] lg:hidden">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-              </button>
+          <!-- Mobile hamburger -->
+          <button type="button"
+                  onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                  class="inline-flex items-center justify-center rounded border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-50 lg:hidden">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
 
-              <!-- Mobile brand -->
-              <div class="flex items-center gap-2 lg:hidden">
-                <div class="flex h-7 w-7 items-center justify-center rounded bg-[#191c23] text-[#6b7280]">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
-                  </svg>
-                </div>
-                <span class="text-[13px] font-semibold text-[#111318]">
-                  {{ company_name or "Inversiq" }}
-                </span>
-              </div>
-
-              <!-- Desktop breadcrumb/title -->
-              <div class="hidden lg:flex items-center gap-2">
-                <span class="text-[11px] font-medium text-[#9ca3af] uppercase tracking-[0.08em]">Inversiq</span>
-                <span class="text-[#d0d4dd]">/</span>
-                <span class="text-[13px] font-semibold text-[#111318]">
-                  {{ title or "Overzicht" }}
-                </span>
-              </div>
+          <!-- Mobile brand -->
+          <div class="flex items-center gap-2 lg:hidden">
+            <div class="flex h-5 w-5 items-center justify-center rounded bg-slate-900">
+              <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
             </div>
-
-            <!-- Right -->
-            <div class="flex items-center gap-2">
-              <span class="hidden sm:inline-flex items-center rounded border border-[#e5e7eb] px-2 py-0.5 text-[10px] font-medium tabular-nums text-[#c0c4ce]">
-                v1.0
-              </span>
-            </div>
+            <span class="text-[13px] font-semibold text-slate-800">
+              {{ company_name or "Inversiq" }}
+            </span>
           </div>
+
+          <!-- Desktop breadcrumb -->
+          <div class="hidden lg:flex items-center gap-1.5 text-[12px]">
+            <span class="text-neutral-400">Inversiq</span>
+            <span class="text-neutral-300">/</span>
+            <span class="font-semibold text-neutral-900 tracking-tight">{{ title or "Overzicht" }}</span>
+          </div>
+        </div>
+
+        <!-- Right: notifications -->
+        <div class="flex items-center gap-0.5">
+          <button type="button"
+                  class="relative flex items-center justify-center w-7 h-7 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </button>
         </div>
       </header>
 
-      <!-- Mobile menu -->
-      <div id="mobile-menu" class="hidden border-b border-[#d0d4dd] bg-white lg:hidden">
-        <nav class="space-y-px px-3 py-2">
-          {% macro mobile_nav_link(href, label, active_condition) %}
+      <!-- Mobile dropdown menu -->
+      <div id="mobile-menu" class="hidden border-b border-slate-200 bg-white lg:hidden">
+        <nav class="space-y-px px-2 py-2">
+          {% macro mobile_nav(href, label, active) %}
             <a href="{{ href }}"
-               class="block border-l-2 px-3 py-2 text-[12px] font-medium transition-all
-                 {% if active_condition %}
-                   border-[#4a90d9] bg-[#f0f2f5] text-[#111318]
-                 {% else %}
-                   border-transparent text-[#6b7280] hover:bg-[#f5f6f8] hover:text-[#374151]
-                 {% endif %}">
+               class="block rounded px-2 py-1.5 text-[12px] font-medium transition-colors
+                 {% if active %}bg-slate-100 text-slate-900{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-800{% endif %}">
               {{ label }}
             </a>
           {% endmacro %}
 
-          {{ mobile_nav_link('/app/dashboard', 'Overzicht', path.startswith('/app/dashboard')) }}
-          {{ mobile_nav_link('/app/leads', 'Offertes', path.startswith('/app/leads')) }}
-          {{ mobile_nav_link('/app/jobs', 'Klussen', path.startswith('/app/jobs')) }}
-          {{ mobile_nav_link('/app/reviews', 'Review', path.startswith('/app/reviews')) }}
-          {{ mobile_nav_link('/app/calendar', 'Agenda', path.startswith('/app/calendar')) }}
+          {{ mobile_nav('/app/dashboard', 'Overzicht',  path.startswith('/app/dashboard')) }}
+          {{ mobile_nav('/app/leads',     'Offertes',   path.startswith('/app/leads')) }}
+          {{ mobile_nav('/app/jobs',      'Klussen',    path.startswith('/app/jobs')) }}
+          {{ mobile_nav('/app/reviews',   'Review',     path.startswith('/app/reviews')) }}
+          {{ mobile_nav('/app/calendar',  'Agenda',     path.startswith('/app/calendar')) }}
+          {{ mobile_nav('/app/billing',   'Abonnement', path.startswith('/app/billing')) }}
+          {{ mobile_nav('/app/settings',  'Instellingen', path.startswith('/app/settings')) }}
         </nav>
       </div>
 
-      <!-- Content -->
-      <main class="flex-1 w-full px-5 py-5 sm:px-6 lg:px-7">
+      <!-- Page content -->
+      <main class="flex-1 w-full px-6 py-6 sm:px-8 sm:py-7">
         {% block content %}{% endblock %}
       </main>
-    </div>
-  </div>
 
-  <!-- ── Toast ──────────────────────────────────────────────── -->
+    </div><!-- /main shell -->
+  </div><!-- /flex wrapper -->
+
+  <!-- ════════════════════════════════════════════════════════
+       TOAST (Alpine.js) — unchanged functionality, restyled
+  ════════════════════════════════════════════════════════ -->
   <div id="toast"
        x-data="{ open: false, level: 'success', title: '', message: '' }"
        x-show="open"
@@ -270,30 +416,38 @@
        x-transition:leave-start="opacity-100"
        x-transition:leave-end="opacity-0"
        x-cloak
-       @paintly-toast.window="level = $event.detail.level || 'success'; title = $event.detail.title || ''; message = $event.detail.message || ''; open = true; clearTimeout(window.__paintlyToastTimer); window.__paintlyToastTimer = setTimeout(() => open = false, 3200)"
-       class="pointer-events-none fixed bottom-5 right-5 z-[100] w-64 rounded border border-[#d0d4dd] bg-white px-3.5 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.10)]">
-    <div class="flex items-start gap-2.5">
-      <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded"
+       @paintly-toast.window="
+         level   = $event.detail.level   || 'success';
+         title   = $event.detail.title   || '';
+         message = $event.detail.message || '';
+         open    = true;
+         clearTimeout(window.__paintlyToastTimer);
+         window.__paintlyToastTimer = setTimeout(() => open = false, 3200)"
+       class="pointer-events-none fixed bottom-5 right-5 z-[100] w-72 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-card-md">
+    <div class="flex items-start gap-3">
+      <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm"
            :class="level === 'error' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'">
         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
         </svg>
       </div>
       <div class="min-w-0 flex-1">
-        <div class="text-[12px] font-semibold text-[#111318]" x-text="title"></div>
-        <div class="mt-0.5 text-[11px] text-[#6b7280]" x-show="message" x-text="message"></div>
+        <p class="text-[12px] font-semibold text-slate-900" x-text="title"></p>
+        <p class="mt-0.5 text-[11px] text-slate-500" x-show="message" x-text="message"></p>
       </div>
     </div>
   </div>
 
   <script>
+    /* ── Global helpers (unchanged API, preserved for HTMX/Alpine compatibility) ── */
     window.paintlyToast = function (payload) {
-      var level = (payload && payload.level) || 'success';
-      var title = (payload && payload.title) || '';
-      var message = (payload && payload.message) || '';
       window.dispatchEvent(new CustomEvent('paintly-toast', {
         bubbles: true,
-        detail: { level: level, title: title, message: message },
+        detail: {
+          level:   (payload && payload.level)   || 'success',
+          title:   (payload && payload.title)   || '',
+          message: (payload && payload.message) || '',
+        },
       }));
     };
 
@@ -308,16 +462,13 @@
       return Promise.resolve();
     };
 
+    /* HTMX toast trigger via HX-Trigger header */
     document.addEventListener('htmx:afterRequest', function (evt) {
       try {
-        var xhr = evt.detail.xhr;
-        if (!xhr) return;
-        var raw = xhr.getResponseHeader('HX-Trigger');
+        var raw = evt.detail.xhr && evt.detail.xhr.getResponseHeader('HX-Trigger');
         if (!raw) return;
         var parsed = JSON.parse(raw);
-        if (parsed && parsed['show-toast']) {
-          window.paintlyToast(parsed['show-toast']);
-        }
+        if (parsed && parsed['show-toast']) window.paintlyToast(parsed['show-toast']);
       } catch (e) { /* ignore */ }
     });
 

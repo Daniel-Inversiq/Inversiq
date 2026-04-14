@@ -10,7 +10,10 @@ from app.models.calendar_connection import CalendarConnection  # noqa
 from app.models.quote_calendar_link import QuoteCalendarLink  # noqa
 from app.models.calendar_event import CalendarEvent  # noqa
 from app.models.password_reset_token import PasswordResetToken  # noqa
-from app.modules.outreach.models.outbound_message import OutboundMessage
+from app.modules.outreach.models.outbound_message import OutboundMessage  # noqa
+from app.modules.outreach.models.message_reply import MessageReply  # noqa
+from app.modules.outreach.models.outbound_suggestion import OutboundSuggestion  # noqa
+from app.models.pipeline_run import PipelineRun, PipelineStepRun  # noqa
 
 # (als je dit al had)
 from app.models.upload_record import UploadRecord  # noqa  (alleen als die bestaat)

@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vraag je schilderofferte aan — {{ (tenant.company_name if tenant is defined and tenant else none) or (tenant.name if tenant is defined and tenant else none) or "Inversiq" }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
     * { transition: border-color 0.15s ease, background-color 0.15s ease; }
 
     .upload-zone {
-      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23D0D4DD' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
+      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23cbd5e1' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
     }
     .upload-zone:hover {
-      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23111318' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
+      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23334155' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
     }
 
     .field-error {
@@ -32,44 +32,44 @@
   </style>
 </head>
 
-<body class="min-h-screen bg-[#f0f2f5] text-[#111318] antialiased">
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
 
 <!-- HEADER -->
-<div class="border-b border-[#e8eaee] bg-white">
-  <div class="mx-auto max-w-2xl px-5 py-3.5">
+<div class="border-b border-slate-200 bg-white">
+  <div class="mx-auto max-w-3xl px-6 py-4">
     <div class="flex items-center gap-2.5">
-      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#f6f7f9] text-[#6b7280]">
+      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
         </svg>
       </div>
       <div>
-        <div class="text-[13px] font-semibold text-[#111318]">
+        <div class="text-[14px] font-semibold tracking-tight text-slate-900">
           {% if tenant is defined and tenant %}
             {{ (tenant.company_name if tenant else none) or (tenant.name if tenant else none) or "Schilderofferte aanvragen" }}
           {% else %}
             Schilderofferte aanvragen
           {% endif %}
         </div>
-        <div class="text-[11px] text-[#9ca3af]">Gratis en vrijblijvend</div>
+        <div class="text-[11px] text-slate-500">Gratis en vrijblijvend</div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- MAIN -->
-<div class="mx-auto max-w-2xl px-5 py-6" x-data="{ step: 1 }">
+<div class="mx-auto max-w-3xl px-6 py-8" x-data="{ step: 1 }">
 
 <input type="hidden" id="currentStep" x-model.number="step" />
 
 <!-- PROGRESS -->
-<div class="mb-5">
+<div class="mb-6 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
   <div class="mb-2 flex items-center justify-between">
-    <span class="text-[11px] text-[#9ca3af]">Stap <span x-text="step"></span> van 4</span>
-    <span class="text-[11px] font-semibold text-[#111318]" x-text="['Jouw gegevens', 'Project details', 'Foto\'s', 'Controleer'][step - 1]"></span>
+    <span class="text-[11px] text-slate-500">Stap <span x-text="step"></span> van 4</span>
+    <span class="text-[11px] font-semibold text-slate-800" x-text="['Jouw gegevens', 'Project details', 'Foto\'s', 'Controleer'][step - 1]"></span>
   </div>
-  <div class="h-[2px] bg-[#e8eaee]">
-    <div class="h-[2px] bg-[#111318] transition-all duration-300" :style="`width: ${(step / 4) * 100}%`"></div>
+  <div class="h-1.5 rounded-full bg-slate-200">
+    <div class="h-1.5 rounded-full bg-slate-900 transition-all duration-300" :style="`width: ${(step / 4) * 100}%`"></div>
   </div>
 </div>
 
@@ -83,46 +83,46 @@
   <input type="hidden" name="lead_id" id="lead_id" value="" />
   <input type="hidden" name="address" id="fullAddress" value="" />
 
-  <div class="overflow-hidden rounded-md border border-[#e8eaee] bg-white">
+  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
     <!-- Step title -->
-    <div class="border-b border-[#e8eaee] px-5 py-4">
-      <h2 class="text-[14px] font-semibold text-[#111318]" x-show="step === 1">Jouw gegevens</h2>
-      <h2 class="text-[14px] font-semibold text-[#111318]" x-show="step === 2">Project details</h2>
-      <h2 class="text-[14px] font-semibold text-[#111318]" x-show="step === 3">Foto's van het werk</h2>
-      <h2 class="text-[14px] font-semibold text-[#111318]" x-show="step === 4">Controleer en verstuur</h2>
-      <p class="mt-0.5 text-[12px] text-[#9ca3af]" x-show="step === 3">Hoe beter de foto's, hoe nauwkeuriger de prijs</p>
+    <div class="border-b border-slate-100 bg-slate-50/70 px-6 py-5">
+      <h2 class="text-[16px] font-semibold tracking-tight text-slate-900" x-show="step === 1">Jouw gegevens</h2>
+      <h2 class="text-[16px] font-semibold tracking-tight text-slate-900" x-show="step === 2">Project details</h2>
+      <h2 class="text-[16px] font-semibold tracking-tight text-slate-900" x-show="step === 3">Foto's van het werk</h2>
+      <h2 class="text-[16px] font-semibold tracking-tight text-slate-900" x-show="step === 4">Controleer en verstuur</h2>
+      <p class="mt-1 text-[12px] text-slate-500" x-show="step === 3">Hoe beter de foto's, hoe nauwkeuriger de prijs</p>
     </div>
 
     <!-- Step content -->
-    <div class="px-5 py-5">
+    <div class="px-6 py-6">
 
       <!-- Step 1: Contact -->
-      <section data-step="1" x-show="step === 1" class="space-y-4">
+      <section data-step="1" x-show="step === 1" class="space-y-5">
         <div>
-          <label for="name" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Volledige naam *</label>
+          <label for="name" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Volledige naam *</label>
           <input id="name" name="name" type="text" autocomplete="name" required
-            class="step-1-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+            class="step-1-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
             placeholder="Jan Jansen" />
         </div>
         <div>
-          <label for="email" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">E-mailadres *</label>
+          <label for="email" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">E-mailadres *</label>
           <input id="email" name="email" type="email" autocomplete="email" required
-            class="step-1-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+            class="step-1-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
             placeholder="jan@voorbeeld.nl" />
         </div>
         <div>
-          <label for="phone" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Telefoonnummer *</label>
+          <label for="phone" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Telefoonnummer *</label>
           <input id="phone" name="phone" type="tel" autocomplete="tel" required
-            class="step-1-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+            class="step-1-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
             placeholder="+31 6 12345678" />
         </div>
       </section>
 
       <!-- Step 2: Work details -->
-      <section data-step="2" x-show="step === 2" class="space-y-4">
+      <section data-step="2" x-show="step === 2" class="space-y-5">
         <div>
-          <span class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Wat wil je laten schilderen? *</span>
+          <span class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Wat wil je laten schilderen? *</span>
           <div id="jobTypeGroup" class="grid gap-1.5 sm:grid-cols-2">
             <label class="cursor-pointer">
               <input type="radio" name="job_type" value="interior" class="peer sr-only step-2-input" checked />
@@ -144,64 +144,64 @@
         </div>
 
         <div>
-          <label for="square_meters" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Oppervlakte (m²) *</label>
+          <label for="square_meters" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Oppervlakte (m²) *</label>
           <input id="square_meters" name="square_meters" type="number" min="5" step="1" required
-            class="step-2-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+            class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
             placeholder="35" />
-          <p class="mt-1 text-[11px] text-[#9ca3af]">Weet je het niet precies? Een schatting is prima.</p>
+          <p class="mt-1 text-[11px] text-slate-500">Weet je het niet precies? Een schatting is prima.</p>
         </div>
 
         <div id="otherRepairWrapper" class="hidden">
-          <label for="other_repair_details" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Wat moet er gebeuren?</label>
+          <label for="other_repair_details" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Wat moet er gebeuren?</label>
           <input id="other_repair_details" name="other_repair_details" type="text"
-            class="step-2-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+            class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
             placeholder="Bijv. houtrot herstel, kozijn reparatie of schuurwerk" disabled />
         </div>
 
         <div class="grid gap-2 sm:grid-cols-3">
           <div class="sm:col-span-3">
-            <label for="street" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Adres *</label>
+            <label for="street" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Adres *</label>
             <input id="street" name="street" type="text" autocomplete="street-address" required
-              class="step-2-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
               placeholder="Straat en huisnummer" />
           </div>
           <div>
             <input id="city" name="city" type="text" autocomplete="address-level2" required
-              class="step-2-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
               placeholder="Woonplaats" />
           </div>
           <div>
             <input id="zip" name="zip" type="text" autocomplete="postal-code" required
-              class="step-2-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
               placeholder="Postcode" />
           </div>
           <div>
             <input id="state" name="state" type="text" autocomplete="address-level1" required
-              class="step-2-input h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#111318] outline-none placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
               placeholder="Provincie" />
           </div>
         </div>
 
         <div>
-          <label for="project_description" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Omschrijving *</label>
+          <label for="project_description" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Omschrijving *</label>
           <textarea id="project_description" name="project_description" rows="4" required
-            class="step-2-input w-full rounded border border-[#d0d4dd] bg-white px-3 py-2 text-[12px] text-[#111318] outline-none resize-y placeholder:text-[#9ca3af] focus:border-[#374151] focus:ring-1 focus:ring-[#111318]/8"
+            class="step-2-input min-h-[116px] w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-[13px] text-slate-900 outline-none resize-y placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
             placeholder="Bijv. woonkamer en hal, alleen wanden, kleine reparaties gewenst."></textarea>
         </div>
       </section>
 
       <!-- Step 3: Photos -->
-      <section data-step="3" x-show="step === 3" class="space-y-3">
-        <label class="upload-zone block cursor-pointer rounded bg-[#f6f7f9] p-5 transition hover:bg-[#f0f2f5]" for="files">
+      <section data-step="3" x-show="step === 3" class="space-y-4">
+        <label class="upload-zone block cursor-pointer rounded-xl bg-slate-50 p-6 transition hover:bg-slate-100/70" for="files">
           <input type="file" id="files" name="files" multiple accept="image/*" class="hidden" />
           <div class="text-center">
-            <div class="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded border border-[#d0d4dd] bg-white text-[#9ca3af]">
+            <div class="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-400">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
               </svg>
             </div>
-            <div class="text-[12px] font-semibold text-[#111318]">Klik om foto's toe te voegen</div>
-            <div class="mt-0.5 text-[11px] text-[#9ca3af]">1–5 foto's · JPG, PNG of WebP · max 15 MB per foto</div>
+            <div class="text-[13px] font-semibold text-slate-900">Klik om foto's toe te voegen</div>
+            <div class="mt-0.5 text-[11px] text-slate-500">1–5 foto's · JPG, PNG of WebP · max 15 MB per foto</div>
           </div>
           <div id="fileList" class="mt-3 space-y-1.5"></div>
           <div id="uploadStatus" class="mt-2 text-center text-[11px] text-[#9ca3af]">Nog geen bestanden geselecteerd</div>
@@ -210,9 +210,9 @@
       </section>
 
       <!-- Step 4: Review -->
-      <section data-step="4" x-show="step === 4" class="space-y-3">
-        <div class="rounded-md border border-[#e8eaee] bg-[#f8f9fb] px-4 py-4">
-          <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Jouw gegevens</div>
+      <section data-step="4" x-show="step === 4" class="space-y-4">
+        <div class="rounded-lg border border-slate-200 bg-slate-50/70 px-5 py-4.5">
+          <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Jouw gegevens</div>
           <dl class="space-y-2 text-[12px]">
             <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
               <dt class="text-[#9ca3af]">Naam</dt><dd id="summaryName" class="font-semibold text-[#111318] text-right">-</dd>
@@ -237,24 +237,24 @@
             </div>
           </dl>
         </div>
-        <p class="text-[11px] text-[#9ca3af]">Gratis en vrijblijvend. Binnen een paar minuten geregeld.</p>
+      <p class="text-[11px] text-slate-500">Gratis en vrijblijvend. Binnen een paar minuten geregeld.</p>
       </section>
     </div>
 
     <!-- Navigation -->
-    <div class="border-t border-[#e8eaee] px-5 py-3">
+    <div class="border-t border-slate-100 bg-slate-50/60 px-6 py-4">
       <div class="flex items-center justify-between gap-2">
         <button type="button" id="prevBtn" x-show="step > 1" @click="step = Math.max(step - 1, 1)"
-          class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]">
+          class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-[12px] font-medium text-slate-700 transition hover:bg-slate-100">
           Vorige
         </button>
         <div class="ml-auto flex items-center gap-2">
           <button type="button" id="nextBtn" x-show="step < 4"
-            class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-4 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]">
+            class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-5 text-[12px] font-semibold text-white transition hover:bg-slate-800">
             Ga verder
           </button>
           <button type="submit" id="submitBtn" x-show="step === 4"
-            class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-4 text-[11px] font-semibold text-white transition hover:bg-[#1e2129] disabled:cursor-not-allowed disabled:opacity-50">
+            class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-5 text-[12px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
             Offerte aanvragen
           </button>
         </div>
@@ -375,17 +375,17 @@
 
   function createFileRow(file) {
     const row = document.createElement("div");
-    row.className = "flex items-center justify-between gap-3 rounded border border-[#d0d4dd] bg-[#f6f7f9] px-3 py-2";
+    row.className = "flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5";
     row.innerHTML = `
       <div class="flex items-center gap-3 min-w-0">
         <div class="min-w-0">
-          <div class="truncate text-[12px] font-medium text-[#111318]">${file.name}</div>
-          <div class="text-[11px] text-[#9ca3af]">${formatBytes(file.size)}</div>
+          <div class="truncate text-[12px] font-medium text-slate-900">${file.name}</div>
+          <div class="text-[11px] text-slate-500">${formatBytes(file.size)}</div>
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <span class="status-badge inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Bezig...</span>
-        <button type="button" class="remove-file-btn hidden text-[11px] font-medium text-[#9ca3af] hover:text-rose-600">Verwijder</button>
+        <span class="status-badge inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-700">Bezig...</span>
+        <button type="button" class="remove-file-btn hidden text-[11px] font-medium text-slate-500 hover:text-rose-600">Verwijder</button>
       </div>
     `;
     return {
@@ -603,7 +603,7 @@
         const keyInput = createHiddenPhotoKey(key);
         uploaded += 1;
         badge.textContent = "Geupload";
-        badge.className = "status-badge inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700";
+        badge.className = "status-badge inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700";
         if (removeBtn) {
           removeBtn.classList.remove("hidden");
           removeBtn.addEventListener("click", () => {

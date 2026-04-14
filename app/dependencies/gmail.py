@@ -5,7 +5,10 @@ from googleapiclient.discovery import build
 
 from app.core.settings import settings
 
-_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.readonly",
+]
 
 
 def get_gmail_service():

@@ -1703,7 +1703,7 @@ def app_billing(
                 f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.subtitle",
                 lang=request_lang,
             ),
-            "is_recommended": item.code == "pro",
+            "is_recommended": item.code == "growth",
             "cta_label": translate(
                 _plan_cta_keys.get(item.code, "billing.cta.choose_plan"),
                 lang=request_lang,

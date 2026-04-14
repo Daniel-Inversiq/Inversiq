@@ -1,38 +1,54 @@
 {% extends "app/layout.html" %}
 {% block content %}
-<div class="space-y-5">
+<div class="dashboard-typography space-y-6">
+
+  {# ── Intake link ────────────────────────────────────────────── #}
   {% include "app/partials/intake_link_card.html" %}
 
-  <!-- Page header -->
-  <div class="flex items-center justify-between gap-4">
-    <div>
-      <h1 class="text-[15px] font-semibold text-[#111318] leading-none">Vandaag te regelen</h1>
-      <p class="mt-1.5 text-[12px] text-[#9ca3af]">
-        {{ open_quotes|length }} open offertes · {{ followups|length }} aanvragen om op te volgen
-      </p>
+  {# ── "Vandaag te regelen" banner ────────────────────────────── #}
+  <div class="flex items-center justify-between gap-4
+              rounded-xl border border-neutral-200/90 bg-white shadow-none px-5 py-3.5">
+    <div class="flex items-center gap-3">
+      <span class="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0"></span>
+      <div>
+        <p class="text-[14px] section-title leading-none tracking-tight">Vandaag te regelen</p>
+        <p class="body-muted mt-1 text-[12px] leading-relaxed">
+          <span class="text-neutral-900 font-medium">{{ open_quotes|length }} open offertes</span>
+          &nbsp;·&nbsp;
+          <span class="text-neutral-900 font-medium">{{ followups|length }} aanvragen</span> om op te volgen
+        </p>
+      </div>
     </div>
-    <div class="flex items-center gap-2">
-      <a href="/app/leads"
-        class="inline-flex h-7 items-center justify-center rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e232e]">
+    <div class="flex items-center gap-1.5 shrink-0">
+      <a href="/app/leads" class="ui-btn-primary">
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
         Bekijk offertes
       </a>
-      <a href="/app/leads"
-        class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#6b7280] transition hover:bg-[#f5f6f8]">
+      <a href="/app/leads" class="ui-btn-secondary">
         Opvolging
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
+        </svg>
       </a>
     </div>
   </div>
 
-  <!-- Near-limit billing prompt -->
+  {# ── Billing usage warning (near limit) ─────────────────────── #}
   {% if billing_usage_summary %}
     {% set ouv = billing_usage_summary.offer_usage_view %}
     {% if ouv and not ouv.unlimited and ouv.limit_for_plan and ouv.limit_for_plan > 0 %}
       {% set usage_pct = ((ouv.used_this_month / ouv.limit_for_plan) * 100) | int %}
       {% if usage_pct >= 70 %}
-        <div class="flex items-center justify-between gap-4 rounded border {% if usage_pct >= 90 %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %} px-4 py-2.5">
+        <div class="flex items-center justify-between gap-4 rounded-xl border px-4 py-3
+                    {% if usage_pct >= 90 %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %}">
           <div class="flex items-center gap-2.5 min-w-0">
-            <svg class="h-3.5 w-3.5 shrink-0 {% if usage_pct >= 90 %}text-red-500{% else %}text-amber-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <svg class="h-3.5 w-3.5 shrink-0 {% if usage_pct >= 90 %}text-red-500{% else %}text-amber-500{% endif %}"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
             </svg>
             <span class="text-[12px] {% if usage_pct >= 90 %}text-red-800{% else %}text-amber-800{% endif %}">
               {% if usage_pct >= 100 %}
@@ -44,417 +60,524 @@
               {% endif %}
             </span>
           </div>
-          <a href="/app/billing"
-            class="shrink-0 inline-flex h-6 items-center justify-center rounded border border-[#111318] bg-[#111318] px-2.5 text-[11px] font-semibold text-white transition hover:bg-[#1e232e]">
-            Upgrade →
-          </a>
+          <a href="/app/billing" class="ui-btn-primary shrink-0">Upgrade →</a>
         </div>
       {% endif %}
     {% endif %}
   {% endif %}
 
-  {% if open_quotes|length == 0 %}
-    <p class="text-[12px] text-[#9ca3af]">
-      Nog geen open offertes.
-      {% if tenant is defined and tenant and tenant.slug %}
-        <a href="/intake/{{ tenant.slug }}" class="font-semibold text-[#111318] hover:underline">Start nieuwe offerte →</a>
-      {% endif %}
-    </p>
-  {% endif %}
+  {# ── KPI cards ──────────────────────────────────────────────── #}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-  <!-- KPI row — open, borderless, content-feel -->
-  <div class="flex items-start gap-0 pt-4 pb-5 border-b border-[#e5e7eb]">
-    <div class="flex-1 pr-8">
-      <div class="text-[11px] font-medium text-[#9ca3af]">Omzet maand</div>
-      <div id="kpi-month-revenue" class="mt-1.5 text-[28px] font-bold tracking-[-0.03em] text-[#111318] tabular-nums leading-none">€ 0</div>
+    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-400">Omzet maand</p>
+        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <div>
+        <p id="kpi-month-revenue" class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">€ 0</p>
+        <div class="mt-2 flex items-center gap-2">
+          <span id="kpi-revenue-delta" class="hidden text-[11px] font-semibold text-emerald-600"></span>
+          <span class="body-muted text-[11px]">vs vorige maand</span>
+        </div>
+      </div>
     </div>
-    <div class="flex-1 border-l border-[#f0f2f5] pl-8 pr-8">
-      <div class="text-[11px] font-medium text-[#9ca3af]">Offertes verzonden</div>
-      <div class="mt-1.5 text-[28px] font-bold tracking-[-0.03em] text-[#111318] tabular-nums leading-none">{{ quotes_sent_this_month }}</div>
-    </div>
-    <div class="flex-1 border-l border-[#f0f2f5] pl-8 pr-8">
-      <div class="text-[11px] font-medium text-[#9ca3af]">Akkoord %</div>
-      <div id="kpi-sign-rate" class="mt-1.5 text-[28px] font-bold tracking-[-0.03em] text-[#111318] tabular-nums leading-none">0%</div>
-    </div>
-    <div class="flex-1 border-l border-[#f0f2f5] pl-8">
-      <div class="text-[11px] font-medium text-[#9ca3af]">Open offertes</div>
-      <div id="kpi-open-offers" class="mt-1.5 text-[28px] font-bold tracking-[-0.03em] text-[#111318] tabular-nums leading-none">{{ open_quotes|length }}</div>
-    </div>
-  </div>
 
-  <!-- Main panels -->
+    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-400">Offertes verzonden</p>
+        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+      </div>
+      <div>
+        <p class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">{{ quotes_sent_this_month }}</p>
+        <p class="body-muted mt-2 text-[11px]">deze maand</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-400">Akkoord %</p>
+        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p id="kpi-sign-rate" class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">0%</p>
+        <p class="body-muted mt-2 text-[11px]">conversieratio</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-400">Open offertes</p>
+        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p id="kpi-open-offers" class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">{{ open_quotes|length }}</p>
+        <p class="body-muted mt-2 text-[11px]">wachten op reactie</p>
+      </div>
+    </div>
+
+  </div>{# /KPI grid #}
+
+  {# ── Main content grid ──────────────────────────────────────── #}
   <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
+
+    {# Left column (≈ 2/3) #}
     <div class="space-y-4 xl:col-span-8">
 
-      <!-- OMZET & RESULTATEN -->
-      <section id="secondary-section" class="rounded-md border border-[#e8eaee] bg-white">
+      {# Omzet & resultaten card #}
+      <div id="secondary-section" class="overflow-hidden rounded-xl border border-neutral-200/90 bg-white shadow-none">
 
-        <!-- Section header -->
-        <div class="flex items-baseline justify-between gap-4 border-b border-[#f0f2f5] px-5 py-4">
-          <div class="flex items-baseline gap-2.5">
-            <span class="text-[13px] font-semibold text-[#111318]">Omzet &amp; resultaten</span>
-            <span class="text-[11px] text-[#b0b5bf]">Afgelopen 6 maanden</span>
+        <div class="flex items-baseline justify-between gap-4 border-b border-neutral-100 px-5 py-[18px] bg-neutral-50/70">
+          <div>
+            <span class="text-[15px] section-title">Omzet &amp; resultaten</span>
+            <span class="body-muted ml-2 text-[11px]">Afgelopen 6 maanden</span>
           </div>
-          <p id="current-month-revenue" class="text-[12px] font-semibold tabular-nums text-[#374151]"></p>
+          <p id="current-month-revenue" class="text-[14px] font-semibold tabular-nums text-neutral-900 tracking-tight"></p>
         </div>
 
-        <!-- Empty state -->
+        {# Empty state #}
         <div id="secondary-empty" class="hidden py-12 text-center">
-          <p class="text-[12px] font-medium text-[#374151]">Nog geen data beschikbaar</p>
-          <p class="mt-1 text-[11px] text-[#b0b5bf]">Zodra je offertes verstuurt zie je hier je resultaten</p>
+          <svg class="mx-auto mb-3 h-8 w-8 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          <p class="text-[12px] font-medium text-neutral-500">Nog geen data beschikbaar</p>
+          <p class="mt-1 text-[11px] text-neutral-400">Zodra je offertes verstuurt zie je hier je resultaten</p>
         </div>
 
-        <!-- Charts grid -->
+        {# Charts grid #}
         <div id="secondary-charts" class="grid grid-cols-1 xl:grid-cols-5">
 
-          <!-- Revenue chart -->
-          <div class="xl:col-span-3 xl:border-r xl:border-[#f0f2f5]">
-            <div class="flex items-baseline justify-between gap-3 px-5 pt-5 pb-0">
-              <p class="text-[11px] font-medium text-[#9ca3af]">Omzet over tijd</p>
-              <span id="revenue-total-label" class="text-[11px] tabular-nums text-[#9ca3af]"></span>
+          {# Revenue line chart #}
+          <div class="xl:col-span-3 xl:border-r xl:border-neutral-100 bg-white">
+            <div class="flex items-baseline justify-between gap-3 border-b border-neutral-100 px-5 pt-4 pb-2.5">
+              <p class="body-muted text-[10px] font-semibold uppercase tracking-[0.12em]">Omzet over tijd</p>
+              <span id="revenue-total-label" class="text-[11px] font-semibold tabular-nums text-neutral-800"></span>
             </div>
             <div class="px-5 pt-4 pb-5">
-              <div id="revenue-chart-wrap" class="h-[220px]">
+              <div id="revenue-chart-wrap" class="h-[228px] rounded-lg border border-neutral-200/90 bg-white px-3 py-2.5 shadow-none">
                 <canvas id="revenue-by-month-chart"></canvas>
               </div>
-              <div id="revenue-empty" class="hidden flex h-[220px] items-center justify-center">
-                <p class="text-[11px] text-[#b0b5bf]">Nog geen omzetdata</p>
+              <div id="revenue-empty" class="hidden flex h-[228px] items-center justify-center">
+                <p class="text-[11px] text-neutral-400">Nog geen omzetdata</p>
               </div>
             </div>
           </div>
 
-          <!-- Status distribution -->
+          {# Status doughnut #}
           <div class="xl:col-span-2">
-            <div class="flex items-baseline justify-between gap-3 px-5 pt-5 pb-0">
-              <p class="text-[11px] font-medium text-[#9ca3af]">Statusverdeling</p>
-              <span id="status-total-label" class="text-[11px] tabular-nums text-[#9ca3af]"></span>
+            <div class="flex items-baseline justify-between gap-3 border-b border-neutral-100 px-5 pt-4 pb-2.5">
+              <p class="body-muted text-[10px] font-semibold uppercase tracking-[0.12em]">Statusverdeling</p>
+              <span id="status-total-label" class="text-[11px] font-semibold tabular-nums text-neutral-800"></span>
             </div>
             <div class="px-5 pt-4 pb-5">
-              <div id="status-chart-wrap" class="flex h-[220px] items-center justify-center">
+              <div id="status-chart-wrap" class="flex h-[228px] items-center justify-center rounded-lg border border-neutral-200/90 bg-white shadow-none">
                 <canvas id="status-breakdown-chart"></canvas>
               </div>
-              <div id="status-empty" class="hidden flex h-[220px] items-center justify-center">
-                <p class="text-[11px] text-[#b0b5bf]">Nog geen statusdata</p>
+              <div id="status-empty" class="hidden flex h-[228px] items-center justify-center">
+                <p class="text-[11px] text-neutral-400">Nog geen statusdata</p>
               </div>
 
-              <!-- Stat breakdown below the doughnut -->
-              <div id="status-stats" class="hidden mt-4 grid grid-cols-3 gap-2 border-t border-[#f0f2f5] pt-4">
-                <div class="text-center">
-                  <div id="stat-accepted" class="text-[15px] font-bold tabular-nums text-[#3d9a6e]">—</div>
-                  <div class="mt-0.5 text-[10px] text-[#b0b5bf]">Akkoord</div>
+              <div id="status-stats" class="hidden mt-4 border-t border-neutral-100 pt-4 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-sm bg-emerald-600 shrink-0"></span>
+                    <span class="text-[11px] text-neutral-500">Akkoord</span>
+                  </div>
+                  <span id="stat-accepted" class="text-[14px] font-semibold text-neutral-900 tabular-nums">—</span>
                 </div>
-                <div class="text-center">
-                  <div id="stat-open" class="text-[15px] font-bold tabular-nums text-[#4a90d9]">—</div>
-                  <div class="mt-0.5 text-[10px] text-[#b0b5bf]">Open</div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-sm bg-brand-600 shrink-0"></span>
+                    <span class="text-[11px] text-neutral-500">Open</span>
+                  </div>
+                  <span id="stat-open" class="text-[14px] font-semibold text-neutral-900 tabular-nums">—</span>
                 </div>
-                <div class="text-center">
-                  <div id="stat-lost" class="text-[15px] font-bold tabular-nums text-[#c0392b]">—</div>
-                  <div class="mt-0.5 text-[10px] text-[#b0b5bf]">Verloren</div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-sm bg-red-600 shrink-0"></span>
+                    <span class="text-[11px] text-neutral-500">Verloren</span>
+                  </div>
+                  <span id="stat-lost" class="text-[14px] font-semibold text-neutral-900 tabular-nums">—</span>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
-      </section>
+        </div>{# /charts grid #}
+      </div>{# /omzet card #}
 
-      <!-- OPEN QUOTES TABLE -->
-      <article class="rounded-md border border-[#e8eaee] bg-white">
-        <div class="flex items-center justify-between gap-3 border-b border-[#f0f2f5] px-5 py-4">
-          <span class="text-[13px] font-semibold text-[#111318]">Offertes die nog lopen</span>
-          <a href="/app/leads" class="text-[11px] font-medium text-[#b0b5bf] transition hover:text-[#374151]">
-            Alle offertes →
+      {# Open quotes table #}
+      <div class="overflow-hidden rounded-xl border border-neutral-200/90 bg-white shadow-none">
+        <div class="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-[18px] bg-neutral-50/70">
+          <span class="text-[15px] section-title tracking-tight">Offertes die nog lopen</span>
+          <a href="/app/leads"
+             class="flex items-center gap-1 text-[11px] font-medium text-neutral-400 hover:text-neutral-900 transition-colors">
+            Alle offertes
+            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
+            </svg>
           </a>
         </div>
 
-        <div class="max-h-[320px] overflow-x-auto overflow-y-auto">
-          <table class="min-w-full">
+        <div class="overflow-x-auto">
+          <table class="min-w-full border-collapse">
             <thead>
-              <tr class="border-b border-[#f0f2f5] bg-[#f8f9fb] text-left">
-                <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#b0b5bf]">Klant</th>
-                <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#b0b5bf]">Bedrag</th>
-                <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#b0b5bf]">Status</th>
-                <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#b0b5bf]">Actie</th>
+              <tr class="border-b border-neutral-200 bg-neutral-50/90">
+                <th class="px-5 py-3.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Klant</th>
+                <th class="px-5 py-3.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Omschrijving</th>
+                <th class="px-5 py-3.5 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Bedrag</th>
+                <th class="px-5 py-3.5 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Status</th>
+                <th class="px-5 py-3.5 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Actie</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[#f4f5f7]">
+            <tbody class="divide-y divide-neutral-100">
               {% for q in open_quotes %}
-                <tr class="align-middle transition hover:bg-[#f8f9fb]">
-                  <td class="px-5 py-3.5 text-[12px] font-semibold text-[#111318]">{{ q.customer_name }}</td>
-                  <td class="px-5 py-3.5 text-[12px] tabular-nums text-[#374151]">{{ q.total_display }}</td>
-                  <td class="px-5 py-3.5">
-                    <span class="inline-flex items-center rounded border border-[#eaecf0] bg-[#f8f9fb] px-2 py-0.5 text-[11px] font-medium text-[#374151] {{ q.status_badge }}">{{ q.status_label }}</span>
+                <tr class="group hover:bg-neutral-50/90 transition-colors">
+                  <td class="px-5 py-5 align-middle">
+                    <div class="flex items-center gap-2.5">
+                      <div class="flex items-center justify-center w-7 h-7 rounded-md bg-neutral-100 text-neutral-600 text-[10px] font-bold shrink-0">
+                        {{ (q.customer_name or "?")[:2] | upper }}
+                      </div>
+                      <span class="text-[12px] font-semibold text-neutral-900 tracking-tight">{{ q.customer_name }}</span>
+                    </div>
                   </td>
-                  <td class="px-5 py-3.5">
-                    <a href="/app/leads/{{ q.id }}" class="text-[11px] font-medium text-[#6b7280] transition hover:text-[#111318]">
-                      Bekijk →
+                  <td class="px-5 py-5 align-middle">
+                    <span class="text-[11px] text-neutral-500 max-w-[220px] truncate block leading-relaxed">
+                      {{ q.description or "—" }}
+                    </span>
+                  </td>
+                  <td class="px-5 py-5 text-right align-middle">
+                    <span class="text-[14px] font-semibold text-neutral-900 tabular-nums">{{ q.total_display }}</span>
+                  </td>
+                  <td class="px-5 py-5 align-middle">
+                    {# Map server status codes to ui-badge classes #}
+                    {% if q.status_code in ['signed', 'accepted'] %}
+                      <span class="ui-badge ui-badge-akkoord">
+                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        {{ q.status_label }}
+                      </span>
+                    {% elif q.status_code == 'rejected' %}
+                      <span class="ui-badge ui-badge-verloren">
+                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        {{ q.status_label }}
+                      </span>
+                    {% elif q.status_code == 'pending' %}
+                      <span class="ui-badge ui-badge-open">
+                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        {{ q.status_label }}
+                      </span>
+                    {% else %}
+                      <span class="ui-badge ui-badge-pending">
+                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        {{ q.status_label }}
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="px-5 py-5 text-right align-middle">
+                    <a href="/app/leads/{{ q.id }}"
+                       class="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-400 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-all">
+                      Bekijk
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                      </svg>
                     </a>
                   </td>
                 </tr>
               {% else %}
                 <tr>
-                  <td colspan="4" class="px-5 py-12 text-center text-[12px] text-[#b0b5bf]">
-                    Geen open offertes — lekker bezig.
-                    {% if tenant is defined and tenant and tenant.slug %}
-                      <a href="/intake/{{ tenant.slug }}" class="ml-2 font-semibold text-[#374151] hover:text-[#111318]">Maak nieuwe offerte</a>
-                    {% endif %}
+                  <td colspan="5" class="px-6 py-12 text-center">
+                    <svg class="mx-auto mb-2.5 h-6 w-6 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-[12px] font-medium text-neutral-400">
+                      Geen open offertes.
+                      {% if tenant is defined and tenant and tenant.slug %}
+                        <a href="/intake/{{ tenant.slug }}"
+                           class="ml-1 font-semibold text-neutral-800 hover:text-neutral-950">
+                          Maak nieuwe offerte →
+                        </a>
+                      {% endif %}
+                    </p>
                   </td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-      </article>
-    </div>
+      </div>{# /open quotes #}
 
+    </div>{# /left column #}
+
+    {# Right column (≈ 1/3) #}
     <aside class="space-y-4 xl:col-span-4">
 
-      <!-- OPVOLGING -->
-      <article class="rounded-md border border-[#e8eaee] bg-white">
-        <div class="flex items-center justify-between gap-2 border-b border-[#f0f2f5] px-5 py-4">
-          <span class="text-[13px] font-semibold text-[#111318]">Opvolging</span>
-          <a href="/app/leads" class="text-[11px] font-medium text-[#b0b5bf] transition hover:text-[#374151]">Alles →</a>
+      {# Opvolging #}
+      <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none">
+        <div class="flex items-center justify-between gap-2 border-b border-neutral-100 px-5 py-4 bg-neutral-50/70">
+          <span class="text-[11px] section-title uppercase tracking-[0.12em]">Opvolging</span>
+          <a href="/app/leads"
+             class="flex items-center gap-1 text-[11px] font-medium text-neutral-400 hover:text-neutral-900 transition-colors">
+            Alles
+            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
         </div>
 
-        <div class="divide-y divide-[#f4f5f7]">
+        <div class="divide-y divide-neutral-100">
           {% for item in followups %}
-            <a href="{{ item.href }}" class="block px-5 py-4 transition hover:bg-[#f8f9fb]">
-              <p class="truncate text-[12px] font-semibold text-[#111318]">{{ item.customer_name }}</p>
-              <p class="mt-0.5 text-[12px] text-[#374151]">{{ item.next_action }}</p>
-              <p class="mt-1.5 text-[11px] text-[#b0b5bf]">{{ item.next_action_at_human or "Geen datum" }}</p>
+            <a href="{{ item.href }}"
+               class="flex gap-2.5 px-5 py-4 hover:bg-neutral-50/90 transition-colors">
+              {# Priority dot: red for overdue, amber for today, slate for upcoming #}
+              {% if item.status_label == "Te laat" %}
+                <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+              {% elif item.status_label == "Vandaag" %}
+                <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+              {% else %}
+                <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-neutral-300 shrink-0"></span>
+              {% endif %}
+              <div class="flex-1 min-w-0">
+                <p class="text-[12px] font-semibold text-neutral-900 leading-snug truncate">{{ item.customer_name }}</p>
+                <p class="mt-0.5 text-[11px] text-neutral-500 leading-snug truncate">{{ item.next_action }}</p>
+                <p class="mt-1 text-[10px] text-neutral-400 tabular-nums">{{ item.next_action_at_human or "Geen datum" }}</p>
+              </div>
             </a>
           {% else %}
-            <div class="px-5 py-10 text-center">
-              <svg viewBox="0 0 24 24" fill="none" class="mx-auto mb-2.5 h-5 w-5 text-[#d8dce4]" stroke="currentColor" stroke-width="1.5">
-                <path d="M8 7h8M8 12h8M8 17h5" stroke-linecap="round"></path>
-                <path d="M6 3h12a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2Z" stroke-linecap="round" stroke-linejoin="round"></path>
+            <div class="px-6 py-10 text-center">
+              <svg class="mx-auto mb-2.5 h-5 w-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M8 7h8M8 12h8M8 17h5"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M6 3h12a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z"/>
               </svg>
-              <p class="text-[12px] text-[#b0b5bf]">Geen opvolging gepland.</p>
-              <a href="/app/leads" class="mt-1.5 inline-block text-[11px] font-semibold text-[#374151] hover:text-[#111318]">Plan opvolging →</a>
+              <p class="text-[12px] text-neutral-400">
+                Geen opvolging gepland.
+                <a href="/app/leads" class="ml-1 font-semibold text-neutral-800 hover:text-neutral-950">
+                  Plan opvolging →
+                </a>
+              </p>
             </div>
           {% endfor %}
         </div>
-      </article>
+      </div>{# /opvolging #}
 
-      <!-- ABONNEMENT -->
-      {% set _dash_plan_names = {'core': 'Core', 'growth': 'Growth', 'pro': 'Pro', 'scale': 'Scale'} %}
-      {% set _dash_plan_name = _dash_plan_names.get(current_plan_code, current_plan_code | capitalize) if current_plan_code else 'Core' %}
-      <article class="rounded-md border border-[#e8eaee] bg-white">
-        <div class="border-b border-[#f0f2f5] bg-[#f8f9fb] px-5 py-3.5">
-          <span class="text-[12px] font-semibold text-[#374151]">Abonnement</span>
+      {# Abonnement #}
+      {% set _plan_names = {'core': 'Core', 'growth': 'Growth', 'pro': 'Pro', 'scale': 'Scale'} %}
+      {% set _plan_name = _plan_names.get(current_plan_code, current_plan_code | capitalize) if current_plan_code else 'Core' %}
+      <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none">
+        <div class="border-b border-neutral-100 bg-neutral-50/70 px-5 py-4 rounded-t-xl">
+          <span class="text-[13px] section-title">Abonnement</span>
         </div>
         <div class="px-5 py-4 space-y-3">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#b0b5bf]">Plan</div>
-              <div class="mt-1 text-[13px] font-semibold text-[#111318]">{{ _dash_plan_name }}</div>
+              <div class="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Plan</div>
+              <div class="mt-1 text-[14px] font-semibold text-neutral-900">{{ _plan_name }}</div>
             </div>
             <div class="text-right">
-              <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#b0b5bf]">Status</div>
+              <div class="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Status</div>
               <div class="mt-1">
                 {% if subscription_status == "trialing" %}
-                  <span class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">Proefperiode</span>
+                  <span class="ui-badge ui-badge-pending">Proefperiode</span>
                 {% elif subscription_status == "active" %}
-                  <span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Actief</span>
+                  <span class="ui-badge ui-badge-akkoord">Actief</span>
                 {% elif subscription_status %}
-                  <span class="inline-flex items-center rounded border border-[#e8eaee] bg-[#f6f7f9] px-2 py-0.5 text-[11px] font-medium text-[#6b7280]">{{ subscription_status | replace('_', ' ') | title }}</span>
+                  <span class="ui-badge ui-badge-neutral">{{ subscription_status | replace('_', ' ') | title }}</span>
                 {% else %}
-                  <span class="inline-flex items-center rounded border border-[#e8eaee] bg-[#f6f7f9] px-2 py-0.5 text-[11px] font-medium text-[#6b7280]">Onbekend</span>
+                  <span class="ui-badge ui-badge-neutral">Onbekend</span>
                 {% endif %}
               </div>
             </div>
           </div>
+
           {% if subscription_status == "trialing" and trial_days_left is not none %}
-            <div class="rounded border border-amber-200 bg-amber-50 px-3 py-2">
-              <p class="text-[11px] text-amber-800">Nog <strong>{{ trial_days_left }} dag{% if trial_days_left != 1 %}en{% endif %}</strong> gratis proberen.</p>
+            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <p class="text-[11px] text-amber-800">
+                Nog <strong>{{ trial_days_left }} dag{% if trial_days_left != 1 %}en{% endif %}</strong> gratis proberen.
+              </p>
             </div>
           {% endif %}
-          <a href="/app/billing"
-            class="inline-flex w-full h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f5f6f8]">
+
+          <a href="/app/billing" class="ui-btn-secondary w-full justify-center">
             Beheer abonnement
           </a>
         </div>
-      </article>
-    </aside>
-  </div>
-</div>
+      </div>{# /abonnement #}
+
+    </aside>{# /right column #}
+  </div>{# /main grid #}
+
+</div>{# /page wrapper #}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const eur = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-  const pct = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 2 });
-  const monthFmt = new Intl.DateTimeFormat("nl-NL", { month: "short", year: "numeric" });
+  const eur     = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  const pct     = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 2 });
+  const mthFmt  = new Intl.DateTimeFormat('nl-NL', { month: 'short', year: 'numeric' });
 
-  const setText = (id, value) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-  };
-
-  const showEl = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("hidden");
-  };
-
-  const hideEl = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  };
+  const setText  = (id, v)  => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const showEl   = (id)     => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
+  const hideEl   = (id)     => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); };
 
   let revenueChart = null;
-  let statusChart = null;
+  let statusChart  = null;
+
+  /* Chart.js defaults — neutral, minimal */
+  Chart.defaults.font.family = "'Inter Display', 'Inter', system-ui, sans-serif";
+  Chart.defaults.color = '#a3a3a3';
 
   function buildCharts(summary) {
-    const revenue = Array.isArray(summary.revenue_series) ? summary.revenue_series : [];
+    const revenue           = Array.isArray(summary.revenue_series)    ? summary.revenue_series    : [];
     const statusDistribution = Array.isArray(summary.status_distribution) ? summary.status_distribution : [];
 
-    console.log("dashboard summary", summary);
-    console.log("revenue_series", revenue);
-    console.log("status_distribution", statusDistribution);
+    const statusMap      = Object.fromEntries(statusDistribution.map(i => [String(i.label || ''), Number(i.value || 0)]));
+    const statusAccepted = statusMap.signed   || 0;
+    const statusOpen     = statusMap.pending  || 0;
+    const statusLost     = statusMap.rejected || 0;
+    const statusTotal    = statusAccepted + statusOpen + statusLost;
 
-    const statusMap = Object.fromEntries(
-      statusDistribution.map((item) => [String(item.label || ""), Number(item.value || 0)])
-    );
-
-    const statusAccepted = Number(statusMap.signed || 0);
-    const statusOpen = Number(statusMap.pending || 0);
-    const statusLost = Number(statusMap.rejected || 0);
-    const statusTotal = statusAccepted + statusOpen + statusLost;
-
-    const revenueValues = revenue.map((x) => Number(x.value || 0));
-    const revenueTotal = revenueValues.reduce((sum, value) => sum + value, 0);
+    const revenueValues   = revenue.map(x => Number(x.value || 0));
+    const revenueTotal    = revenueValues.reduce((s, v) => s + v, 0);
     const currentMonthVal = revenue.length ? Number(revenue[revenue.length - 1].value || 0) : 0;
 
-    const hasRevenue = revenueValues.some((v) => v > 0);
-    const hasStatus = statusTotal > 0;
+    const hasRevenue = revenueValues.some(v => v > 0);
+    const hasStatus  = statusTotal > 0;
 
-    hideEl("secondary-empty");
-    showEl("secondary-charts");
+    hideEl('secondary-empty');
+    showEl('secondary-charts');
 
-    // Revenue chart
+    /* ── Revenue line chart ── */
     if (hasRevenue) {
-      hideEl("revenue-empty");
-      showEl("revenue-chart-wrap");
+      hideEl('revenue-empty');
+      showEl('revenue-chart-wrap');
+      setText('revenue-total-label', eur.format(revenueTotal) + ' totaal');
+      setText('kpi-month-revenue',   eur.format(currentMonthVal));
+      setText('current-month-revenue', eur.format(currentMonthVal) + ' deze maand');
 
-      setText("revenue-total-label", eur.format(revenueTotal) + " totaal");
-      setText("kpi-month-revenue", eur.format(currentMonthVal));
-      setText("current-month-revenue", eur.format(currentMonthVal) + " deze maand");
-
-      const revenueLabels = revenue.map((x) => {
-        const raw = String(x.label || "");
-        const [y, m] = raw.split("-");
-        const dt = new Date(Number(y), Number(m) - 1, 1);
-        return Number.isNaN(dt.getTime()) ? raw : monthFmt.format(dt);
+      const labels = revenue.map(x => {
+        const raw  = String(x.label || '');
+        const [y, m] = raw.split('-');
+        const dt   = new Date(Number(y), Number(m) - 1, 1);
+        return Number.isNaN(dt.getTime()) ? raw : mthFmt.format(dt);
       });
 
-      console.log("revenueLabels", revenueLabels);
-      console.log("revenueValues", revenueValues);
-
       if (revenueChart) revenueChart.destroy();
-      revenueChart = new Chart(document.getElementById("revenue-by-month-chart"), {
-        type: "line",
+      const revenueCanvas = document.getElementById('revenue-by-month-chart');
+
+      revenueChart = new Chart(revenueCanvas, {
+        type: 'line',
         data: {
-          labels: revenueLabels,
+          labels,
           datasets: [{
-            label: "Omzet",
+            label: 'Omzet',
             data: revenueValues,
-            borderColor: "#4a90d9",
-            backgroundColor: "rgba(74,144,217,0.08)",
-            fill: true,
-            tension: 0.35,
-            pointRadius: 3,
-            pointHoverRadius: 4,
-            pointBackgroundColor: "#4a90d9",
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 1.5,
-            borderWidth: 2,
+            borderColor:           '#0a0a0a',
+            backgroundColor:       'rgba(10, 10, 10, 0.06)',
+            fill:                  true,
+            tension:               0.42,
+            pointRadius:           2.5,
+            pointHoverRadius:      4.5,
+            pointBackgroundColor:  '#0a0a0a',
+            pointBorderColor:      '#ffffff',
+            pointBorderWidth:      1.8,
+            borderWidth:           1.75,
           }],
         },
         options: {
-          responsive: true,
+          responsive:          true,
           maintainAspectRatio: false,
           scales: {
             x: {
-              ticks: { color: "#b0b5bf", font: { size: 10 } },
-              grid: { display: false },
+              ticks:  { color: '#a3a3a3', font: { size: 10, weight: '500' } },
+              grid:   { display: false },
               border: { display: false },
             },
             y: {
-              ticks: {
-                color: "#b0b5bf",
-                font: { size: 10 },
-                maxTicksLimit: 4,
-                callback: (value) => eur.format(value),
-              },
-              grid: { color: "rgba(0,0,0,0.03)" },
+              ticks:  { color: '#a3a3a3', font: { size: 10, weight: '500' }, maxTicksLimit: 4, callback: v => eur.format(v) },
+              grid:   { color: 'rgba(163, 163, 163, 0.2)' },
               border: { display: false },
             },
           },
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: "#ffffff",
-              titleColor: "#111318",
-              bodyColor: "#374151",
-              borderColor: "#e8eaee",
-              borderWidth: 1,
-              padding: 10,
-              cornerRadius: 4,
+              backgroundColor: '#ffffff',
+              titleColor:      '#0a0a0a',
+              bodyColor:       '#737373',
+              borderColor:     '#e5e5e5',
+              borderWidth:     1,
+              padding:         10,
+              cornerRadius:    8,
               callbacks: {
-                title: (items) => (items[0] ? items[0].label : ""),
-                label: (ctx) => `Omzet: ${eur.format(ctx.parsed.y || 0)}`,
+                title: items => (items[0] ? items[0].label : ''),
+                label: ctx   => `Omzet: ${eur.format(ctx.parsed.y || 0)}`,
               },
             },
           },
         },
       });
     } else {
-      hideEl("revenue-chart-wrap");
-      showEl("revenue-empty");
-      setText("revenue-total-label", "€ 0 totaal");
-      setText("kpi-month-revenue", "€ 0");
-      setText("current-month-revenue", "€ 0 deze maand");
+      hideEl('revenue-chart-wrap');
+      showEl('revenue-empty');
+      setText('revenue-total-label',   '€ 0 totaal');
+      setText('kpi-month-revenue',     '€ 0');
+      setText('current-month-revenue', '€ 0 deze maand');
     }
 
-    // Status doughnut
+    /* ── Status doughnut ── */
     if (hasStatus) {
-      hideEl("status-empty");
-      showEl("status-chart-wrap");
-      showEl("status-stats");
-
-      setText("stat-accepted", String(statusAccepted));
-      setText("stat-open", String(statusOpen));
-      setText("stat-lost", String(statusLost));
-      setText("status-total-label", statusTotal + " offertes");
+      hideEl('status-empty');
+      showEl('status-chart-wrap');
+      showEl('status-stats');
+      setText('stat-accepted',    String(statusAccepted));
+      setText('stat-open',        String(statusOpen));
+      setText('stat-lost',        String(statusLost));
+      setText('status-total-label', statusTotal + ' offertes');
 
       if (statusChart) statusChart.destroy();
-      statusChart = new Chart(document.getElementById("status-breakdown-chart"), {
-        type: "doughnut",
+      statusChart = new Chart(document.getElementById('status-breakdown-chart'), {
+        type: 'doughnut',
         data: {
-          labels: ["Akkoord", "Open", "Verloren"],
+          labels: ['Akkoord', 'Open', 'Verloren'],
           datasets: [{
-            data: [statusAccepted, statusOpen, statusLost],
-            backgroundColor: ["#3d9a6e", "#4a90d9", "#e05252"],
-            borderColor: "#ffffff",
-            borderWidth: 3,
-            hoverOffset: 4,
+            data:            [statusAccepted, statusOpen, statusLost],
+            backgroundColor: ['#15803d', '#1d4ed8', '#b91c1c'],
+            borderColor:     '#ffffff',
+            borderWidth:     2.5,
+            hoverOffset:     4,
           }],
         },
         options: {
-          responsive: true,
+          responsive:          true,
           maintainAspectRatio: false,
-          cutout: "72%",
+          cutout:              '72%',
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: "#ffffff",
-              titleColor: "#111318",
-              bodyColor: "#374151",
-              borderColor: "#e8eaee",
-              borderWidth: 1,
-              padding: 10,
-              cornerRadius: 4,
+              backgroundColor: '#ffffff',
+              titleColor:      '#0a0a0a',
+              bodyColor:       '#737373',
+              borderColor:     '#e5e5e5',
+              borderWidth:     1,
+              padding:         10,
+              cornerRadius:    8,
               callbacks: {
-                label: (ctx) => {
+                label: ctx => {
                   const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                   const share = total ? Math.round((ctx.parsed / total) * 100) : 0;
                   return ` ${ctx.label}: ${ctx.parsed} (${share}%)`;
@@ -465,32 +588,30 @@
         },
       });
     } else {
-      hideEl("status-chart-wrap");
-      hideEl("status-stats");
-      showEl("status-empty");
-      setText("status-total-label", "0 offertes");
-      setText("stat-accepted", "0");
-      setText("stat-open", "0");
-      setText("stat-lost", "0");
+      hideEl('status-chart-wrap');
+      hideEl('status-stats');
+      showEl('status-empty');
+      setText('status-total-label', '0 offertes');
+      setText('stat-accepted', '0');
+      setText('stat-open',     '0');
+      setText('stat-lost',     '0');
     }
   }
 
   async function loadDashboardSummary() {
-    const res = await fetch("/app/api/dashboard/summary", { headers: { Accept: "application/json" } });
-    if (!res.ok) return;
-
-    const summary = await res.json();
-    const k = summary.kpis || {};
-
-    console.log("kpis", k);
-
-    setText("kpi-sign-rate", `${pct.format(k.sign_rate || 0)}%`);
-    setText("kpi-open-offers", String(k.pending_count || 0));
-
-    buildCharts(summary);
+    try {
+      const res = await fetch('/app/api/dashboard/summary', { headers: { Accept: 'application/json' } });
+      if (!res.ok) return;
+      const summary = await res.json();
+      const k = summary.kpis || {};
+      setText('kpi-sign-rate',   `${pct.format(k.sign_rate || 0)}%`);
+      setText('kpi-open-offers', String(k.pending_count || 0));
+      buildCharts(summary);
+    } catch (e) {
+      /* fail silently — server-rendered fallback values remain */
+    }
   }
 
   loadDashboardSummary();
 </script>
-
 {% endblock %}

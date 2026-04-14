@@ -49,7 +49,9 @@ from app.routers import stripe_webhook
 from app.routers.founder import router as founder_router
 from app.observability.metrics import router as metrics_router
 from app.routers import internal
+from app.routers.offertes import router as offertes_router
 from app.routers.outreach import router as outreach_router
+from app.routers.pipeline_runs import router as pipeline_runs_router
 from app.i18n.service import SUPPORTED_LANGS, set_language_cookie, setup_jinja_i18n
 from app.routers import processing
 
@@ -176,7 +178,9 @@ app.include_router(files.router)
 app.include_router(intake.router)
 app.include_router(metrics_router)  # /metrics
 app.include_router(internal.router)
+app.include_router(offertes_router)
 app.include_router(outreach_router)
+app.include_router(pipeline_runs_router)
 app.include_router(processing.router)
 app.include_router(auth_router)
 app.include_router(app_me_router)

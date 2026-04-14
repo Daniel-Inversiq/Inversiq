@@ -344,6 +344,7 @@
             <div class="shrink-0">
               <a
                 href="/app/billing?action=topup"
+                onclick="event.preventDefault(); startTopup();"
                 class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-3 text-[11px] font-semibold text-[#374151] transition hover:bg-[#edf0f4]"
               >
                 Koop extra aanvragen
@@ -545,6 +546,55 @@
       alert("Er ging iets mis bij het openen van abonnementsbeheer.");
     }
   }
+
+  let topupInFlight = false;
+  async function startTopup() {
+    if (topupInFlight) return;
+    topupInFlight = true;
+    try {
+      const response = await fetch("/app/billing/topup", {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (!response.ok) {
+        let message = "Extra aanvragen kopen is mislukt. Probeer het later opnieuw.";
+        try {
+          const errorData = await response.json();
+          const detail = errorData && errorData.detail ? String(errorData.detail) : "";
+          if (detail.indexOf("not configured") !== -1 || detail.indexOf("Top-up price") !== -1) {
+            message = "Extra aanvragen zijn nog niet geactiveerd op deze omgeving. Neem contact op met support.";
+          } else if (detail) {
+            message = "Extra aanvragen kopen is mislukt: " + detail;
+          }
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+        alert(message);
+        topupInFlight = false;
+        return;
+      }
+
+      const data = await response.json();
+      if (data && data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+      alert("Geen geldige betaallink ontvangen van de server.");
+    } catch (err) {
+      alert("Er ging iets mis bij het starten van de betaling.");
+    }
+    topupInFlight = false;
+  }
+
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("action") !== "topup") return;
+    history.replaceState({}, "", window.location.pathname + window.location.hash);
+    startTopup();
+  })();
 </script>
 
 {% endblock %}

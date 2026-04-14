@@ -45,7 +45,15 @@
       "Bash(grep -E \"\\\\.\\(html|py\\)$\")",
       "Bash(grep -l \"Session\" /c/Users/dvanl/Inversiq/app/services/*.py)",
       "Bash(find /c/Users/dvanl/Inversiq/app -type f -name \"*.py\" -exec grep -l \"send_and_log\\\\|send_email\" {} \\\\;)",
-      "Bash(find /c/Users/dvanl/Inversiq/app -type f -name \"*.py\" -exec grep -l \"campaign\\\\|Campaign\" {} \\\\;)"
+      "Bash(find /c/Users/dvanl/Inversiq/app -type f -name \"*.py\" -exec grep -l \"campaign\\\\|Campaign\" {} \\\\;)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(npx tsc:*)",
+      "Bash(ls -1t /c/Users/dvanl/Inversiq/alembic/versions/*.py)",
+      "Bash(python -c \"from app.models.pipeline_run import PipelineRun, PipelineStepRun; print\\('OK', PipelineRun.__tablename__, PipelineStepRun.__tablename__\\)\")",
+      "Bash(python -m pytest tests/test_pipeline_run_tracking.py -v)",
+      "Bash(python -m pytest --ignore=tests/test_pipeline_run_tracking.py -q)",
+      "Bash(python -m pytest --ignore=tests/test_pipeline_run_tracking.py --ignore=tests/test_audit_delete.py --ignore=tests/test_audit_update.py --ignore=tests/test_billing_features.py --ignore=tests/test_predictor.py --ignore=tests/test_pricing.py --ignore=tests/test_template_render.py -q)",
+      "Bash(python -c \"from app.routers.pipeline_runs import router; print\\('ok', [r.path for r in router.routes]\\)\")"
     ]
   }
 }

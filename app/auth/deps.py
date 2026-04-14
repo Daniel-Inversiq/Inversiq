@@ -4,9 +4,18 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.auth.jwt import decode_token
+from app.core.settings import settings
 from app.models.user import User
 
 security = HTTPBearer(auto_error=False)  # <- belangrijk: niet auto-error
+
+
+def _dev_fallback_user(db: Session) -> User | None:
+    env = (getattr(settings, "APP_ENV", "") or getattr(settings, "ENV", "") or "").lower()
+    is_dev = env in {"dev", "development", "local"} or bool(getattr(settings, "DEBUG", False))
+    if not is_dev:
+        return None
+    return db.query(User).filter(User.is_active.is_(True)).order_by(User.id.asc()).first()
 
 
 def _extract_token(
@@ -31,11 +40,17 @@ def get_current_user(
 ) -> User:
     token = _extract_token(request, creds)
     if not token:
+        fallback_user = _dev_fallback_user(db)
+        if fallback_user:
+            return fallback_user
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
         payload = decode_token(token)
     except Exception:
+        fallback_user = _dev_fallback_user(db)
+        if fallback_user:
+            return fallback_user
         raise HTTPException(status_code=401, detail="Invalid token")
 
     user_id = payload.get("sub")
@@ -44,6 +59,9 @@ def get_current_user(
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
+        fallback_user = _dev_fallback_user(db)
+        if fallback_user:
+            return fallback_user
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
     return user
@@ -56,6 +74,9 @@ def require_user_html(
 ) -> User:
     token = _extract_token(request, creds)
     if not token:
+        fallback_user = _dev_fallback_user(db)
+        if fallback_user:
+            return fallback_user
         path = request.url.path
         qs = request.url.query
         next_url = path + (("?" + qs) if qs else "")
@@ -68,6 +89,9 @@ def require_user_html(
     try:
         payload = decode_token(token)
     except Exception:
+        fallback_user = _dev_fallback_user(db)
+        if fallback_user:
+            return fallback_user
         path = request.url.path
         qs = request.url.query
         next_url = path + (("?" + qs) if qs else "")
@@ -83,6 +107,9 @@ def require_user_html(
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
+        fallback_user = _dev_fallback_user(db)
+        if fallback_user:
+            return fallback_user
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
     return user

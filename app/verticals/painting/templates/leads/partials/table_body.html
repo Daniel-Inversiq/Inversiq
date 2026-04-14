@@ -26,7 +26,7 @@
     {% elif st in ['CANCELLED','REJECTED'] %}
       {% set badge_color = 'bg-rose-50 text-rose-700 border-rose-200' %}
     {% else %}
-      {% set badge_color = 'bg-[#f6f7f9] text-[#6b7280] border-[#d0d4dd]' %}
+      {% set badge_color = 'bg-slate-100 text-slate-600 border-slate-200' %}
     {% endif %}
 
     {% set urgency = (followup.status_code or '') %}
@@ -42,33 +42,33 @@
     {% elif urgency == 'upcoming' %}
       {% set urgency_class = 'bg-sky-50 text-sky-700 border-sky-200' %}
     {% else %}
-      {% set urgency_class = 'bg-[#f6f7f9] text-[#6b7280] border-[#d0d4dd]' %}
+      {% set urgency_class = 'bg-slate-100 text-slate-600 border-slate-200' %}
     {% endif %}
 
     {% set total = lead.get("total") if lead is mapping else None %}
 
     {% set searchable = ((lead.customer_name or '') ~ ' ' ~ (status_labels.get(st, st or '')) ~ ' ' ~ (followup.next_action or ''))|lower %}
     <tr
-      class="border-b border-[#e8eaee] align-top last:border-0 transition hover:bg-[#f8f9fb]"
+      class="border-b border-slate-100 align-top last:border-0 transition hover:bg-slate-50/80"
       x-show='match({ search: {{ searchable|tojson }}, status: {{ st|lower|tojson }}, urgentie: {{ urgency|tojson }}, vertical: {{ (v or "painting")|tojson }} })'
     >
-      <td class="px-5 py-3 align-middle">
+      <td class="px-5 py-[18px] align-middle">
         <div class="flex min-w-[240px] flex-col gap-1">
-          <a href="/app/leads/{{ lead.id }}" class="text-[13px] font-semibold text-[#111318] transition hover:text-[#4a90d9]">
+          <a href="/app/leads/{{ lead.id }}" class="text-[13px] font-semibold text-slate-900 transition hover:text-brand-600">
             {{ lead.customer_name or t('leads_list.table.empty_customer') }}
           </a>
           {% set v = lead.vertical if lead is mapping else lead.get("vertical", "painting") %}
-          <span class="inline-flex w-fit items-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b7280]">
+          <span class="inline-flex w-fit items-center rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
             {{ v or "painting" }}
           </span>
           {% if lead.address %}
-            <div class="text-[11px] text-[#9ca3af]">
+            <div class="text-[11px] text-slate-500">
               <span class="max-w-[240px] truncate">{{ lead.address }}</span>
             </div>
           {% endif %}
-          <div class="text-[11px] text-[#9ca3af]">
+          <div class="text-[11px] text-slate-500">
             {% if total is not none %}
-              {{ t('leads_list.table.quote_amount') }}: <span class="font-semibold text-[#374151]">€ {{ "%.2f"|format(total) }}</span>
+              {{ t('leads_list.table.quote_amount') }}: <span class="font-semibold text-slate-700">€ {{ "%.2f"|format(total) }}</span>
             {% else %}
               {{ t('leads_list.table.quote_amount_unknown') }}
             {% endif %}
@@ -76,7 +76,7 @@
         </div>
       </td>
 
-      <td class="px-5 py-3 align-middle">
+      <td class="px-5 py-[18px] align-middle">
         <div class="flex min-w-[160px] flex-col gap-1.5">
           <span class="inline-flex w-fit items-center rounded border px-2 py-0.5 text-[11px] font-semibold {{ badge_color }}">
             {{ status_labels.get(st, st or t('leads_list.status.unknown')) }}
@@ -86,40 +86,40 @@
               {{ t('leads_list.quote_state.ready') }}
             </span>
           {% else %}
-            <span class="inline-flex w-fit items-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-2 py-0.5 text-[11px] font-medium text-[#6b7280]">
+            <span class="inline-flex w-fit items-center rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
               {{ t('leads_list.quote_state.building') }}
             </span>
           {% endif %}
         </div>
       </td>
 
-      <td class="px-5 py-3 align-middle">
+      <td class="px-5 py-[18px] align-middle">
         <div class="min-w-[220px] space-y-1.5">
           {% if followup.has_followup %}
             <div class="inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold {{ urgency_class }}">
               {{ urgency_labels.get(urgency, t('leads_list.followup.scheduled')) }}
             </div>
-            <div class="text-[12px] font-semibold text-[#374151]">{{ followup.next_action or t('leads_list.followup.action') }}</div>
+            <div class="text-[12px] font-semibold text-slate-700">{{ followup.next_action or t('leads_list.followup.action') }}</div>
             {% if followup.next_action_at_human %}
-              <div class="text-[11px] text-[#9ca3af]">{{ followup.next_action_at_human }}</div>
+              <div class="text-[11px] text-slate-500">{{ followup.next_action_at_human }}</div>
             {% else %}
-              <div class="text-[11px] text-[#9ca3af]">{{ t('leads_list.followup.moment_not_planned') }}</div>
+              <div class="text-[11px] text-slate-500">{{ t('leads_list.followup.moment_not_planned') }}</div>
             {% endif %}
           {% else %}
-            <div class="inline-flex items-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-2 py-0.5 text-[11px] font-medium text-[#6b7280]">
+            <div class="inline-flex items-center rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
               {{ t('leads_list.followup.none_planned') }}
             </div>
           {% endif %}
         </div>
       </td>
 
-      <td class="px-5 py-3 align-middle text-right">
+      <td class="px-5 py-[18px] align-middle text-right">
         <div class="flex min-w-[280px] flex-wrap items-center justify-end gap-2">
           {% set a = lead.next_action %}
           {% if a.method == "POST" %}
             <form method="post" action="{{ a.href }}" class="m-0">
               <button
-                class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129] disabled:opacity-60"
+                class="ui-btn-primary disabled:opacity-60"
                 type="submit"
               >
                 {{ t('lead_detail.actions.view_quote') }}
@@ -127,7 +127,7 @@
             </form>
           {% else %}
             <a
-              class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+              class="ui-btn-primary"
               href="{{ a.href }}"
             >
               {{ t('lead_detail.actions.view_quote') }}
@@ -136,7 +136,7 @@
 
           {% if lead.public_url %}
             <a
-              class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+              class="ui-btn-secondary"
               href="{{ lead.public_url }}"
               target="_blank"
               rel="noopener noreferrer"
@@ -147,11 +147,11 @@
 
           {% if lead.public_url %}
             <button
-              class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+              class="ui-btn-secondary"
               type="button"
               onclick="window.paintlyCopy('{{ lead.public_url }}')"
             >
-              <svg class="mr-1.5 h-3.5 w-3.5 text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="mr-1.5 h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
               {{ t('lead_detail.actions.copy_link') }}
@@ -164,15 +164,15 @@
     <tr>
       <td class="px-5 py-14 text-center" colspan="4">
         <div class="flex flex-col items-center justify-center">
-          <div class="mb-3 flex h-10 w-10 items-center justify-center rounded border border-[#d0d4dd] bg-[#f6f7f9] text-[#9ca3af]">
+          <div class="mb-3 flex h-10 w-10 items-center justify-center rounded border border-slate-200 bg-slate-100 text-slate-400">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
           </div>
-          <p class="text-[13px] font-semibold text-[#111318]">{{ t('leads_list.empty.no_results_title') }}</p>
-          <p class="mt-0.5 text-[12px] text-[#9ca3af]">{{ t('leads_list.empty.no_results_subtitle') }}</p>
+          <p class="text-[13px] font-semibold text-slate-900">{{ t('leads_list.empty.no_results_title') }}</p>
+          <p class="mt-0.5 text-[12px] text-slate-500">{{ t('leads_list.empty.no_results_subtitle') }}</p>
           <a href="/intake/{{ tenant.slug if tenant is defined and tenant and tenant.slug else 'dev-tenant' }}"
-             class="mt-4 inline-flex h-7 items-center justify-center rounded bg-[#111318] px-4 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]">
+             class="mt-4 ui-btn-primary px-4">
             {{ t('leads_list.actions.new_quote') }}
           </a>
         </div>

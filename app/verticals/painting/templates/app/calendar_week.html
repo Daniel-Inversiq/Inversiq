@@ -4,18 +4,18 @@
 {% set cal_nav_qs = calendar_nav_qs if calendar_nav_qs is defined and calendar_nav_qs else '' %}
 {% set cal_nav_amp = ('&' + cal_nav_qs) if cal_nav_qs else '' %}
 
-<div class="space-y-3">
+<div class="space-y-4">
 
   <!-- Page header -->
-  <div class="flex items-center justify-between gap-4 pb-1">
+  <div class="ui-card flex items-center justify-between gap-4 px-5 py-4">
     <div>
-      <h1 class="text-[14px] font-semibold text-[#111318]">Weekplanning</h1>
-      <p class="mt-0.5 text-[12px] text-[#9ca3af]">{{ week_label }} · {{ now_chip }}</p>
+      <h1 class="text-[14px] font-semibold tracking-tight text-slate-900">Weekplanning</h1>
+      <p class="mt-0.5 text-[12px] text-slate-500">{{ week_label }} · {{ now_chip }}</p>
     </div>
 
     <div class="flex items-center gap-1.5">
       <a
-        class="inline-flex h-7 items-center justify-center gap-1 rounded border border-[#d0d4dd] bg-white px-2.5 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        class="ui-btn-secondary px-2.5"
         href="/app/calendar?week={{ prev_week }}{{ cal_nav_amp }}"
       >
         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,14 +25,14 @@
       </a>
 
       <a
-        class="inline-flex h-7 items-center justify-center rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+        class="ui-btn-primary"
         href="/app/calendar{% if cal_nav_qs %}?{{ cal_nav_qs }}{% endif %}"
       >
         Deze week
       </a>
 
       <a
-        class="inline-flex h-7 items-center justify-center gap-1 rounded border border-[#d0d4dd] bg-white px-2.5 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        class="ui-btn-secondary px-2.5"
         href="/app/calendar?week={{ next_week }}{{ cal_nav_amp }}"
       >
         Volgende
@@ -41,10 +41,10 @@
         </svg>
       </a>
 
-      <div class="mx-1 h-4 w-px bg-[#e8eaee]"></div>
+      <div class="mx-1 h-4 w-px bg-slate-200"></div>
 
       <a
-        class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2.5 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        class="ui-btn-secondary px-2.5"
         href="/app/jobs"
       >
         Alle klussen
@@ -54,30 +54,30 @@
 
   {% if google_calendar_connected %}
   <!-- Appointment planner -->
-  <div class="border border-[#d0d4dd] bg-white px-5 py-4">
+  <div class="ui-card px-5 py-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="min-w-0">
-        <div class="text-[13px] font-semibold text-[#111318]">
+        <div class="text-[13px] font-semibold text-slate-900">
           {% if bezichtiging_prefill %}Bezichtiging plannen{% else %}Afspraak plannen{% endif %}
         </div>
-        <p class="mt-0.5 text-[12px] text-[#9ca3af]">
+        <p class="mt-0.5 text-[12px] text-slate-500">
           {% if bezichtiging_prefill %}
             Voor {{ bezichtiging_prefill.customer_name|e }} —
           {% endif %}
-          Google Agenda (<span class="text-[#374151]">{{ google_calendar_id or "primary" }}</span>)
+          Google Agenda (<span class="text-slate-700">{{ google_calendar_id or "primary" }}</span>)
         </p>
         {% if bezichtiging_prefill %}
-        <div class="mt-1.5 text-[11px] text-[#374151]">
+        <div class="mt-1.5 text-[11px] text-slate-700">
           <span class="font-medium">{{ bezichtiging_prefill.lead_short|e }}</span>
-          <span class="text-[#9ca3af]"> · {{ bezichtiging_prefill.customer_name|e }}</span>
-          <a href="/app/leads/{{ bezichtiging_prefill.lead_id }}" class="ml-1.5 text-[#4a90d9] hover:underline">Open lead</a>
+          <span class="text-slate-500"> · {{ bezichtiging_prefill.customer_name|e }}</span>
+          <a href="/app/leads/{{ bezichtiging_prefill.lead_id }}" class="ml-1.5 text-brand-600 hover:underline">Open lead</a>
         </div>
         {% endif %}
       </div>
       <button
         type="button"
         onclick="openPaintlyApptModal()"
-        class="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+        class="ui-btn-primary shrink-0"
       >
         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -88,40 +88,43 @@
   </div>
 
   <!-- Upcoming events -->
-  <div class="border border-[#d0d4dd] bg-white">
-    <div class="border-b border-[#d0d4dd] px-5 py-3">
-      <h2 class="text-[13px] font-semibold text-[#111318]">Aankomende afspraken</h2>
-      <p class="text-[12px] text-[#9ca3af]">Google Agenda · komende 30 dagen</p>
+  <div class="ui-card overflow-hidden">
+    <div class="border-b border-slate-200 bg-slate-50/70 px-5 py-3.5">
+      <h2 class="text-[13px] font-semibold text-slate-900">Aankomende afspraken</h2>
+      <p class="text-[12px] text-slate-500">Google Agenda · komende 30 dagen</p>
     </div>
     {% set upcoming = upcoming_calendar_events if upcoming_calendar_events is defined else [] %}
     {% if upcoming|length == 0 %}
-      <p class="px-5 py-4 text-[12px] text-[#9ca3af]">Geen afspraken in deze periode.</p>
+      <p class="px-5 py-4 text-[12px] text-slate-500">
+        Geen afspraken in deze periode.
+        <a href="/app/jobs" class="ml-1 font-semibold text-slate-700 hover:text-slate-900">Bekijk klussen →</a>
+      </p>
     {% else %}
-      <ul class="divide-y divide-[#e8eaee]">
+      <ul class="divide-y divide-slate-100">
         {% for ev in upcoming %}
           <li class="flex items-start justify-between gap-4 px-5 py-3">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span class="text-[13px] font-semibold text-[#111318]">{{ ev.title|e }}</span>
+                <span class="text-[13px] font-semibold text-slate-900">{{ ev.title|e }}</span>
                 {% if ev.html_link %}
                   <a
                     href="{{ ev.html_link|e }}"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-[11px] text-[#4a90d9] hover:underline"
+                    class="text-[11px] text-brand-600 hover:underline"
                   >Open in Google Calendar</a>
                 {% endif %}
               </div>
               {% if ev.attendees and ev.attendees|length > 0 %}
-                <p class="mt-0.5 text-[11px] text-[#9ca3af]">{{ ev.attendees|join(', ')|e }}</p>
+                <p class="mt-0.5 text-[11px] text-slate-500">{{ ev.attendees|join(', ')|e }}</p>
               {% endif %}
               {% if ev.quote_id %}
                 <p class="mt-0.5 text-[11px]">
-                  <a href="/app/leads/{{ ev.quote_id|e }}" class="text-[#4a90d9] hover:underline">Gekoppelde offerte</a>
+                  <a href="/app/leads/{{ ev.quote_id|e }}" class="text-brand-600 hover:underline">Gekoppelde offerte</a>
                 </p>
               {% endif %}
             </div>
-            <span class="shrink-0 text-[11px] tabular-nums text-[#9ca3af]">{{ ev.start_label|e }}</span>
+            <span class="shrink-0 text-[11px] tabular-nums text-slate-500">{{ ev.start_label|e }}</span>
           </li>
         {% endfor %}
       </ul>
@@ -265,20 +268,20 @@
 
   {% else %}
   <!-- Google Calendar not connected -->
-  <div class="border border-[#d0d4dd] bg-white px-5 py-4">
-    <div class="text-[13px] font-semibold text-[#111318]">
+  <div class="ui-card px-5 py-4">
+    <div class="text-[13px] font-semibold text-slate-900">
       {% if bezichtiging_prefill %}Bezichtiging plannen{% else %}Afspraak plannen{% endif %}
     </div>
-    <p class="mt-1 text-[12px] text-[#9ca3af]">
+    <p class="mt-1 text-[12px] text-slate-500">
       Koppel eerst Google Calendar onder
-      <a href="/app/settings" class="text-[#4a90d9] hover:underline">Instellingen</a>
+      <a href="/app/settings" class="text-brand-600 hover:underline">Instellingen</a>
       om hier afspraken toe te voegen.
     </p>
     {% if bezichtiging_prefill %}
-    <p class="mt-2 text-[12px] text-[#374151]">
+    <p class="mt-2 text-[12px] text-slate-700">
       <span class="font-medium">{{ bezichtiging_prefill.lead_short|e }}</span>
       — terug naar
-      <a href="/app/leads/{{ bezichtiging_prefill.lead_id }}" class="text-[#4a90d9] hover:underline">de lead</a>.
+      <a href="/app/leads/{{ bezichtiging_prefill.lead_id }}" class="text-brand-600 hover:underline">de lead</a>.
     </p>
     {% endif %}
   </div>
@@ -288,31 +291,34 @@
   <div class="grid gap-3 xl:grid-cols-[260px_1fr]">
 
     <!-- Left: Niet ingepland -->
-    <aside class="flex flex-col overflow-hidden border border-[#d0d4dd] bg-white">
-      <div class="flex items-center justify-between border-b border-[#d0d4dd] px-4 py-3">
+    <aside class="ui-card flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-4 py-3">
         <div>
-          <div class="text-[13px] font-semibold text-[#111318]">Niet ingepland</div>
-          <div class="text-[11px] text-[#9ca3af]">Wacht op planning</div>
+          <div class="text-[13px] font-semibold text-slate-900">Niet ingepland</div>
+          <div class="text-[11px] text-slate-500">Wacht op planning</div>
         </div>
-        <span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded border border-[#d0d4dd] bg-[#f6f7f9] px-1.5 text-[10px] font-semibold text-[#374151]">
+        <span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-700">
           {{ unscheduled|length }}
         </span>
       </div>
 
       <div class="flex-1 overflow-auto">
         {% if unscheduled|length == 0 %}
-          <p class="px-4 py-4 text-[12px] text-[#9ca3af]">Geen openstaande aanvragen</p>
+          <p class="px-4 py-4 text-[12px] text-slate-500">
+            Geen openstaande aanvragen.
+            <a href="/app/jobs" class="ml-1 font-semibold text-slate-700 hover:text-slate-900">Bekijk klussen →</a>
+          </p>
         {% else %}
           {% for u in unscheduled %}
-            <div class="border-b border-[#e8eaee] px-4 py-3 transition last:border-b-0 hover:bg-[#f8f9fb]">
+            <div class="border-b border-slate-100 px-4 py-3 transition last:border-b-0 hover:bg-slate-50/80">
               <a href="/app/leads/{{ u.lead_id }}#job" class="block">
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0 flex-1">
-                    <div class="truncate text-[12px] font-semibold text-[#111318]">{{ u.customer }}</div>
+                    <div class="truncate text-[12px] font-semibold text-slate-900">{{ u.customer }}</div>
                     {% if u.notes %}
-                      <div class="mt-0.5 truncate text-[11px] text-[#9ca3af]">{{ u.notes }}</div>
+                      <div class="mt-0.5 truncate text-[11px] text-slate-500">{{ u.notes }}</div>
                     {% endif %}
-                    <div class="mt-1 text-[10px] text-[#9ca3af]">
+                    <div class="mt-1 text-[10px] text-slate-500">
                       #{{ u.job_id }} · Offerte #{{ (u.lead_id|string)[-6:]|upper }}
                     </div>
                   </div>
@@ -328,7 +334,7 @@
                   <input type="hidden" name="hhmm" value="09:00">
                   <input type="hidden" name="return_to" value="/app/calendar">
                   <button
-                    class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                    class="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-medium text-slate-700 transition hover:bg-slate-50"
                     type="submit"
                   >Vandaag 9:00</button>
                 </form>
@@ -338,7 +344,7 @@
                   <input type="hidden" name="hhmm" value="13:00">
                   <input type="hidden" name="return_to" value="/app/calendar">
                   <button
-                    class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                    class="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-medium text-slate-700 transition hover:bg-slate-50"
                     type="submit"
                   >Vandaag 13:00</button>
                 </form>
@@ -348,7 +354,7 @@
                   <input type="hidden" name="hhmm" value="09:00">
                   <input type="hidden" name="return_to" value="/app/calendar">
                   <button
-                    class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                    class="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-medium text-slate-700 transition hover:bg-slate-50"
                     type="submit"
                   >Morgen 9:00</button>
                 </form>
@@ -358,7 +364,7 @@
                   <input type="hidden" name="hhmm" value="13:00">
                   <input type="hidden" name="return_to" value="/app/calendar">
                   <button
-                    class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[10px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+                    class="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-medium text-slate-700 transition hover:bg-slate-50"
                     type="submit"
                   >Morgen 13:00</button>
                 </form>
@@ -370,9 +376,9 @@
     </aside>
 
     <!-- Week grid -->
-    <section class="overflow-hidden border border-[#d0d4dd] bg-white">
+    <section class="ui-card overflow-hidden">
       <div class="overflow-x-auto">
-        <div class="grid min-w-[700px] divide-x divide-[#e8eaee] [grid-template-columns:repeat(7,minmax(0,1fr))]">
+        <div class="grid min-w-[700px] divide-x divide-slate-100 [grid-template-columns:repeat(7,minmax(0,1fr))]">
           {% for day in days %}
             {% set day_abbr = {
               'Monday': 'Ma',
@@ -385,13 +391,13 @@
             } %}
             {% set abbr = day_abbr.get(day.title, day.title[:2]) %}
 
-            <div class="flex flex-col {% if day.is_today %}bg-[#f9fafb]{% endif %}">
+            <div class="flex flex-col {% if day.is_today %}bg-slate-50/70{% endif %}">
               <!-- Day header -->
-              <div class="border-b px-3 py-2.5 {% if day.is_today %}border-b-2 border-b-[#111318] border-[#e8eaee]{% else %}border-[#e8eaee]{% endif %}">
-                <div class="text-[10px] font-semibold uppercase tracking-[0.08em] {% if day.is_today %}text-[#111318]{% else %}text-[#9ca3af]{% endif %}">
+              <div class="border-b px-3 py-2.5 {% if day.is_today %}border-b-2 border-b-slate-900 border-slate-100{% else %}border-slate-100{% endif %}">
+                <div class="text-[10px] font-semibold uppercase tracking-[0.08em] {% if day.is_today %}text-slate-900{% else %}text-slate-500{% endif %}">
                   {{ abbr }}
                 </div>
-                <div class="mt-0.5 text-[15px] font-bold tabular-nums leading-none {% if day.is_today %}text-[#111318]{% else %}text-[#374151]{% endif %}">
+                <div class="mt-0.5 text-[15px] font-bold tabular-nums leading-none {% if day.is_today %}text-slate-900{% else %}text-slate-700{% endif %}">
                   {{ day.date }}
                 </div>
               </div>
@@ -399,7 +405,10 @@
               <!-- Day content -->
               <div class="min-h-[160px] max-h-[60vh] flex-1 overflow-y-auto">
                 {% if day["items"]|length == 0 %}
-                  <p class="px-3 py-3 text-[11px] text-[#9ca3af]">Geen klussen gepland</p>
+                  <p class="px-3 py-3 text-[11px] text-slate-500">
+                    Geen klussen gepland.
+                    <a href="/app/jobs" class="ml-1 font-semibold text-slate-700 hover:text-slate-900">Bekijk klussen →</a>
+                  </p>
                 {% else %}
                   {% for it in day["items"] %}
                     {% set st = (it.status or '').upper() %}
@@ -420,20 +429,20 @@
                       {% set status_text = st|replace('_', ' ')|title %}
                     {% endif %}
 
-                    <a href="/app/leads/{{ it.lead_id }}#job" class="block border-b border-[#e8eaee] px-3 py-2.5 transition last:border-b-0 hover:bg-[#f8f9fb]">
+                    <a href="/app/leads/{{ it.lead_id }}#job" class="block border-b border-slate-100 px-3 py-2.5 transition last:border-b-0 hover:bg-slate-50/80">
                       <div class="flex items-center justify-between gap-1">
-                        <span class="text-[11px] tabular-nums text-[#9ca3af]">{{ it.time }}</span>
+                        <span class="text-[11px] tabular-nums text-slate-500">{{ it.time }}</span>
                         <span class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold {{ badge_color }}">
                           {{ status_text }}
                         </span>
                       </div>
-                      <div class="mt-1 truncate text-[12px] font-semibold text-[#111318]">
+                      <div class="mt-1 truncate text-[12px] font-semibold text-slate-900">
                         {{ it.customer }}
                       </div>
                       {% if it.notes %}
-                        <div class="mt-0.5 truncate text-[11px] text-[#9ca3af]">{{ it.notes }}</div>
+                        <div class="mt-0.5 truncate text-[11px] text-slate-500">{{ it.notes }}</div>
                       {% endif %}
-                      <div class="mt-1 text-[10px] text-[#9ca3af]">
+                      <div class="mt-1 text-[10px] text-slate-500">
                         #{{ it.job_id }}{% if it.lead_id %} · #{{ (it.lead_id|string)[-6:]|upper }}{% endif %}
                       </div>
                     </a>

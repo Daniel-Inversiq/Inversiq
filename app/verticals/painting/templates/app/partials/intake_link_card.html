@@ -1,70 +1,84 @@
 {% if intake_url %}
-  <section
-    class="border-b border-[#f0f2f5] pb-5"
-    aria-labelledby="intake-link-heading"
-  >
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3
+            rounded-xl border border-neutral-200/90 bg-white shadow-none px-4 py-3.5">
 
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-          <h2 id="intake-link-heading" class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#b0b5bf]">
-            Intake-link
-          </h2>
-        </div>
-        <div class="mt-1.5 flex items-center rounded border border-[#e8eaee] bg-[#f8f9fb] px-3 py-1.5">
-          <p class="min-w-0 truncate font-mono text-[12px] text-[#374151]">{{ intake_url }}</p>
-        </div>
-      </div>
-
-      <div class="flex shrink-0 items-center gap-1.5">
-        <button
-          type="button"
-          class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
-          data-intake-url="{{ intake_url|e }}"
-          data-copy-label="Kopieer"
-          data-intake-copy-btn
-          aria-live="polite"
-        >
-          Kopieer
-        </button>
-
-        <a
-          href="{{ intake_url }}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
-        >
-          Open
-        </a>
-
-        {% set wa_intake_message = "Hallo, via deze link kun je jouw schilderaanvraag invullen: " ~ intake_url %}
-        <a
-          href="https://wa.me/?text={{ wa_intake_message|url_query_quote }}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex h-7 items-center justify-center rounded border border-emerald-200 bg-white px-3 text-[11px] font-medium text-emerald-700 transition hover:bg-emerald-50"
-        >
-          WhatsApp
-        </a>
-      </div>
+  <!-- Link icon + URL -->
+  <div class="flex items-center gap-3 min-w-0 flex-1">
+    <svg class="h-4 w-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+    </svg>
+    <div class="min-w-0 flex-1">
+      <p class="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-0.5">Intake-link</p>
+      <p class="truncate font-mono text-[12px] text-neutral-600">{{ intake_url }}</p>
     </div>
-  </section>
+  </div>
 
-  <script>
-    (function () {
-      document.querySelectorAll("[data-intake-copy-btn]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          var url = btn.getAttribute("data-intake-url");
-          if (!url) return;
-          var label = btn.getAttribute("data-copy-label") || "Kopieer";
-          navigator.clipboard.writeText(url).then(function () {
-            btn.textContent = "Gekopieerd!";
-            setTimeout(function () {
-              btn.textContent = label;
-            }, 2000);
-          }).catch(function () {});
-        });
+  <!-- Action buttons -->
+  <div class="flex shrink-0 items-center gap-1.5">
+    <a href="{{ intake_url }}"
+       class="ui-btn-primary">
+      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nieuwe intake
+    </a>
+
+    <button
+      type="button"
+      class="ui-btn-secondary"
+      data-intake-url="{{ intake_url|e }}"
+      data-copy-label="Kopieer"
+      data-intake-copy-btn
+      aria-live="polite"
+    >
+      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      Kopieer
+    </button>
+
+    <a href="{{ intake_url }}"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="ui-btn-secondary">
+      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+      </svg>
+      Open
+    </a>
+
+    {% set wa_msg = "Hallo, via deze link kun je jouw schilderaanvraag invullen: " ~ intake_url %}
+    <a href="https://wa.me/?text={{ wa_msg|url_query_quote }}"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="ui-btn-secondary">
+      <svg class="h-3 w-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+      WhatsApp
+    </a>
+  </div>
+</div>
+
+<script>
+  (function () {
+    document.querySelectorAll('[data-intake-copy-btn]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var url = btn.getAttribute('data-intake-url');
+        if (!url) return;
+        var label = btn.getAttribute('data-copy-label') || 'Kopieer';
+        navigator.clipboard.writeText(url).then(function () {
+          btn.innerHTML = '<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 13l4 4L19 7"/></svg> Gekopieerd';
+          setTimeout(function () {
+            btn.innerHTML = '<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> ' + label;
+          }, 2000);
+        }).catch(function () {});
       });
-    })();
-  </script>
+    });
+  })();
+</script>
 {% endif %}

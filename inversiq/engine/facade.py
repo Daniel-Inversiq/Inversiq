@@ -381,13 +381,15 @@ def compute_quote_for_lead_v15(
         **_extra_assets,
     }
 
-    # 6) run pipeline
+    # 6) run pipeline — pass db so PipelineRun rows are persisted for every invocation;
+    #    this is also the prerequisite for the idempotency guard in publish_quote.
     state = run_pipeline(
         context=ctx,
         config=cfg,
         registry=registry,
         assets=assets,
         initial_data={},
+        db=db,
     )
 
     logs = getattr(state, "logs", []) or []

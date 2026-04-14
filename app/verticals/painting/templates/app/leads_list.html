@@ -17,14 +17,14 @@
   {% endif %}
 {% endfor %}
 
-<div class="space-y-3">
+<div class="space-y-4">
   {% include "app/partials/intake_link_card.html" %}
 
   <!-- Page header -->
-  <div class="flex items-center justify-between gap-4 pb-1">
+  <div class="ui-card flex items-center justify-between gap-4 px-5 py-4">
     <div>
-      <h1 class="text-[14px] font-semibold text-[#111318]">Offertes</h1>
-      <p class="mt-0.5 text-[12px] text-[#9ca3af]">{{ counts.totaal }} offertes · {{ counts.te_laat }} te laat · {{ counts.geaccepteerd }} geaccepteerd</p>
+      <h1 class="text-[14px] font-semibold tracking-tight text-slate-900">Offertes</h1>
+      <p class="mt-0.5 text-[12px] text-slate-500">{{ counts.totaal }} offertes · {{ counts.te_laat }} te laat · {{ counts.geaccepteerd }} geaccepteerd</p>
     </div>
 
     {# Workflow visibility: use tenant.enabled_verticals when set; fall back to ["painting"] for legacy tenants. #}
@@ -34,7 +34,7 @@
       {% if "painting" in workflows and tenant and tenant.slug %}
       <a
         href="/intake/{{ tenant.slug }}"
-        class="inline-flex h-7 items-center justify-center gap-1.5 rounded border border-[#111318] bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+        class="ui-btn-primary"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3 shrink-0" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
@@ -46,7 +46,7 @@
       {% if "roofing" in workflows %}
       <a
         href="/intake/roofing"
-        class="inline-flex h-7 items-center justify-center gap-1.5 rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        class="ui-btn-secondary"
       >
         Dakofferte
       </a>
@@ -55,7 +55,7 @@
       {% if "solar" in workflows %}
       <a
         href="/intake/solar"
-        class="inline-flex h-7 items-center justify-center gap-1.5 rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        class="ui-btn-secondary"
       >
         Zonne-energie
       </a>
@@ -64,31 +64,31 @@
   </div>
 
   <!-- KPI panel — single bordered surface with divide-x -->
-  <div class="grid grid-cols-2 divide-x divide-[#e8eaee] border border-[#d0d4dd] bg-white sm:grid-cols-4">
-    <div class="px-5 py-4">
-      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">In beeld</div>
-      <div class="mt-2 text-[26px] font-bold tracking-tight text-[#111318] tabular-nums">{{ counts.totaal }}</div>
-      <div class="mt-0.5 text-[11px] text-[#9ca3af]">Offertes</div>
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="ui-card px-5 py-4">
+      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">In beeld</div>
+      <div class="mt-2 text-[26px] font-bold tracking-tight text-slate-900 tabular-nums">{{ counts.totaal }}</div>
+      <div class="mt-0.5 text-[11px] text-slate-500">Offertes</div>
     </div>
-    <div class="px-5 py-4">
-      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Direct opvolgen</div>
-      <div class="mt-2 text-[26px] font-bold tracking-tight text-[#111318] tabular-nums">{{ counts.te_laat }}</div>
-      <div class="mt-0.5 text-[11px] text-[#9ca3af]">Te laat</div>
+    <div class="ui-card px-5 py-4">
+      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">Direct opvolgen</div>
+      <div class="mt-2 text-[26px] font-bold tracking-tight text-slate-900 tabular-nums">{{ counts.te_laat }}</div>
+      <div class="mt-0.5 text-[11px] text-slate-500">Te laat</div>
     </div>
-    <div class="px-5 py-4">
-      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Nog open</div>
-      <div class="mt-2 text-[26px] font-bold tracking-tight text-[#111318] tabular-nums">{{ counts.verstuurd }}</div>
-      <div class="mt-0.5 text-[11px] text-[#9ca3af]">Verstuurd / bekeken</div>
+    <div class="ui-card px-5 py-4">
+      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">Nog open</div>
+      <div class="mt-2 text-[26px] font-bold tracking-tight text-slate-900 tabular-nums">{{ counts.verstuurd }}</div>
+      <div class="mt-0.5 text-[11px] text-slate-500">Verstuurd / bekeken</div>
     </div>
-    <div class="px-5 py-4">
-      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca3af]">Binnen</div>
-      <div class="mt-2 text-[26px] font-bold tracking-tight text-[#111318] tabular-nums">{{ counts.geaccepteerd }}</div>
-      <div class="mt-0.5 text-[11px] text-[#9ca3af]">Geaccepteerd</div>
+    <div class="ui-card px-5 py-4">
+      <div class="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">Binnen</div>
+      <div class="mt-2 text-[26px] font-bold tracking-tight text-slate-900 tabular-nums">{{ counts.geaccepteerd }}</div>
+      <div class="mt-0.5 text-[11px] text-slate-500">Geaccepteerd</div>
     </div>
   </div>
 
   <!-- TABLE -->
-  <section class="overflow-hidden border border-[#d0d4dd] bg-white"
+  <section class="ui-card overflow-hidden"
     x-data="{
       q: '',
       status: 'alles',
@@ -104,11 +104,11 @@
     }"
   >
 
-    <div class="border-b border-[#d0d4dd] px-5 py-4">
+    <div class="border-b border-slate-200 bg-slate-50/70 px-5 py-4">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h2 class="text-[13px] font-semibold text-[#111318]">Je offertes</h2>
-          <p class="text-[12px] text-[#9ca3af]">Filter en pak sneller door</p>
+          <h2 class="text-[13px] font-semibold text-slate-900">Je offertes</h2>
+          <p class="text-[12px] text-slate-500">Filter en pak sneller door</p>
         </div>
       </div>
 
@@ -117,21 +117,21 @@
           type="search"
           x-model="q"
           placeholder="Zoek..."
-          class="h-8 rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#374151] placeholder:text-[#9ca3af] focus:outline-none focus:ring-1 focus:ring-[#4a90d9]"
+          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
 
-        <select x-model="status" class="h-8 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-[#374151]">
+        <select x-model="status" class="h-8 rounded-md border border-slate-300 bg-white px-2 text-[12px] text-slate-700">
           <option value="alles">Alle standen</option>
           <option value="sent">Verstuurd</option>
           <option value="accepted">Geaccepteerd</option>
         </select>
 
-        <select x-model="urgentie" class="h-8 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-[#374151]">
+        <select x-model="urgentie" class="h-8 rounded-md border border-slate-300 bg-white px-2 text-[12px] text-slate-700">
           <option value="alles">Alle urgentie</option>
           <option value="te laat">Te laat</option>
         </select>
 
-        <select x-model="vertical" class="h-8 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-[#374151]">
+        <select x-model="vertical" class="h-8 rounded-md border border-slate-300 bg-white px-2 text-[12px] text-slate-700">
           <option value="alles">All workflows</option>
           <option value="painting">Painting</option>
           <option value="roofing">Roofing</option>
@@ -140,7 +140,7 @@
 
         <button
           @click="q='';status='alles';urgentie='alles';vertical='alles'"
-          class="h-8 rounded border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] hover:bg-[#f6f7f9]"
+          class="h-8 rounded-md border border-slate-300 bg-white px-3 text-[12px] font-medium text-slate-700 hover:bg-slate-50"
         >
           Reset
         </button>
@@ -150,11 +150,11 @@
     <div class="overflow-x-auto">
       <table class="min-w-full">
         <thead>
-          <tr class="border-b border-[#d0d4dd] bg-[#f6f7f9]">
-            <th class="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Klant</th>
-            <th class="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Status</th>
-            <th class="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Opvolging</th>
-            <th class="px-5 py-2.5 text-right text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Acties</th>
+          <tr class="border-b border-slate-200 bg-slate-100/70">
+            <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">Klant</th>
+            <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">Status</th>
+            <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">Opvolging</th>
+            <th class="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">Acties</th>
           </tr>
         </thead>
         {% include "leads/partials/table_body.html" %}

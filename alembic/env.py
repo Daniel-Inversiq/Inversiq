@@ -8,7 +8,7 @@ from app.db import Base  # onze Base
 
 # Importeer je modellen zodat ze in Base.metadata zitten.
 # Begin met alleen upload_record om import errors te vermijden.
-from app.models import upload_record
+import app.models  # noqa
 
 target_metadata = Base.metadata
 
