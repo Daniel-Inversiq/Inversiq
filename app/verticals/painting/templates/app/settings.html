@@ -6,7 +6,7 @@
   <!-- Page header -->
   <div class="border-b border-[#e8eaee] pb-5">
     <h1 class="text-[14px] font-semibold text-[#111318]">Instellingen</h1>
-    <p class="mt-0.5 text-[12px] text-[#9ca3af]">Beheer je account, prijzen en integraties</p>
+    <p class="mt-0.5 text-[12px] text-[#9ca3af]">Beheer je account en integraties</p>
   </div>
 
   {% if saved in ["1", "account", "pricing", "integrations"] %}
@@ -86,35 +86,6 @@
           />
         </div>
 
-      </div>
-
-      <div class="mt-5 flex items-center justify-end gap-2">
-        <a
-          href="/auth/login"
-          class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
-        >
-          Wachtwoord wijzigen
-        </a>
-        <button
-          type="submit"
-          class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
-        >
-          Opslaan
-        </button>
-      </div>
-    </form>
-
-    <!-- Pricing -->
-    <form method="post" action="/app/settings" class="py-6">
-      <input type="hidden" name="section" value="pricing" />
-
-      <div class="mb-1">
-        <h2 class="text-[13px] font-semibold text-[#111318]">Prijzen</h2>
-        <p class="mt-0.5 text-[12px] text-[#9ca3af]">Gebruikt voor het automatisch berekenen van offertes.</p>
-      </div>
-
-      <div class="mt-4 space-y-4">
-
         <div>
           <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Prijs per m²</label>
           <div class="relative">
@@ -129,37 +100,15 @@
           </div>
         </div>
 
-        <div>
-          <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Minimum prijs</label>
-          <div class="relative">
-            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[#9ca3af]">€</span>
-            <input
-              class="h-8 w-full rounded border border-[#d0d4dd] bg-white pl-7 pr-3 text-[12px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
-              name="minimum_price"
-              type="text"
-              value="{{ minimum_price }}"
-              placeholder="Bijv. 250"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Voorrijkosten</label>
-          <div class="relative">
-            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[#9ca3af]">€</span>
-            <input
-              class="h-8 w-full rounded border border-[#d0d4dd] bg-white pl-7 pr-3 text-[12px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
-              name="travel_cost"
-              type="text"
-              value="{{ travel_cost }}"
-              placeholder="Bijv. 50"
-            />
-          </div>
-        </div>
-
       </div>
 
-      <div class="mt-5 flex justify-end">
+      <div class="mt-5 flex items-center justify-end gap-2">
+        <a
+          href="/auth/login"
+          class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+        >
+          Wachtwoord wijzigen
+        </a>
         <button
           type="submit"
           class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"

@@ -16,6 +16,11 @@ os.environ["DISABLE_BG"] = "1"
 for key in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"):
     os.environ.pop(key, None)
 
+# Lege Basic-Auth credentials zodat load_dotenv() de echte waarden niet overschrijft
+# en de test-client gewoon "" + "" kan sturen (BasicAuthMiddleware laadt deze vóór import).
+os.environ.setdefault("SALES_BASIC_AUTH_USER", "")
+os.environ.setdefault("SALES_BASIC_AUTH_PASS", "")
+
 TEST_DB_PATH = ROOT / "tests" / "test_db.sqlite3"
 TEST_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 TEST_DATABASE_URL = f"sqlite:///{TEST_DB_PATH.as_posix()}"

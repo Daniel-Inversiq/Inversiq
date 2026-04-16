@@ -1,5 +1,7 @@
-# aether/engine/config.py
+# inversiq/engine/config.py
 from __future__ import annotations
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -21,6 +23,24 @@ class EngineConfig:
     steps: List[StepConfig]
     version: str = "1.0"
     defaults: Optional[Dict[str, Any]] = None
+
+    def config_hash(self) -> str:
+        """Return a 12-char SHA-256 prefix over the pipeline step definitions.
+
+        The hash covers the ordered list of (step_id, step_use) pairs — enough
+        to detect any change in *which steps run and in what order*.  It does
+        not cover ``with_`` params, rules, or templates (those change frequently
+        and would make the hash too volatile for useful equality checks).
+
+        Two PipelineRuns with identical ``config_hash`` values used the same
+        pipeline structure.  Different hashes mean the structure differed even
+        if ``engine_version`` is the same.
+        """
+        canonical = json.dumps(
+            [{"id": s.id, "use": s.use} for s in self.steps],
+            sort_keys=True,
+        )
+        return hashlib.sha256(canonical.encode()).hexdigest()[:12]
 
 
 def load_engine_config(raw: Dict[str, Any]) -> EngineConfig:

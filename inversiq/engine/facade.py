@@ -4,6 +4,7 @@ import json
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, TypedDict
 
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from inversiq.engine.assets import load_assets, repo_root
 from inversiq.engine.context import EngineContext
-from inversiq.engine.config import load_engine_config
+from inversiq.engine.config import EngineConfig, load_engine_config
 from inversiq.engine.registry import StepRegistry
 from inversiq.engine.runner import run_pipeline
 
@@ -125,6 +126,29 @@ def _normalize_estimate(raw: Any) -> Optional[Dict[str, Any]]:
 
 def _load_json(p: Path) -> Dict[str, Any]:
     return json.loads(p.read_text(encoding="utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# Cached config and rules loaders
+#
+# Engine config and rules files are static for the lifetime of a worker
+# process — they change only on deploy.  Caching them by path eliminates
+# one disk read + JSON parse per lead per file on every hot-path invocation.
+#
+# lru_cache(maxsize=16) is generous; there are typically 2-4 verticals per
+# process.  The returned objects are treated as read-only by all callers.
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=16)
+def _load_engine_config_cached(cfg_path_str: str) -> EngineConfig:
+    """Load, parse, and cache an EngineConfig by absolute path string."""
+    return load_engine_config(_load_json(Path(cfg_path_str)))
+
+
+@lru_cache(maxsize=16)
+def _load_rules_cached(rules_path_str: str) -> Dict[str, Any]:
+    """Load and cache a rules JSON dict by absolute path string."""
+    return _load_json(Path(rules_path_str))
 
 
 def _tail(xs: list, n: int = 50) -> list:
@@ -344,9 +368,9 @@ def compute_quote_for_lead_v15(
 ) -> EngineQuoteResult:
     root = repo_root()
 
-    # 1) load engine config
+    # 1) load engine config — cached: disk read + JSON parse happens once per vertical per process
     cfg_path = root / "engine_config" / f"{vertical.vertical_id}.json"
-    cfg = load_engine_config(_load_json(cfg_path))
+    cfg = _load_engine_config_cached(str(cfg_path))
 
     # 2) registry — populated by the vertical's register_steps_fn
     registry = StepRegistry()
@@ -359,12 +383,13 @@ def compute_quote_for_lead_v15(
         lead_id=str(lead.id),
     )
 
-    # 4) rules
+    # 4) rules — cached: disk read + JSON parse happens once per rules file per process;
+    #    shallow-copy the cached dict so downstream code cannot mutate the cached original
     rules_dict: Dict[str, Any] = {}
     if cfg.rules_path:
         rp = root / cfg.rules_path
         if rp.exists():
-            rules_dict = _load_json(rp)
+            rules_dict = dict(_load_rules_cached(str(rp)))
 
     # 5) assets (template + jinja env)
     assets_obj = load_assets(cfg, rules=rules_dict)
@@ -405,7 +430,7 @@ def compute_quote_for_lead_v15(
             if (
                 isinstance(entry, dict)
                 and entry.get("message") == "step_end"
-                and entry.get("step_id") == failure_step
+                and entry.get("step_name") == failure_step
                 and entry.get("error")
             ):
                 error_summary = entry.get("error")

@@ -13,6 +13,7 @@ from app.core.settings import settings
 from app.models import Lead, LeadFile
 from app.schemas.intake import IntakePayload
 from app.tasks.vision_task import run_vision_for_lead
+from app.services.activity_service import log_activity_event
 from app.verticals.painting.eu_config import resolve_eu_config
 from app.verticals.painting.quote_service import compute_and_persist_quote
 from app.i18n.service import setup_jinja_i18n
@@ -286,6 +287,15 @@ class PaintlyAdapter(VerticalAdapter):
         db.add(lead)
         db.commit()
         db.refresh(lead)
+        log_activity_event(
+            db,
+            tenant_id=lead.tenant_id,
+            event_type="new_intake_request",
+            title=f"Nieuwe intake: {lead.name or 'Onbekende klant'}",
+            link_url=f"/app/leads/{lead.id}",
+            metadata={"lead_id": str(lead.id)},
+        )
+        db.commit()
         logger.info(
             "[DATA_DEBUG] lead fields lead_id=%s name=%r email=%r phone=%r address=%r location=%r",
             str(getattr(lead, "id", "")),

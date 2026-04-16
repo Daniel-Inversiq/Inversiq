@@ -52,6 +52,11 @@ from app.routers import internal
 from app.routers.offertes import router as offertes_router
 from app.routers.outreach import router as outreach_router
 from app.routers.pipeline_runs import router as pipeline_runs_router
+from app.routers.ops import router as ops_router
+from app.routers.engine_events import router as engine_events_router
+from app.routers.lead_feedback import router as lead_feedback_router
+from app.routers.business_metrics import router as business_metrics_router
+from app.routers.anomalies import router as anomalies_router
 from app.i18n.service import SUPPORTED_LANGS, set_language_cookie, setup_jinja_i18n
 from app.routers import processing
 
@@ -181,6 +186,8 @@ app.include_router(internal.router)
 app.include_router(offertes_router)
 app.include_router(outreach_router)
 app.include_router(pipeline_runs_router)
+app.include_router(ops_router)
+app.include_router(engine_events_router)
 app.include_router(processing.router)
 app.include_router(auth_router)
 app.include_router(app_me_router)
@@ -199,6 +206,9 @@ app.include_router(onboarding.router)
 app.include_router(billing.router)
 app.include_router(stripe_webhook.router)
 app.include_router(founder_router)
+app.include_router(lead_feedback_router)
+app.include_router(business_metrics_router)
+app.include_router(anomalies_router)
 
 
 # DEV-only routes (hardening)

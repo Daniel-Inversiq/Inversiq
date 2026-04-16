@@ -14,6 +14,9 @@ from app.modules.outreach.models.outbound_message import OutboundMessage  # noqa
 from app.modules.outreach.models.message_reply import MessageReply  # noqa
 from app.modules.outreach.models.outbound_suggestion import OutboundSuggestion  # noqa
 from app.models.pipeline_run import PipelineRun, PipelineStepRun  # noqa
+from app.models.activity_event import ActivityEvent  # noqa
+from app.models.engine_event import EngineEvent  # noqa
+from app.models.lead_feedback import LeadFeedback  # noqa
 
 # (als je dit al had)
 from app.models.upload_record import UploadRecord  # noqa  (alleen als die bestaat)

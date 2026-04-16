@@ -430,30 +430,43 @@ def _normalize_vertical_id(raw: str | None) -> str:
     return vid
 
 
-def _has_active_pipeline_run(
+def _find_active_pipeline_run(
     db: Session,
     tenant_id: str,
     lead_id: str,
     vertical_id: str,
     *,
     dedup_window_seconds: int = 60,
-) -> bool:
+):
     """
-    Return True if an active PipelineRun exists for (tenant_id, lead_id, vertical_id).
+    Best-effort duplicate request deduplication guard.
+
+    Returns the first matching PipelineRun if one is "active" for
+    (tenant_id, lead_id, vertical_id), or None if it is safe to proceed.
 
     "Active" means one of:
       - status=RUNNING  : engine is still executing
       - status in (COMPLETED, NEEDS_REVIEW) and completed_at is within the last
         `dedup_window_seconds` seconds — absorbs double-clicks and HTTP retries.
 
-    Idempotency key: (tenant_id, lead_id, vertical_id)
+    FAILED runs are intentionally excluded: a failed pipeline must always be
+    retriggerable without manual intervention.
+
+    Deduplication key: (tenant_id, lead_id, vertical_id)
+
+    Limitations:
+      - Not atomic: a small race window exists between this check and the
+        PipelineRun insert where two concurrent requests can both pass through.
+      - Not a distributed lock: does not prevent parallel execution across workers.
+      - Intended solely to prevent accidental duplicate triggers (double-clicks,
+        HTTP retries, form resubmissions).
     """
     from app.models.pipeline_run import PipelineRun
     from sqlalchemy import or_, and_
 
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=dedup_window_seconds)
 
-    run = (
+    return (
         db.query(PipelineRun)
         .filter(
             PipelineRun.tenant_id == str(tenant_id),
@@ -469,7 +482,6 @@ def _has_active_pipeline_run(
         )
         .first()
     )
-    return run is not None
 
 
 # =========================
@@ -562,23 +574,40 @@ def publish_quote(
             status_code=303,
         )
 
-    # Idempotency guard: check for an active PipelineRun before starting the engine.
-    # This is a second-layer defence that catches duplicate triggers even when
-    # lead.status hasn't been updated yet (e.g. concurrent requests, HTTP retries).
+    # Best-effort duplicate request deduplication: check for an active PipelineRun
+    # before starting the engine. Second-layer defence that catches duplicate triggers
+    # even when lead.status hasn't been updated yet (e.g. concurrent requests, HTTP
+    # retries, double-clicks). Not atomic. Not a distributed lock.
     # The check is cheap — one indexed query on (tenant_id, lead_id, vertical_id, status).
     _vid_for_guard = _normalize_vertical_id(getattr(lead, "vertical", None))
-    if _has_active_pipeline_run(db, str(lead.tenant_id), str(lead.id), _vid_for_guard):
-        inc("publish_idempotent_pipeline_run_total")
-        logger.info(
-            "PUBLISH_IDEMPOTENT_PIPELINE_RUN lead=%s vertical=%s — skipping duplicate trigger",
-            lead.id,
-            _vid_for_guard,
-        )
-        redirect_target = _publish_redirect_target(
-            lead_id=str(lead.id),
-            status=str(lead.status),
-            is_public_flow=is_public_flow,
-        )
+    _active_run = _find_active_pipeline_run(db, str(lead.tenant_id), str(lead.id), _vid_for_guard)
+    if _active_run is not None:
+        inc("publish_dedup_pipeline_run_total")
+        if _active_run.status == "RUNNING":
+            # Engine is still executing — redirect the same way as lead.status == "RUNNING"
+            logger.info(
+                "PUBLISH_DEDUP_PIPELINE_RUN lead=%s vertical=%s run_status=RUNNING — skipping duplicate trigger",
+                lead.id,
+                _vid_for_guard,
+            )
+            redirect_target = _publish_redirect_target(
+                lead_id=str(lead.id),
+                status="RUNNING",
+                is_public_flow=is_public_flow,
+            )
+        else:
+            # Recently completed (COMPLETED or NEEDS_REVIEW within dedup window)
+            logger.info(
+                "PUBLISH_DEDUP_PIPELINE_RUN lead=%s vertical=%s run_status=%s — skipping duplicate trigger",
+                lead.id,
+                _vid_for_guard,
+                _active_run.status,
+            )
+            redirect_target = _publish_redirect_target(
+                lead_id=str(lead.id),
+                status=_active_run.status,
+                is_public_flow=is_public_flow,
+            )
         return RedirectResponse(url=redirect_target, status_code=303)
 
     files = db.query(LeadFile).filter(LeadFile.lead_id == lead.id).all()

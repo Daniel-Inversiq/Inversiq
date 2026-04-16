@@ -14,7 +14,7 @@
   <!-- Inter Display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -71,7 +71,7 @@
     body {
       font-family: 'Inter Display', 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
@@ -79,12 +79,13 @@
     button, input, textarea, select { font-family: inherit; }
     h1, h2, h3 {
       color: #0B0B0C;
-      font-weight: 600;
+      font-weight: 500;
       letter-spacing: -0.01em;
     }
 
     .dashboard-typography {
       color: #737373;
+      line-height: 1.42;
     }
     .dashboard-typography .section-title {
       color: #0a0a0a;
@@ -93,12 +94,12 @@
     }
     .dashboard-typography .body-muted {
       color: #a3a3a3;
-      font-weight: 400;
+      font-weight: 300;
     }
     .dashboard-typography .kpi-value {
       color: #0a0a0a;
-      font-weight: 700;
-      letter-spacing: -0.03em;
+      font-weight: 600;
+      letter-spacing: -0.02em;
     }
 
     /* HTMX loading indicator */
@@ -194,6 +195,15 @@
   </a>
   {% endmacro %}
 
+  {% macro nav_sub_item(href, label, active) %}
+  <a href="{{ href }}"
+     class="group flex items-center gap-2.5 px-3 py-2 text-[11px] rounded-md transition-colors duration-100
+      {% if active %}bg-slate-100 text-slate-900 font-semibold{% else %}text-slate-500 font-medium hover:text-slate-800 hover:bg-slate-50{% endif %}">
+    <span class="w-1 h-1 rounded-full bg-current opacity-60 shrink-0"></span>
+    <span class="flex-1 truncate">{{ label }}</span>
+  </a>
+  {% endmacro %}
+
   <div class="flex min-h-screen">
 
     <!-- ════════════════════════════════════════════════════════
@@ -210,7 +220,7 @@
           </svg>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-[13px] font-semibold text-neutral-900 tracking-tight leading-none">Inversiq</p>
+          <p class="text-[13px] font-semibold text-neutral-900 tracking-[-0.02em] leading-none">Inversiq</p>
           <p class="text-[10px] text-neutral-400 truncate mt-0.5 leading-none">
             {{ company_name or "Schildersbedrijf" }}
           </p>
@@ -259,7 +269,7 @@
 
       <!-- Bottom utility -->
       <div class="border-t border-neutral-200/90 px-3 py-3 space-y-3 shrink-0 bg-white">
-        <div class="space-y-px">
+        <div class="space-y-2">
         {{ nav_item(
           '/app/billing', 'Abonnement',
           'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
@@ -267,20 +277,53 @@
         }}
 
         <a href="mailto:support@inversiq.nl?subject=Support%20request%20-%20Inversiq"
-           class="group flex items-center gap-2.5 px-2 py-1.5 text-[12px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors duration-100 rounded">
-          <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center">
-            <svg class="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           class="group flex items-center gap-2.5 px-3 py-2 text-[12px] font-medium leading-none text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors duration-100 rounded-md">
+          <span class="flex h-[19px] w-[19px] shrink-0 items-center justify-center">
+            <svg class="h-4 w-4 text-slate-500/80 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </span>
-          <span class="flex-1 truncate">Contact support</span>
+          <span class="flex-1 truncate leading-none">Contact support</span>
         </a>
 
-        {{ nav_item(
-          '/app/settings', 'Instellingen',
-          'M10.325 4.317a1 1 0 011.35-.936l.527.211a1 1 0 001.357-.556l.21-.527a1 1 0 011.873 0l.21.527a1 1 0 001.357.556l.527-.211a1 1 0 011.35.936l-.05.566a1 1 0 00.873 1.114l.566.05a1 1 0 01.936 1.35l-.211.527a1 1 0 00.556 1.357l.527.21a1 1 0 010 1.873l-.527.21a1 1 0 00-.556 1.357l.211.527a1 1 0 01-.936 1.35l-.566-.05a1 1 0 00-1.114.873l-.05.566a1 1 0 01-1.35.936l-.527-.211a1 1 0 00-1.357.556l-.21.527a1 1 0 01-1.873 0l-.21-.527a1 1 0 00-1.357-.556l-.527.211a1 1 0 01-1.35-.936l.05-.566a1 1 0 00-.873-1.114l-.566-.05a1 1 0 01-.936-1.35l.211-.527a1 1 0 00-.556-1.357l-.527-.21a1 1 0 010-1.873l.527-.21a1 1 0 00.556-1.357l-.211-.527a1 1 0 01.936-1.35l.566.05a1 1 0 001.114-.873l.05-.566z M12 15a3 3 0 100-6 3 3 0 000 6z',
-          path.startswith('/app/settings'))
-        }}
+        <div x-data="{ open: {{ 'true' if path.startswith('/app/settings') else 'false' }} }" class="space-y-0.5">
+          <button
+            type="button"
+            @click="open = !open"
+            :aria-expanded="open.toString()"
+            class="group flex w-full items-center gap-2.5 px-3 py-2 text-[12px] rounded-md transition-colors duration-100 text-slate-500 font-medium hover:text-slate-800 hover:bg-slate-50"
+          >
+            <span class="flex h-[19px] w-[19px] shrink-0 items-center justify-center">
+              <svg class="h-[15px] w-[15px] text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317a1 1 0 011.35-.936l.527.211a1 1 0 001.357-.556l.21-.527a1 1 0 011.873 0l.21.527a1 1 0 001.357.556l.527-.211a1 1 0 011.35.936l-.05.566a1 1 0 00.873 1.114l.566.05a1 1 0 01.936 1.35l-.211.527a1 1 0 00.556 1.357l.527.21a1 1 0 010 1.873l-.527.21a1 1 0 00-.556 1.357l.211.527a1 1 0 01-.936 1.35l-.566-.05a1 1 0 00-1.114.873l-.05.566a1 1 0 01-1.35.936l-.527-.211a1 1 0 00-1.357.556l-.21.527a1 1 0 01-1.873 0l-.21-.527a1 1 0 00-1.357-.556l-.527.211a1 1 0 01-1.35-.936l.05-.566a1 1 0 00-.873-1.114l-.566-.05a1 1 0 01-.936-1.35l.211-.527a1 1 0 00-.556-1.357l-.527-.21a1 1 0 010-1.873l.527-.21a1 1 0 00.556-1.357l-.211-.527a1 1 0 01.936-1.35l.566.05a1 1 0 001.114-.873l.05-.566z M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+              </svg>
+            </span>
+            <span class="flex-1 truncate text-left">Instellingen</span>
+            <svg
+              class="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-150"
+              :class="open ? 'rotate-90 text-slate-600' : ''"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+
+          <div
+            x-show="open"
+            x-cloak
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="opacity-0 -translate-y-0.5"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="ml-6 mt-0.5 space-y-0.5"
+          >
+            {{ nav_sub_item('/app/settings', 'Algemeen', path == '/app/settings') }}
+          </div>
+        </div>
 
         <form method="post" action="/auth/logout" class="pt-1">
           <button type="submit"
@@ -302,7 +345,7 @@
               {{ (company_name or "IW")[:2] | upper }}
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-[12px] font-semibold text-neutral-900 tracking-tight">
+              <p class="truncate text-[12px] font-semibold text-neutral-900 tracking-[-0.02em]">
                 {{ company_name or "Inversiq Workspace" }}
               </p>
               <div class="mt-1.5 flex items-center gap-2">
@@ -359,20 +402,41 @@
           <div class="hidden lg:flex items-center gap-1.5 text-[12px]">
             <span class="text-neutral-400">Inversiq</span>
             <span class="text-neutral-300">/</span>
-            <span class="font-semibold text-neutral-900 tracking-tight">{{ title or "Overzicht" }}</span>
+            <span class="font-semibold text-neutral-900 tracking-[-0.02em]">{{ title or "Overzicht" }}</span>
           </div>
         </div>
 
         <!-- Right: notifications -->
         <div class="flex items-center gap-0.5">
-          <button type="button"
-                  class="relative flex items-center justify-center w-7 h-7 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-          </button>
+          <div id="activity-bell-root" class="relative">
+            <button
+              id="activity-bell-trigger"
+              type="button"
+              class="relative flex items-center justify-center w-7 h-7 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Notificaties"
+              aria-expanded="false"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <span id="activity-bell-dot" class="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-slate-500"></span>
+            </button>
+            <div
+              id="activity-bell-dropdown"
+              class="hidden absolute right-0 mt-2 w-80 rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden"
+            >
+              <div class="px-3 py-2 border-b border-neutral-200">
+                <p class="text-[11px] font-medium text-neutral-900 tracking-[-0.01em]">Activiteit</p>
+              </div>
+              <div id="activity-bell-list" class="max-h-80 overflow-y-auto"></div>
+            </div>
+          </div>
         </div>
       </header>
+
+      <div class="border-b border-neutral-200/80 bg-white px-6 py-2.5 sm:px-8">
+        <div id="quick-switch-bar" class="hidden items-center gap-1.5 overflow-x-auto whitespace-nowrap"></div>
+      </div>
 
       <!-- Mobile dropdown menu -->
       <div id="mobile-menu" class="hidden border-b border-slate-200 bg-white lg:hidden">
@@ -479,6 +543,218 @@
     document.addEventListener('htmx:sendError', function () {
       window.paintlyToast({ level: 'error', title: 'Netwerkfout', message: 'Verbinding mislukt. Probeer opnieuw.' });
     });
+
+    (function () {
+      var bar = document.getElementById('quick-switch-bar');
+      if (!bar) return;
+
+      var STORAGE_KEY = 'inversiq_recent_pages_v1';
+      var MAX_ITEMS = 5;
+
+      function normalizeRoute(pathname) {
+        if (!pathname || typeof pathname !== 'string') return '/app/dashboard';
+        if (pathname === '/app' || pathname === '/app/') return '/app/dashboard';
+        if (pathname.indexOf('/app/leads') === 0) return '/app/leads';
+        if (pathname.indexOf('/app/jobs') === 0) return '/app/jobs';
+        if (pathname.indexOf('/app/reviews') === 0) return '/app/reviews';
+        if (pathname.indexOf('/app/calendar') === 0) return '/app/calendar';
+        if (pathname.indexOf('/app/billing') === 0) return '/app/billing';
+        if (pathname.indexOf('/app/settings') === 0) return '/app/settings';
+        if (pathname.indexOf('/app/dashboard') === 0) return '/app/dashboard';
+        return pathname;
+      }
+
+      function labelForRoute(route) {
+        if (route === '/app/dashboard') return 'Overzicht';
+        if (route === '/app/leads') return 'Offertes';
+        if (route === '/app/jobs') return 'Klussen';
+        if (route === '/app/reviews') return 'Review';
+        if (route === '/app/calendar') return 'Agenda';
+        if (route === '/app/billing') return 'Abonnement';
+        if (route === '/app/settings') return 'Instellingen';
+        return 'Pagina';
+      }
+
+      function readRecent() {
+        try {
+          var raw = sessionStorage.getItem(STORAGE_KEY);
+          var parsed = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(parsed)) return [];
+          return parsed.filter(function (route) {
+            return typeof route === 'string' && route.indexOf('/app/') === 0;
+          });
+        } catch (_err) {
+          return [];
+        }
+      }
+
+      function writeRecent(routes) {
+        try {
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(routes));
+        } catch (_err) {
+          /* ignore storage failures */
+        }
+      }
+
+      function updateRecent(currentRoute) {
+        var prior = readRecent().filter(function (route) {
+          return route !== currentRoute;
+        });
+        var next = [currentRoute].concat(prior).slice(0, MAX_ITEMS);
+        writeRecent(next);
+        return next;
+      }
+
+      function render(currentRoute, routes) {
+        var knownRoutes = routes.filter(function (route) {
+          return labelForRoute(route) !== 'Pagina';
+        }).slice(0, MAX_ITEMS);
+
+        if (knownRoutes.length <= 1) {
+          bar.classList.add('hidden');
+          bar.classList.remove('flex');
+          return;
+        }
+
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+        bar.innerHTML = knownRoutes.map(function (route) {
+          var isActive = route === currentRoute;
+          var baseClasses = 'inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors';
+          var stateClasses = isActive
+            ? ' bg-slate-200/80 text-slate-900'
+            : ' text-slate-500 hover:text-slate-800 hover:bg-slate-100';
+          return '<a href="' + route + '" class="' + baseClasses + stateClasses + '">' + labelForRoute(route) + '</a>';
+        }).join('');
+      }
+
+      var currentRoute = normalizeRoute(window.location.pathname || '/app/dashboard');
+      var recent = updateRecent(currentRoute);
+      render(currentRoute, recent);
+    })();
+
+    (function () {
+      var root = document.getElementById('activity-bell-root');
+      var trigger = document.getElementById('activity-bell-trigger');
+      var dropdown = document.getElementById('activity-bell-dropdown');
+      var list = document.getElementById('activity-bell-list');
+      var dot = document.getElementById('activity-bell-dot');
+      if (!root || !trigger || !dropdown || !list || !dot) return;
+
+      var loadedOnce = false;
+
+      function setOpen(isOpen) {
+        if (isOpen) {
+          dropdown.classList.remove('hidden');
+          trigger.setAttribute('aria-expanded', 'true');
+        } else {
+          dropdown.classList.add('hidden');
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      function isOpen() {
+        return !dropdown.classList.contains('hidden');
+      }
+
+      function relativeTime(iso) {
+        if (!iso) return 'onbekend';
+        var date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return 'onbekend';
+        var diffSeconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+        if (diffSeconds < 60) return 'zojuist';
+        var units = [
+          ['year', 31536000],
+          ['month', 2592000],
+          ['week', 604800],
+          ['day', 86400],
+          ['hour', 3600],
+          ['minute', 60],
+        ];
+        var rtf = new Intl.RelativeTimeFormat('nl-NL', { numeric: 'auto' });
+        for (var i = 0; i < units.length; i += 1) {
+          var unit = units[i][0];
+          var seconds = units[i][1];
+          if (diffSeconds >= seconds) {
+            var amount = Math.floor(diffSeconds / seconds);
+            return rtf.format(-amount, unit);
+          }
+        }
+        return 'zojuist';
+      }
+
+      function renderLoading() {
+        list.innerHTML = '<p class="px-3 py-3 text-[12px] text-neutral-500">Laden...</p>';
+      }
+
+      function renderEmpty() {
+        list.innerHTML = '<p class="px-3 py-3 text-[12px] text-neutral-500">Nog geen activiteit.</p>';
+        dot.classList.remove('hidden');
+      }
+
+      function escapeHtml(text) {
+        return String(text || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function renderItems(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+          renderEmpty();
+          return;
+        }
+        dot.classList.remove('hidden');
+        list.innerHTML = items.slice(0, 5).map(function (item) {
+          var title = escapeHtml(item && item.title ? item.title : 'Onbekende gebeurtenis');
+          var time = escapeHtml(relativeTime(item && item.created_at ? item.created_at : ''));
+          var block = ''
+            + '<div class="px-3 py-2.5 border-b border-neutral-100 hover:bg-neutral-50 transition-colors">'
+            +   '<p class="text-[12px] font-medium text-neutral-900 leading-tight">' + title + '</p>'
+            +   '<p class="text-[11px] mt-1 text-neutral-500">' + time + '</p>'
+            + '</div>';
+          if (item && item.link_url) {
+            return '<a href="' + encodeURI(item.link_url) + '" class="block">' + block + '</a>';
+          }
+          return block;
+        }).join('');
+      }
+
+      async function loadActivity() {
+        renderLoading();
+        try {
+          var res = await fetch('/app/api/dashboard/activity', {
+            method: 'GET',
+            headers: { Accept: 'application/json' }
+          });
+          if (!res.ok) {
+            renderEmpty();
+            return;
+          }
+          var payload = await res.json();
+          renderItems(payload && payload.items ? payload.items : []);
+        } catch (_err) {
+          renderEmpty();
+        }
+      }
+
+      trigger.addEventListener('click', function () {
+        var nextOpen = !isOpen();
+        setOpen(nextOpen);
+        if (nextOpen && !loadedOnce) {
+          loadedOnce = true;
+          loadActivity();
+        }
+      });
+
+      document.addEventListener('mousedown', function (event) {
+        if (!root.contains(event.target)) {
+          setOpen(false);
+        }
+      });
+    })();
   </script>
 </body>
 </html>

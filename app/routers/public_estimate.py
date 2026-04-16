@@ -28,6 +28,7 @@ from app.services.workflow import (
     mark_lead_accepted,
     mark_lead_viewed,
 )
+from app.services.activity_service import log_activity_event
 from app.verticals.painting.email_render import (
     render_estimate_accepted_email,
     render_painter_estimate_accepted_email,
@@ -292,7 +293,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db),
         </div>
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inversiq bevestiging</p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-900">
             Bedankt, we gaan uw aanvraag controleren
           </h1>
         </div>
@@ -338,7 +339,17 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="Estimate not found")
 
     if not preview:
+        was_unviewed = getattr(lead, "viewed_at", None) is None
         mark_lead_viewed(db, lead)
+        if was_unviewed:
+            log_activity_event(
+                db,
+                tenant_id=str(lead.tenant_id),
+                event_type="quote_viewed",
+                title=f"Offerte bekeken: {lead.name or 'Onbekende klant'}",
+                link_url=f"/app/leads/{lead.id}",
+                metadata={"lead_id": str(lead.id)},
+            )
         db.commit()
 
     # Normaliseer tenant_id + key op dezelfde manier als de interne HTML-flow:

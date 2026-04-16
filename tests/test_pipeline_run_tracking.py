@@ -590,3 +590,109 @@ class TestNoDatabaseSession:
         assert len(state.logs) > 0
         levels = {e["level"] for e in state.logs}
         assert "info" in levels
+
+
+# ---------------------------------------------------------------------------
+# 7. New Phase-2 fields: config_hash, step_use, error_category on run
+# ---------------------------------------------------------------------------
+
+class TestPhase2Fields:
+    """Verify the fields added during the Phase 2 infrastructure pass."""
+
+    def test_config_hash_is_persisted(self, db):
+        ctx = _ctx()
+        config = _cfg([_step("s1", "ok")])
+        reg = _registry(("ok", _ok_fn()))
+
+        run_pipeline(ctx, config, reg, assets={}, db=db)
+
+        run = _get_run(db, ctx.trace_id)
+        assert run.config_hash == config.config_hash()
+        assert len(run.config_hash) == 12  # SHA-256 prefix
+
+    def test_config_hash_is_stable_for_same_structure(self, db):
+        """Two runs with identical step structure share the same config_hash."""
+        ctx1, ctx2 = _ctx(), _ctx()
+        config = _cfg([_step("a", "ok"), _step("b", "ok")])
+        reg = _registry(("ok", _ok_fn()))
+
+        run_pipeline(ctx1, config, reg, assets={}, db=db)
+        run_pipeline(ctx2, config, reg, assets={}, db=db)
+
+        run1 = _get_run(db, ctx1.trace_id)
+        run2 = _get_run(db, ctx2.trace_id)
+        assert run1.config_hash == run2.config_hash
+
+    def test_config_hash_differs_for_different_step_structure(self, db):
+        """Adding a step changes the config_hash."""
+        ctx1, ctx2 = _ctx(), _ctx()
+        config_a = _cfg([_step("s1", "ok")])
+        config_b = _cfg([_step("s1", "ok"), _step("s2", "ok")])
+        reg = _registry(("ok", _ok_fn()))
+
+        run_pipeline(ctx1, config_a, reg, assets={}, db=db)
+        run_pipeline(ctx2, config_b, reg, assets={}, db=db)
+
+        run1 = _get_run(db, ctx1.trace_id)
+        run2 = _get_run(db, ctx2.trace_id)
+        assert run1.config_hash != run2.config_hash
+
+    def test_step_use_is_persisted(self, db):
+        ctx = _ctx()
+        config = _cfg([_step("my_step", "mykey.v1")])
+        reg = _registry(("mykey.v1", _ok_fn()))
+
+        run_pipeline(ctx, config, reg, assets={}, db=db)
+
+        run = _get_run(db, ctx.trace_id)
+        step = _get_steps(db, run.id)[0]
+        assert step.step_use == "mykey.v1"
+
+    def test_error_category_set_on_pipeline_run_for_exception(self, db):
+        """An unhandled RuntimeError is classified as 'transient'; the run row
+        should carry that category for DLQ filtering without joining on steps."""
+        ctx = _ctx()
+        config = _cfg([_step("boom", "explode")])
+        reg = _registry(("explode", _explode_fn("Kaboom")))
+
+        run_pipeline(ctx, config, reg, assets={}, db=db)
+
+        run = _get_run(db, ctx.trace_id)
+        # RuntimeError with non-permanent message → TRANSIENT
+        assert run.error_category == "transient"
+
+    def test_error_category_set_on_step_run_for_exception(self, db):
+        ctx = _ctx()
+        config = _cfg([_step("boom", "explode")])
+        reg = _registry(("explode", _explode_fn()))
+
+        run_pipeline(ctx, config, reg, assets={}, db=db)
+
+        run = _get_run(db, ctx.trace_id)
+        step = _get_steps(db, run.id)[0]
+        assert step.error_category == "transient"
+
+    def test_error_category_not_set_on_successful_run(self, db):
+        ctx = _ctx()
+        config = _cfg([_step("s1", "ok")])
+        reg = _registry(("ok", _ok_fn()))
+
+        run_pipeline(ctx, config, reg, assets={}, db=db)
+
+        run = _get_run(db, ctx.trace_id)
+        assert run.error_category is None
+
+    def test_error_category_not_set_for_returned_failed_result(self, db):
+        """A step that *returns* FAILED (no exception) has no error_category
+        because there is no exception to classify."""
+        ctx = _ctx()
+        config = _cfg([_step("bad", "fail")])
+        reg = _registry(("fail", _fail_fn()))
+
+        run_pipeline(ctx, config, reg, assets={}, db=db)
+
+        run = _get_run(db, ctx.trace_id)
+        step = _get_steps(db, run.id)[0]
+        # _fail_fn returns StepResult(status="FAILED") without raising — no
+        # error_category is set because the classifier never runs.
+        assert step.error_category is None

@@ -1,6 +1,6 @@
-# aether/engine/registry.py
+# inversiq/engine/registry.py
 from __future__ import annotations
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 from .context import PipelineState, StepResult
 from .config import StepConfig
 
@@ -21,3 +21,12 @@ class StepRegistry:
             return self._steps[key]
         except KeyError:
             raise KeyError(f"Unknown step '{key}'. Registered: {sorted(self._steps.keys())}")
+
+    def peek(self, key: str) -> "Optional[StepFn]":
+        """Return the step function for *key*, or None if not registered.
+
+        Used by the runner to read ``__step_contract__`` before creating the
+        step run row — without raising on misconfigured pipelines (``get``
+        inside the try block handles the error path).
+        """
+        return self._steps.get(key)

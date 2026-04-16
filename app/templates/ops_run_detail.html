@@ -1,0 +1,212 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Run #{{ run_id }}{% endblock %}
+
+{% block content %}
+{% set run = payload.run %}
+{% set review = payload.review %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Pipeline run</p>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900">Run #{{ run.id }}</h2>
+    </div>
+    <a href="{{ url_for('ops_runs') }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50">Back to runs</a>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Review</h3>
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      {% if review.review_recommended %}
+      <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 font-semibold text-rose-800">recommended: yes</span>
+      {% else %}
+      <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">recommended: no</span>
+      {% endif %}
+
+      {% set priority = review.review_priority %}
+      {% if priority == "high" %}
+      <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 font-semibold text-rose-800">priority: high</span>
+      {% elif priority == "medium" %}
+      <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">priority: medium</span>
+      {% elif priority == "low" %}
+      <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">priority: low</span>
+      {% else %}
+      <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">priority: —</span>
+      {% endif %}
+    </div>
+    <p class="mt-2 text-sm text-slate-700">{{ review.review_reason or "—" }}</p>
+  </section>
+
+  <section class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Status</p>
+      <p class="mt-2 text-base font-semibold text-slate-900">{{ run.status }}</p>
+      <p class="mt-1 text-xs text-slate-500">Recoverability: {{ payload.summary.recoverability }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Confidence</p>
+      <p class="mt-2 tabular-nums text-base font-semibold text-slate-900">{{ run.overall_confidence_score if run.overall_confidence_score is not none else "—" }}</p>
+      <p class="mt-1 text-xs text-slate-500">{{ run.overall_confidence_label or "—" }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Steps</p>
+      <p class="mt-2 text-base font-semibold text-slate-900">{{ payload.summary.completed_steps }}/{{ payload.summary.total_steps }} completed</p>
+      <p class="mt-1 text-xs text-slate-500">{{ payload.summary.failed_steps }} failed · {{ payload.summary.skipped_steps }} skipped</p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04]">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Events</p>
+      <p class="mt-2 text-base font-semibold text-slate-900">{{ payload.summary.event_count }}</p>
+      <p class="mt-1 text-xs text-slate-500">Feedback: {{ "yes" if payload.summary.has_feedback else "no" }}</p>
+    </article>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Run summary</h3>
+    <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-sm md:grid-cols-2 xl:grid-cols-3">
+      <div><dt class="text-slate-500">Tenant</dt><dd class="font-mono text-xs text-slate-800">{{ run.tenant_id }}</dd></div>
+      <div><dt class="text-slate-500">Lead</dt><dd class="font-mono text-xs text-slate-800">{{ run.lead_id }}</dd></div>
+      <div><dt class="text-slate-500">Vertical</dt><dd class="text-slate-800">{{ run.vertical_id }}</dd></div>
+      <div><dt class="text-slate-500">Trace ID</dt><dd class="font-mono text-xs text-slate-800">{{ run.trace_id }}</dd></div>
+      <div><dt class="text-slate-500">Pipeline</dt><dd class="text-slate-800">{{ run.pipeline_name }}</dd></div>
+      <div><dt class="text-slate-500">Engine version</dt><dd class="text-slate-800">{{ run.engine_version }}</dd></div>
+      <div><dt class="text-slate-500">Config hash</dt><dd class="font-mono text-xs text-slate-800">{{ run.config_hash or "—" }}</dd></div>
+      <div><dt class="text-slate-500">Failure step</dt><dd class="text-slate-800">{{ run.failure_step or "—" }}</dd></div>
+      <div><dt class="text-slate-500">Error category</dt><dd class="text-slate-800">{{ run.error_category or "—" }}</dd></div>
+      <div><dt class="text-slate-500">Started</dt><dd class="tabular-nums text-slate-800">{{ run.started_at or "—" }}</dd></div>
+      <div><dt class="text-slate-500">Completed</dt><dd class="tabular-nums text-slate-800">{{ run.completed_at or "—" }}</dd></div>
+      <div><dt class="text-slate-500">Created</dt><dd class="tabular-nums text-slate-800">{{ run.created_at or "—" }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+    <div class="border-b border-slate-100 bg-slate-50/90 px-4 py-3">
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Step history</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-[72rem] w-full text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/50 text-left text-xs uppercase tracking-wide text-slate-600">
+          <tr>
+            <th class="px-4 py-3 font-semibold">#</th>
+            <th class="px-4 py-3 font-semibold">Step</th>
+            <th class="px-4 py-3 font-semibold">Use</th>
+            <th class="px-4 py-3 font-semibold">Status</th>
+            <th class="px-4 py-3 font-semibold">Duration</th>
+            <th class="px-4 py-3 font-semibold">Confidence</th>
+            <th class="px-4 py-3 font-semibold">Error</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for step in payload.steps %}
+          <tr>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ step.step_order }}</td>
+            <td class="px-4 py-3 align-top text-slate-900">
+              <div class="font-medium">{{ step.step_name }}</div>
+              <div class="text-xs text-slate-500">v{{ step.step_contract_version or "—" }}</div>
+            </td>
+            <td class="px-4 py-3 align-top font-mono text-xs text-slate-700">{{ step.step_use or "—" }}</td>
+            <td class="px-4 py-3 align-top text-slate-700">{{ step.status }}</td>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ step.duration_ms if step.duration_ms is not none else "—" }}</td>
+            <td class="px-4 py-3 align-top text-slate-700">
+              {% if step.confidence_score is not none %}
+              <div class="tabular-nums">{{ "%.3f"|format(step.confidence_score) }} <span class="text-xs text-slate-500">{{ step.confidence_label or "" }}</span></div>
+              <div class="max-w-xs truncate text-xs text-slate-500" title="{{ step.confidence_reason or '' }}">{{ step.confidence_reason or "—" }}</div>
+              {% else %}
+              <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top text-slate-700">
+              <div class="text-xs">{{ step.error_category or "—" }}</div>
+              <div class="max-w-xs truncate text-xs text-slate-500" title="{{ step.error_message or '' }}">{{ step.error_type or "—" }}</div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500">No step rows.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Events timeline</h3>
+    <div class="space-y-2">
+      {% for event in payload.events %}
+      <article class="rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+          <span class="tabular-nums">{{ event.occurred_at or "—" }}</span>
+          <span class="rounded bg-slate-200 px-1.5 py-0.5 font-semibold text-slate-700">{{ event.event_type }}</span>
+          <span>{{ event.status or "—" }}</span>
+          <span>{{ event.step_name or "—" }}</span>
+          <span class="font-mono">{{ event.step_use or "—" }}</span>
+          <span>Error: {{ event.error_category or "—" }}</span>
+        </div>
+      </article>
+      {% else %}
+      <p class="text-sm text-slate-500">No events recorded for this run.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      Anomalies ({{ payload.summary.anomaly_count }})
+    </h3>
+    {% if payload.anomalies %}
+    <div class="space-y-2">
+      {% for anomaly in payload.anomalies %}
+      <article class="rounded-md border border-slate-200 bg-slate-50/60 p-3 text-sm">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="font-medium text-slate-900">{{ anomaly.anomaly_type }}</span>
+          {% set sev = anomaly.severity %}
+          {% if sev == "high" %}
+          <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 font-semibold text-rose-800">high</span>
+          {% elif sev == "medium" %}
+          <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">medium</span>
+          {% else %}
+          <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">{{ sev or "low" }}</span>
+          {% endif %}
+          {% if anomaly.review_recommended %}
+          <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 font-semibold text-rose-800">review: yes</span>
+          {% else %}
+          <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">review: no</span>
+          {% endif %}
+        </div>
+        <p class="mt-1 text-sm text-slate-700">{{ anomaly.description }}</p>
+        <p class="mt-1 text-xs text-slate-600">
+          <span class="font-semibold uppercase tracking-wide text-slate-500">Action hint:</span>
+          {{ anomaly.action_hint or "—" }}
+        </p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500">No anomalies detected for this run.</p>
+    {% endif %}
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Feedback</h3>
+    {% if payload.feedback %}
+    <div class="space-y-2">
+      {% for fb in payload.feedback %}
+      <article class="rounded-md border border-slate-200 bg-slate-50/60 p-3 text-sm">
+        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <span class="tabular-nums">{{ fb.created_at or "—" }}</span>
+          <span class="rounded bg-slate-200 px-1.5 py-0.5 font-semibold text-slate-700">{{ fb.outcome or "—" }}</span>
+          <span>Actual: {{ fb.actual_price if fb.actual_price is not none else "—" }}</span>
+          <span>Estimated: {{ fb.estimated_price if fb.estimated_price is not none else "—" }}</span>
+        </div>
+        {% if fb.override_reason or fb.notes %}
+        <p class="mt-2 text-xs text-slate-600">{{ fb.override_reason or fb.notes }}</p>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500">No feedback linked to this run.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

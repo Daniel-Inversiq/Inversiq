@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -15,7 +16,13 @@ def _dev_fallback_user(db: Session) -> User | None:
     is_dev = env in {"dev", "development", "local"} or bool(getattr(settings, "DEBUG", False))
     if not is_dev:
         return None
-    return db.query(User).filter(User.is_active.is_(True)).order_by(User.id.asc()).first()
+    # Prefer a platform admin so unauthenticated local browsing (dev fallback) can reach /founder/*.
+    return (
+        db.query(User)
+        .filter(User.is_active.is_(True))
+        .order_by(desc(User.is_platform_admin), User.id.asc())
+        .first()
+    )
 
 
 def _extract_token(

@@ -13,7 +13,7 @@
     <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
       <div>
         <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Internal</p>
-        <h1 class="text-lg font-semibold tracking-tight text-slate-900">Founder Backoffice</h1>
+        <h1 class="text-lg font-semibold tracking-[-0.02em] text-slate-900">Founder Backoffice</h1>
       </div>
       <nav class="flex items-center gap-1 text-sm" aria-label="Founder navigation">
         <a
@@ -24,6 +24,18 @@
           href="{{ url_for('founder_tenants') }}"
           class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/founder/tenants') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
         >Tenants</a>
+        <a
+          href="{{ url_for('founder_outreach_queue') }}"
+          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/founder/outreach') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
+        >Outreach</a>
+        <a
+          href="{{ url_for('ops_runs') }}"
+          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/ops/runs') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
+        >Ops Runs</a>
+        <a
+          href="{{ url_for('ops_anomalies') }}"
+          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/ops/anomalies') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
+        >Anomalies</a>
       </nav>
     </div>
   </header>

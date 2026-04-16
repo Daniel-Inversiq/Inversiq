@@ -32,7 +32,7 @@ from typing import Any, Dict
 from sqlalchemy.orm import Session
 
 from inversiq.engine.config import StepConfig
-from inversiq.engine.context import PipelineState, StepResult
+from inversiq.engine.context import PipelineState, StepContract, StepResult
 from inversiq.engine.facade import VerticalDefinition
 from inversiq.engine.registry import StepRegistry
 
@@ -154,6 +154,12 @@ def step_estimate_v1(state: PipelineState, step: StepConfig, assets: dict) -> St
     return StepResult(status="OK", data={"estimate_json": estimate})
 
 
+step_estimate_v1.__step_contract__ = StepContract(
+    produces=["estimate_json"],
+    version="1.0",
+)
+
+
 def step_review_v1(state: PipelineState, step: StepConfig, assets: dict) -> StepResult:
     # Read estimate meta produced by the previous step.
     # The runner stores result.data (a plain dict) in state.data["steps"][step_id],
@@ -175,10 +181,22 @@ def step_review_v1(state: PipelineState, step: StepConfig, assets: dict) -> Step
     )
 
 
+step_review_v1.__step_contract__ = StepContract(
+    produces=["needs_review", "review_reasons"],
+    version="1.0",
+)
+
+
 def step_store_v1(state: PipelineState, step: StepConfig, assets: dict) -> StepResult:
     lead: Any = assets["lead"]
     html_key = f"roofing/{getattr(lead, 'id', 'x')}/estimate.html"
     return StepResult(status="OK", data={"estimate_html_key": html_key})
+
+
+step_store_v1.__step_contract__ = StepContract(
+    produces=["estimate_html_key"],
+    version="1.0",
+)
 
 
 # ---------------------------------------------------------------------------

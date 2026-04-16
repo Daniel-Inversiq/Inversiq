@@ -18,10 +18,17 @@ from app.core.plan_catalog import resolve_plan_code
 from app.core.settings import settings
 from app.db import get_db
 from app.dependencies.founder import require_platform_admin
+from app.dependencies.gmail import get_gmail_service
 from app.models.lead import Lead
 from app.models.tenant import Tenant
 from app.models.tenant_settings import TenantSettings
 from app.models.user import User
+from app.modules.outreach.models.outbound_suggestion import OutboundSuggestion
+from app.modules.outreach.services.suggestion_queue_actions import (
+    bulk_send_suggestions,
+    bulk_skip_suggestions,
+    normalize_suggestion_ids,
+)
 from app.services.founder_insights import get_tenant_health
 from app.i18n.service import setup_jinja_i18n
 
@@ -971,5 +978,75 @@ def founder_tenant_workflows_update(
 
     return RedirectResponse(
         url=str(request.url_for("founder_tenant_detail", tenant_id=tenant_id)) + "?workflows_saved=1",
+        status_code=303,
+    )
+
+
+@router.get("/outreach", name="founder_outreach_queue")
+def founder_outreach_queue(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pending outbound suggestions queue (platform admin)."""
+    pending = (
+        db.query(OutboundSuggestion)
+        .filter(OutboundSuggestion.status == "pending")
+        .order_by(OutboundSuggestion.created_at.asc())
+        .all()
+    )
+    return templates.TemplateResponse(
+        "founder/outreach_queue.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "suggestions": pending,
+        },
+    )
+
+
+@router.post("/outreach/bulk-send", name="founder_outreach_bulk_send")
+def founder_outreach_bulk_send(
+    request: Request,
+    db: Session = Depends(get_db),
+    gmail_service=Depends(get_gmail_service),
+    suggestion_ids: list[str] = Form(default=[]),
+    _admin: User = Depends(require_platform_admin),
+):
+    ids = normalize_suggestion_ids(suggestion_ids)
+    if not ids:
+        return RedirectResponse(
+            url=str(request.url_for("founder_outreach_queue")) + "?err=no_selection",
+            status_code=303,
+        )
+    out = bulk_send_suggestions(db, gmail_service, ids)
+    ok = sum(1 for r in out["results"] if r.get("ok"))
+    bad = len(out["results"]) - ok
+    return RedirectResponse(
+        url=str(request.url_for("founder_outreach_queue"))
+        + f"?bulk_sent={ok}&bulk_failed={bad}",
+        status_code=303,
+    )
+
+
+@router.post("/outreach/bulk-skip", name="founder_outreach_bulk_skip")
+def founder_outreach_bulk_skip(
+    request: Request,
+    db: Session = Depends(get_db),
+    suggestion_ids: list[str] = Form(default=[]),
+    _admin: User = Depends(require_platform_admin),
+):
+    ids = normalize_suggestion_ids(suggestion_ids)
+    if not ids:
+        return RedirectResponse(
+            url=str(request.url_for("founder_outreach_queue")) + "?err=no_selection",
+            status_code=303,
+        )
+    out = bulk_skip_suggestions(db, ids)
+    ok = sum(1 for r in out["results"] if r.get("ok"))
+    bad = len(out["results"]) - ok
+    return RedirectResponse(
+        url=str(request.url_for("founder_outreach_queue"))
+        + f"?bulk_skipped={ok}&bulk_skip_failed={bad}",
         status_code=303,
     )

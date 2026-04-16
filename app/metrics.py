@@ -97,3 +97,47 @@ def record_lead_metrics(tenant_id: str, status: str) -> None:
 
 def set_active_users(tenant_id: str, count: int) -> None:
     ACTIVE_USERS.labels(tenant_id=tenant_id).set(count)
+
+
+# ---------------------------
+# Engine / pipeline metrics
+# ---------------------------
+PIPELINE_RUN_COUNT = Counter(
+    "pipeline_run_total",
+    "Total pipeline run executions",
+    ["pipeline_name", "status"],
+)
+
+PIPELINE_RUN_DURATION = Histogram(
+    "pipeline_run_duration_seconds",
+    "Engine pipeline end-to-end duration",
+    ["pipeline_name"],
+    buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 300.0, 600.0],
+)
+
+PIPELINE_STEP_COUNT = Counter(
+    "pipeline_step_total",
+    "Total pipeline step executions",
+    ["pipeline_name", "step_name", "status"],
+)
+
+PIPELINE_STEP_DURATION = Histogram(
+    "pipeline_step_duration_seconds",
+    "Engine pipeline step duration",
+    ["pipeline_name", "step_name"],
+    buckets=[0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0],
+)
+
+
+def record_pipeline_run(pipeline_name: str, tenant_id: str, status: str, duration_s: float) -> None:
+    PIPELINE_RUN_COUNT.labels(pipeline_name=pipeline_name, status=status).inc()
+    PIPELINE_RUN_DURATION.labels(pipeline_name=pipeline_name).observe(duration_s)
+
+
+def record_pipeline_step(pipeline_name: str, step_name: str, tenant_id: str, status: str, duration_ms: int) -> None:
+    PIPELINE_STEP_COUNT.labels(
+        pipeline_name=pipeline_name, step_name=step_name, status=status
+    ).inc()
+    PIPELINE_STEP_DURATION.labels(
+        pipeline_name=pipeline_name, step_name=step_name
+    ).observe(duration_ms / 1000.0)

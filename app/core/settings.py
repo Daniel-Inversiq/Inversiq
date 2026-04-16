@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     # Gmail outreach (Openclaw)
     GMAIL_TOKEN_PATH: str = "gmail_token.json"
     GMAIL_SENDER_EMAIL: str = ""
+    OUTREACH_SIGNATURE_ENABLED: bool = True
+    OUTREACH_SIGNATURE_SIGNOFF: str = "Met vriendelijke groet,"
+    OUTREACH_SIGNATURE_NAME: str = ""
+    OUTREACH_SIGNATURE_COMPANY: str = "Inversiq"
+    OUTREACH_SIGNATURE_WEBSITE: str = ""
+    OUTREACH_SIGNATURE_PHONE: str = ""
+    # DNS timeout for outreach recipient validation (email-validator / dnspython).
+    OUTREACH_EMAIL_DNS_TIMEOUT_SECONDS: float = 15.0
 
     # Public estimate flow
     SEND_ACCEPT_CONFIRMATION_EMAIL: bool = True

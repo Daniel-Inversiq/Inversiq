@@ -1,0 +1,116 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Outreach queue{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <header class="flex flex-col gap-2 border-b border-slate-200/90 pb-5 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900">Outreach queue</h2>
+      <p class="mt-1 text-sm text-slate-500">Pending suggestions · select rows, then bulk send or skip</p>
+    </div>
+  </header>
+
+  {% if request.query_params.get('err') == 'no_selection' %}
+  <p class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">Select at least one suggestion.</p>
+  {% endif %}
+  {% if request.query_params.get('bulk_sent') %}
+  <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950" role="status">
+    Sent: {{ request.query_params.get('bulk_sent', '0') }},
+    failed: {{ request.query_params.get('bulk_failed', '0') }}.
+  </p>
+  {% endif %}
+  {% if request.query_params.get('bulk_skipped') %}
+  <p class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800" role="status">
+    Skipped: {{ request.query_params.get('bulk_skipped', '0') }},
+    failed: {{ request.query_params.get('bulk_skip_failed', '0') }}.
+  </p>
+  {% endif %}
+
+  {% if not suggestions %}
+  <p class="text-sm text-slate-500">No pending suggestions.</p>
+  {% else %}
+  <form id="queue-form" method="post" class="flex flex-wrap items-center gap-2">
+    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+      <input type="checkbox" id="select-all" class="h-4 w-4 rounded border-slate-300 text-slate-900" aria-label="Select all">
+      Select all
+    </label>
+    <button
+      type="submit"
+      formaction="{{ url_for('founder_outreach_bulk_send') }}"
+      formmethod="post"
+      class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+    >
+      Send selected
+    </button>
+    <button
+      type="submit"
+      formaction="{{ url_for('founder_outreach_bulk_skip') }}"
+      formmethod="post"
+      class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+    >
+      Skip selected
+    </button>
+  </form>
+
+  <div class="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+      <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <tr>
+          <th scope="col" class="w-10 px-4 py-3"></th>
+          <th scope="col" class="px-4 py-3">Company</th>
+          <th scope="col" class="px-4 py-3">To</th>
+          <th scope="col" class="px-4 py-3">Deliverability</th>
+          <th scope="col" class="px-4 py-3">Subject</th>
+          <th scope="col" class="px-4 py-3 text-right">Row actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in suggestions %}
+        <tr class="hover:bg-slate-50/80">
+          <td class="px-4 py-3 align-top">
+            <input type="checkbox" form="queue-form" name="suggestion_ids" value="{{ row.id }}" class="row-cb h-4 w-4 rounded border-slate-300 text-slate-900">
+          </td>
+          <td class="px-4 py-3 align-top font-medium text-slate-900">{{ row.company_name }}</td>
+          <td class="px-4 py-3 align-top text-slate-600">{{ row.recipient_email }}</td>
+          <td class="px-4 py-3 align-top text-xs text-slate-600">
+            {% if row.email_validation_result %}
+            <span class="inline-block rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-[11px] text-slate-800">{{ row.email_validation_result }}</span>
+            {% if row.is_deliverability_risky %}
+            <span class="ml-1 inline-block rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-950" title="{{ (row.validation_reason or '')|e }}">risky</span>
+            {% endif %}
+            {% else %}
+            <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 align-top text-slate-700">{{ row.subject }}</td>
+          <td class="px-4 py-3 align-top text-right">
+            <form method="post" action="{{ url_for('founder_outreach_bulk_send') }}" class="inline">
+              <input type="hidden" name="suggestion_ids" value="{{ row.id }}">
+              <button type="submit" class="text-xs font-medium text-slate-900 underline decoration-slate-300 hover:decoration-slate-600">Send</button>
+            </form>
+            <span class="text-slate-300">·</span>
+            <form method="post" action="{{ url_for('founder_outreach_bulk_skip') }}" class="inline">
+              <input type="hidden" name="suggestion_ids" value="{{ row.id }}">
+              <button type="submit" class="text-xs font-medium text-slate-700 underline decoration-slate-300 hover:decoration-slate-600">Skip</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+  (function () {
+    var all = document.getElementById("select-all");
+    var form = document.getElementById("queue-form");
+    if (!all || !form) return;
+    all.addEventListener("change", function () {
+      document.querySelectorAll(".row-cb").forEach(function (cb) { cb.checked = all.checked; });
+    });
+  })();
+  </script>
+  {% endif %}
+</div>
+{% endblock %}

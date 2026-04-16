@@ -41,6 +41,26 @@ class EngineAssets:
     template_path: str
 
 
+# Module-level cache keyed by the FileSystemLoader root path (str).
+# A Jinja2 Environment is stateless with respect to render context — it is safe
+# to share across pipeline runs within the same worker process.  Caching here
+# avoids directory scanning and object allocation on every lead invocation.
+_jinja_env_cache: Dict[str, Environment] = {}
+
+
+def _get_jinja_env(loader_root: str) -> Environment:
+    env = _jinja_env_cache.get(loader_root)
+    if env is None:
+        env = Environment(
+            loader=FileSystemLoader(loader_root),
+            autoescape=select_autoescape(["html", "xml"]),
+        )
+        env.globals["fmt_usd"] = fmt_usd
+        env.globals["fmt_qty"] = fmt_qty
+        _jinja_env_cache[loader_root] = env
+    return env
+
+
 def load_assets(
     config: EngineConfig, rules: Dict[str, Any] | None = None
 ) -> EngineAssets:
@@ -49,15 +69,8 @@ def load_assets(
     if not config.template_path:
         raise ValueError("EngineConfig.template_path is required for rendering (1.5.5)")
 
-    env = Environment(
-        loader=FileSystemLoader(str(root)),
-        autoescape=select_autoescape(["html", "xml"]),
-    )
-    env.globals["fmt_usd"] = fmt_usd
-    env.globals["fmt_qty"] = fmt_qty
-
     return EngineAssets(
         rules=rules or {},
-        jinja_env=env,
+        jinja_env=_get_jinja_env(str(root)),
         template_path=config.template_path,
     )

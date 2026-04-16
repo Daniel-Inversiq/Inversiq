@@ -5,9 +5,11 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from app.models.lead import Lead
 from app.modules.outreach.models.outbound_message import OutboundMessage
 from app.modules.outreach.repositories.message_reply_repo import MessageReplyRepository
 from app.modules.outreach.services.reply_classifier import ReplyClassifier
+from app.services.activity_service import log_activity_event
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +119,21 @@ class ReplySyncService:
                 received_at=received_at,
                 classification_label=label,
             )
+            if outbound.lead_id:
+                lead = self.db.query(Lead).filter(Lead.id == str(outbound.lead_id)).first()
+                if lead:
+                    log_activity_event(
+                        self.db,
+                        tenant_id=str(lead.tenant_id),
+                        event_type="customer_replied",
+                        title=f"Klant reactie ontvangen: {lead.name or 'Onbekende klant'}",
+                        link_url=f"/app/leads/{lead.id}",
+                        metadata={
+                            "lead_id": str(lead.id),
+                            "reply_label": label,
+                        },
+                    )
+                    self.db.commit()
             saved += 1
             logger.info(
                 "Stored reply gmail_message_id=%s thread=%s from=%s label=%s",

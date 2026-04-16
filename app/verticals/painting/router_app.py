@@ -1449,6 +1449,13 @@ async def app_settings_save(
         if account_email is not None and account_email.strip():
             current_user.email = account_email.strip()
 
+        parsed_price_per_m2 = _parse_money(price_per_m2)
+        pricing = dict(getattr(tenant, "pricing_json", {}) or {})
+        pricing["price_per_m2"] = parsed_price_per_m2
+        # keep existing pricing key used elsewhere in the app
+        pricing["walls_rate_eur_per_sqm"] = parsed_price_per_m2
+        tenant.pricing_json = pricing
+
         if logo_file is not None and (logo_file.filename or "").strip():
             content_type = (logo_file.content_type or "").strip().lower()
             if content_type in {"image/png", "image/jpeg"}:
@@ -1576,7 +1583,7 @@ async def app_settings_save(
     db.commit()
     db.refresh(current_user)
 
-    saved_section = section if section in {"account", "pricing"} else "1"
+    saved_section = section if section in {"account", "pricing", "integrations"} else "1"
     return RedirectResponse(url=f"/app/settings?saved={saved_section}", status_code=303)
 
 
