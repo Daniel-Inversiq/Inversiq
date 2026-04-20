@@ -2,7 +2,22 @@
   "common": {
     "subscription": "Subscription",
     "manage_subscription": "Manage subscription",
-    "upgrade_to_pro": "Upgrade to Pro"
+    "upgrade_to_pro": "Upgrade to Pro",
+    "auth": {
+      "not_logged_in": "Not logged in"
+    },
+    "actions": {
+      "retry": "Retry",
+      "open": "Open",
+      "open_lead": "Open lead",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "states": {
+      "unknown": "Unknown"
+    },
+    "yes": "Yes",
+    "no": "No"
   },
   "billing": {
     "title": "Subscription",
@@ -43,7 +58,11 @@
       "upgrade_to_pro": "Upgrade to Pro",
       "choose_starter": "Choose Starter",
       "choose_pro": "Choose Pro",
-      "choose_business": "Choose Business"
+      "choose_business": "Choose Business",
+      "choose_core": "Start with Core",
+      "choose_growth": "Start with Growth",
+      "choose_scale": "Contact us",
+      "choose_plan": "Choose a plan"
     },
     "js": {
       "upgrade_failed": "Choosing a subscription failed. Please try again later.",
@@ -55,6 +74,36 @@
       "portal_unexpected": "Something went wrong while opening subscription management."
     },
     "plan": {
+      "core": {
+        "name": "Core",
+        "subtitle": "For smaller teams that want to get started fast",
+        "limit_label": "30 requests / month",
+        "features": {
+          "f1": "30 requests per month",
+          "f2": "1 workflow",
+          "f3": "Standard rules and output"
+        }
+      },
+      "growth": {
+        "name": "Growth",
+        "subtitle": "For growing teams with more volume and automation",
+        "limit_label": "150 requests / month",
+        "features": {
+          "f1": "150 requests per month",
+          "f2": "1–2 workflows",
+          "f3": "Automation and advanced rules"
+        }
+      },
+      "scale": {
+        "name": "Scale",
+        "subtitle": "For larger teams with custom workflows and integrations",
+        "limit_label": "Unlimited volume",
+        "features": {
+          "f1": "Unlimited requests",
+          "f2": "Custom workflows",
+          "f3": "Integrations and API"
+        }
+      },
       "starter": {
         "name": "Starter",
         "subtitle": "For independent painters who want to start professionally, fast.",
@@ -339,5 +388,561 @@
       "no_results_title": "No quotes found",
       "no_results_subtitle": "Adjust your filters or create a new quote right away."
     }
+  },
+  "dashboard": {
+    "header": {
+      "kicker": "Dashboard",
+      "title": "Performance center",
+      "subtitle": "Overview of performance, revenue, and recent activity in an operational cockpit."
+    },
+    "kpi": {
+      "section_title": "KPI overview",
+      "snapshot_label": "Latest backend snapshot",
+      "conversion": {
+        "label": "Conversion",
+        "description": "Signed quote ratio"
+      },
+      "open_quotes": {
+        "label": "Open quotes",
+        "description": "Action required in pipeline"
+      },
+      "accepted": {
+        "label": "Accepted",
+        "description": "Status: signed"
+      },
+      "total_status_rows": {
+        "label": "Total status rows",
+        "pending": "Pending: {pending}"
+      }
+    },
+    "analytics": {
+      "kicker": "Analytics",
+      "title": "Revenue and pipeline split",
+      "subtitle": "Use these signals to adjust capacity and follow-up.",
+      "revenue_trend": "Revenue trend",
+      "status_distribution": "Status distribution"
+    },
+    "activity": {
+      "kicker": "Recent activity",
+      "title": "Events and follow-up",
+      "subtitle": "Realtime changes in your tenant, sorted on timeline.",
+      "empty": "No activity available yet.",
+      "open_item": "Open item",
+      "actions": {
+        "open_lead": "Open lead",
+        "open_offer": "Open offer",
+        "view_send_quote": "View/send quote"
+      },
+      "timeline_title": "Full timeline",
+      "groups": {
+        "needs_attention": {
+          "title": "Needs attention",
+          "description": "Items that require immediate operator action."
+        },
+        "new_requests": {
+          "title": "New requests",
+          "description": "Fresh intake requests entering the workflow."
+        },
+        "recently_completed": {
+          "title": "Recently completed",
+          "description": "Quotes that just became ready."
+        }
+      },
+      "event_type": {
+        "created": "Created",
+        "updated": "Updated",
+        "status_changed": "Status changed",
+        "follow_up": "Follow-up",
+        "note_added": "Note added",
+        "quote_sent": "Quote sent",
+        "quote_viewed": "Quote viewed",
+        "quote_accepted": "Quote accepted",
+        "quote_rejected": "Quote rejected",
+        "upload_received": "Upload received",
+        "new_intake_request": "New intake request",
+        "upload_completed": "Upload completed",
+        "processing_started": "Processing started",
+        "quote_ready": "Quote ready",
+        "review_required": "Review required",
+        "processing_failed": "Processing failed"
+      }
+    },
+    "meta": {
+      "latest_revenue_point": "Latest revenue point",
+      "recent_events": "Recent events",
+      "recent_events_count": "{count} activity items loaded from backend."
+    },
+    "empty": {
+      "title": "No data available",
+      "description": "The API did not return dashboard data. This can happen in an empty tenant environment."
+    },
+    "errors": {
+      "load_failed_title": "Dashboard failed to load",
+      "inactive_session": "Your session is not active. Log in through the FastAPI auth flow so the access_token cookie is sent.",
+      "unauthenticated": "Not authenticated (401). Log in again so the session cookie is sent.",
+      "forbidden": "No access to tenant data (403). Verify your account is linked to the correct tenant.",
+      "network": "Backend unreachable. Check API base URL, CORS, and whether FastAPI is running.",
+      "unknown": "Unknown error while loading dashboard."
+    },
+    "charts": {
+      "status_distribution_aria": "Status distribution",
+      "donut_center_label": "Total"
+    },
+    "operational": {
+      "header_kicker": "Overview",
+      "title": "Operational overview",
+      "subtitle": "Real-time insight into requests, progress, and attention points.",
+      "errors": {
+        "load_failed_title": "Overview could not be loaded",
+        "load_failed_description": "One or more data sources are not responding. Refresh to try again."
+      },
+      "kpi": {
+        "new_requests": { "label": "New requests", "hint": "Intake dossiers" },
+        "open_quotes": { "label": "Open quotes", "hint": "Not yet accepted" },
+        "active_jobs": { "label": "Active jobs", "hint": "Scheduled or in progress" },
+        "review_queue": { "label": "Review queue", "hint": "Manual action" }
+      },
+      "intake": {
+        "label": "Intake link"
+      },
+      "activity": {
+        "kicker": "Activity",
+        "title": "Intake (last 7 days)",
+        "subtitle": "Pipeline runs per day ({count} in this view).",
+        "scheduled_label": "Scheduled",
+        "body": "Weekly intake volume is summarized in Analytics below. This block stays focused on what needs action today."
+      },
+      "distribution": {
+        "kicker": "Distribution",
+        "title": "Status",
+        "subtitle": "Quotes and jobs",
+        "no_data": "No status data yet."
+      },
+      "analytics_section": {
+        "kicker": "Analytics",
+        "title": "Trends and status mix",
+        "subtitle": "Volume and distribution — separate from day-to-day work above.",
+        "line_title": "Intake activity",
+        "line_description": "Pipeline runs per day (last 7 days).",
+        "donut_title": "Status distribution",
+        "donut_description": "Quotes and jobs by status."
+      },
+      "attention": {
+        "title": "Needs attention",
+        "description": "Review, errors, or uncertain runs.",
+        "footer_link": "Go to review",
+        "empty_title": "Nothing waiting",
+        "empty_description": "No open review or failure statuses."
+      },
+      "new_requests_panel": {
+        "title": "New requests",
+        "description": "Latest intake — first contact with the customer.",
+        "footer_link": "Open quotes",
+        "empty_title": "No requests yet",
+        "empty_description": "Share your intake link to see requests here."
+      },
+      "recent_done": {
+        "title": "Recently completed",
+        "description": "Completed jobs, most recent first.",
+        "footer_pipeline": "Open quote value in pipeline:",
+        "empty_title": "No completed jobs yet",
+        "empty_description": "Completed work orders appear here with date."
+      },
+      "job_done_secondary": "Completed {date}"
+    }
+  },
+  "review_queue": {
+    "header": {
+      "kicker": "Review",
+      "title": "Manual review queue",
+      "subtitle": "Dossiers with uncertain or failed processing that need operator intervention."
+    },
+    "kpi": {
+      "review_required": "Review required",
+      "processing_failed": "Processing failed",
+      "other_flags": "Other flags"
+    },
+    "empty": {
+      "title": "No review items",
+      "description": "There are currently no dossiers in the review queue.",
+      "hint": "When the AI cannot process something with confidence, the dossier appears here with status and direct action."
+    }
+  },
+  "agenda_page": {
+    "header": {
+      "kicker": "Agenda",
+      "title": "Scheduled jobs and follow-up",
+      "subtitle": "Planning overview based on current scheduled job data."
+    },
+    "kpi": {
+      "upcoming": "Upcoming",
+      "past": "Past items",
+      "total": "Total scheduled"
+    },
+    "empty": {
+      "title": "No scheduled items yet",
+      "description": "There are currently no jobs with a schedule.",
+      "hint": "This page uses scheduled job data as a light planning view. When more calendar data is available, it can be extended to day/week views."
+    }
+  },
+  "shell": {
+    "search_placeholder": "Search",
+    "apps_aria": "Apps and shortcuts",
+    "notifications_aria": "Notifications",
+    "notifications_title": "Notifications",
+    "notifications_empty": "No notifications",
+    "notifications_sample": "Sample notification — connect your feed here.",
+    "settings_aria": "Settings",
+    "guide": "Guide"
+  },
+  "offers": {
+    "errors": {
+      "not_logged_in_description": "Log in so tenant-scoped offers can be loaded.",
+      "load_failed_title": "Failed to load offers",
+      "unauthenticated": "Not authenticated (401). Log in again.",
+      "forbidden": "No access to offers for this tenant (403).",
+      "network": "Backend unreachable. Check whether FastAPI is running.",
+      "unknown": "Unknown error while loading offers."
+    },
+    "empty": {
+      "title": "No offers found",
+      "description": "No pipeline/offer runs are visible yet for tenant {tenant_id}."
+    },
+    "partial": {
+      "title": "Offers partially loaded",
+      "description": "{count} offer amounts could not be loaded. The list remains visible; values show \"Not calculated yet\" until detail data is available."
+    },
+    "list": {
+      "header": {
+        "kicker": "Offers",
+        "title": "Tenant offer overview",
+        "subtitle": "Realtime list of recent offers based on pipeline runs and available offer amounts.",
+        "detail_line": "Intake requests and generated quotes until the customer accepts."
+      },
+      "table": {
+        "customer_project": "Customer / Project",
+        "status": "Status",
+        "value": "Value",
+        "created": "Created",
+        "updated": "Updated",
+        "action": "Action"
+      },
+      "amount": {
+        "not_calculated": "Not calculated yet"
+      },
+      "unknown_customer": "Unknown customer",
+      "project_details_unavailable": "Project details not available yet",
+      "lead_run_meta": "Lead: {lead_id} | Run #{run_id}",
+      "actions": {
+        "open_offer": "Open offer detail",
+        "open_public_quote": "Open public quote"
+      },
+      "empty_help": {
+        "what_you_see_title": "What you see here",
+        "what_you_see_body": "Intake requests and generated quotes that are not yet accepted.",
+        "data_check_title": "Data check",
+        "data_check_no_runs": "No run data available for this tenant yet.",
+        "data_check_outside_statuses": "{count} runs found, but currently outside the Quotes status filters."
+      },
+      "stats": {
+        "open_quotes": "Open quotes",
+        "in_preparation": "In preparation",
+        "sent_or_followed": "Sent / followed up"
+      },
+      "empty_actions": {
+        "open_dashboard": "Open Overview",
+        "open_review": "Open Review"
+      }
+    },
+    "detail": {
+      "not_available": "Not available",
+      "unknown_customer": "Unknown customer",
+      "no_email": "No email",
+      "header": {
+        "kicker": "Offer detail",
+        "meta": "Lead {lead_id} - tenant {tenant_id}"
+      },
+      "actions": {
+        "back_to_leads": "Back to leads",
+        "back_to_offers": "Back to offers"
+      },
+      "next_action": {
+        "title": "Next action",
+        "offer_ready": "The offer is ready. Open the customer-facing offer page to verify and send it.",
+        "review_lead": "The offer is not ready yet. Open the lead page and complete intake review first.",
+        "open_offer": "Open public offer",
+        "open_lead": "Open lead page"
+      },
+      "ready_panel": {
+        "title": "Quote-ready handoff",
+        "description": "When this quote is ready, first open the customer quote page and use it as your send/verify touchpoint.",
+        "primary_action": "View/send public quote",
+        "secondary_action": "Open offer detail"
+      },
+      "handoff": {
+        "title": "After quote ready",
+        "subtitle": "Use this handoff path to close the loop from offer to execution.",
+        "steps": {
+          "send_quote": "1) Send or share the public quote with the customer.",
+          "track_acceptance": "2) Track customer response and move status to accepted/signed when confirmed.",
+          "convert_to_job": "3) Convert accepted work into an operational job."
+        },
+        "actions": {
+          "open_public_quote": "Open public quote",
+          "open_leads": "Open leads",
+          "open_jobs": "Open jobs"
+        }
+      },
+      "errors": {
+        "session_expired": "Your session expired. Log in again to view offer details.",
+        "load_failed_title": "Failed to load offer detail",
+        "load_failed_description": "Check whether the backend is running and your tenant has access to this lead.",
+        "lead_not_found_title": "Lead not found",
+        "lead_not_found_description": "This lead does not belong to your tenant or no longer exists."
+      },
+      "cards": {
+        "status": {
+          "label": "Status",
+          "last_run": "Latest run: {datetime}"
+        },
+        "quote_value": {
+          "label": "Offer value",
+          "source": "Source: /quotes/{lead_id}/json"
+        },
+        "customer": {
+          "label": "Customer",
+          "open_public": "Open public offer view"
+        }
+      },
+      "project_context": {
+        "title": "Project context",
+        "description": "Description",
+        "address": "Address"
+      }
+    }
+  },
+  "customers": {
+    "header": {
+      "kicker": "Customers / leads",
+      "title": "Tenant customer overview",
+      "subtitle": "Use leads to validate intake details first, then continue to offer detail."
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch customer and lead data.",
+      "load_failed_title": "Failed to load customers",
+      "load_failed_description": "Backend response for /app/leads could not be loaded."
+    },
+    "empty": {
+      "title": "No leads found",
+      "description": "There are no customers/leads in this tenant yet."
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "status": "Status",
+      "action": "Action"
+    },
+    "actions": {
+      "open_lead": "Open lead",
+      "open_offer": "Open offer"
+    }
+  },
+  "workflows": {
+    "header": {
+      "kicker": "Workflows",
+      "title": "Pipeline runs"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch workflow runs.",
+      "load_failed_title": "Failed to load workflow overview",
+      "load_failed_description": "The /api/pipeline-runs endpoint could not be loaded."
+    },
+    "empty": {
+      "title": "No runs found",
+      "description": "No workflow runs are present yet for tenant {tenant_id}."
+    },
+    "table": {
+      "run": "Run",
+      "lead": "Lead",
+      "status": "Status",
+      "created": "Created",
+      "action": "Action"
+    },
+    "actions": {
+      "open_run": "Open run",
+      "open_lead": "Open lead"
+    }
+  },
+  "uploads": {
+    "header": {
+      "kicker": "Uploads",
+      "title": "Tenant upload overview"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch uploads.",
+      "load_failed_title": "Failed to load uploads",
+      "load_failed_description": "The /app/uploads endpoint could not be loaded."
+    },
+    "empty": {
+      "title": "No uploads found",
+      "description": "There are no verified uploads in this tenant yet."
+    },
+    "table": {
+      "file": "File",
+      "status": "Status",
+      "type": "Type",
+      "size": "Size",
+      "created": "Created",
+      "lead": "Lead",
+      "action": "Action"
+    }
+  },
+  "jobs": {
+    "header": {
+      "kicker": "Tasks / jobs",
+      "title": "Tenant task overview",
+      "subtitle": "Accepted work in execution only, including schedule and progress."
+    },
+    "kpi": {
+      "scheduled": "Scheduled",
+      "in_progress": "In progress",
+      "done": "Done"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch tasks/jobs.",
+      "load_failed_title": "Failed to load tasks",
+      "load_failed_description": "The /app/jobs endpoint could not be loaded."
+    },
+    "empty": {
+      "title": "No tasks found",
+      "description": "There are no jobs in this tenant yet.",
+      "hint": "Jobs only show accepted or signed work. New requests are under Quotes.",
+      "link_quotes": "Go to Quotes",
+      "link_agenda": "Open Agenda"
+    },
+    "table": {
+      "job": "Job",
+      "status": "Status",
+      "lead": "Lead",
+      "scheduled": "Scheduled",
+      "started": "Started",
+      "finished": "Finished",
+      "action": "Action"
+    }
+  },
+  "settings": {
+    "header": {
+      "title": "Tenant settings"
+    },
+    "loading": "Loading settings...",
+    "errors": {
+      "not_logged_in_description": "Log in to view and update settings.",
+      "load_failed_title": "Failed to load settings",
+      "load_failed_description": "The /app/settings/company endpoint could not be loaded."
+    },
+    "validation": {
+      "company_name_required": "Enter a company name.",
+      "support_email_invalid": "Enter a valid email address."
+    },
+    "feedback": {
+      "saved": "Settings saved.",
+      "save_failed": "Saving failed. Check your session and try again.",
+      "logo_select_first": "Select a logo file first.",
+      "logo_saved": "Logo saved.",
+      "logo_upload_failed": "Logo upload failed. Use PNG/JPEG and try again."
+    },
+    "form": {
+      "company_name": "Company name",
+      "support_email": "Support email",
+      "support_email_hint": "Support email currently follows the account email address.",
+      "company_logo": "Company logo",
+      "open_current_logo": "Open current logo",
+      "no_logo": "No logo configured yet.",
+      "upload_logo": "Upload logo",
+      "uploading_logo": "Uploading logo...",
+      "save": "Save settings",
+      "saving": "Saving..."
+    }
+  },
+  "nav": {
+    "workspace": "Workspace",
+    "tenant_workspace": "Tenant workspace",
+    "groups": {
+      "core": "Core",
+      "system": "System"
+    },
+    "items": {
+      "dashboard": "Overview",
+      "quotes": "Quotes",
+      "jobs": "Jobs",
+      "review": "Review",
+      "agenda": "Agenda",
+      "settings": "Settings"
+    },
+    "footer": {
+      "subscription": "Subscription",
+      "support": "Support",
+      "logout": "Logout"
+    }
+  },
+  "topbar": {
+    "session_checking": "Checking session...",
+    "logged_in_as": "Logged in as {email} ({tenant_id})"
+  },
+  "workflow_detail": {
+    "header": {
+      "kicker": "Workflow run",
+      "run": "Run #{run_id}",
+      "meta": "Tenant {tenant_id} - Lead {lead_id}"
+    },
+    "errors": {
+      "invalid_run_id_title": "Invalid run id",
+      "invalid_run_id_description": "The workflow run id in the URL is invalid.",
+      "not_logged_in_description": "Log in to fetch workflow details.",
+      "load_failed_title": "Failed to load run detail",
+      "load_failed_description": "The /api/pipeline-runs/{run_id}/debug endpoint could not be loaded."
+    },
+    "cards": {
+      "status": "Status",
+      "recoverability": "Recoverability",
+      "events": "Events",
+      "review": "Review"
+    },
+    "steps": {
+      "title": "Step summary",
+      "total": "Total steps",
+      "completed": "Completed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "failure_step": "Failure step",
+      "error_category": "Error category"
+    },
+    "actions": {
+      "open_linked_offer": "Open linked lead quote"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "uploaded": "Uploaded",
+    "scheduled": "Scheduled",
+    "running": "Running",
+    "processing": "Processing",
+    "succeeded": "Succeeded",
+    "accepted": "Accepted",
+    "signed": "Signed",
+    "done": "Done",
+    "rejected": "Rejected",
+    "error": "Error",
+    "new": "New",
+    "viewed": "Viewed",
+    "sent": "Sent",
+    "draft": "Draft",
+    "ready": "Ready",
+    "in_progress": "In progress",
+    "unknown": "Unknown",
+    "active": "Active",
+    "skipped": "Skipped"
   }
 }

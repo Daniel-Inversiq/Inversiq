@@ -54,10 +54,11 @@ from app.core.plan_catalog import (
 )
 from app.dependencies import tenant_service
 from app.services.usage_service import get_or_create_usage, increment_usage
-from app.services.billing_summary_service import (
-    get_billing_offer_usage_view,
-    get_billing_usage_summary,
+from app.services.billing_app_state import (
+    billing_page_state_to_template_context,
+    compute_billing_page_state,
 )
+from app.services.billing_summary_service import get_billing_usage_summary
 from app.i18n.service import resolve_language, setup_jinja_i18n, translate
 from app.verticals.painting.google_calendar_service import (
     build_appointment_event_payload,
@@ -74,6 +75,7 @@ from app.verticals.painting.render_estimate import render_estimate_pdf_html
 from app.verticals.painting.review_labels import review_label_nl
 from app.utils.slugs import slugify
 from app.billing.features import Feature, tenant_has_feature
+from app.billing.return_urls import billing_return_url
 from app.billing.ui import tenant_entitlements, tenant_feature_flags, tenant_feature_ui
 from app.billing.entitlements import Action, check_entitlement
 from app.billing.dependencies import (
@@ -1053,7 +1055,22 @@ def dev_set_timezone(
 # -------------------------
 def derive_status(lead: Lead) -> str:
     s = (getattr(lead, "status", "") or "").upper()
-    if s in {"SENT", "VIEWED", "ACCEPTED", "REJECTED"}:
+    # Prefer persisted lifecycle status. (Lead has no pricing_ready / needs_review_hard columns;
+    # without this, SUCCEEDED/NEEDS_REVIEW were misclassified as RUNNING.)
+    if s in {
+        "NEW",
+        "DRAFT",
+        "RUNNING",
+        "SUCCEEDED",
+        "NEEDS_REVIEW",
+        "QUOTE_READY",
+        "SENT",
+        "VIEWED",
+        "ACCEPTED",
+        "REJECTED",
+        "CANCELLED",
+        "FAILED",
+    }:
         return s
 
     if getattr(lead, "needs_review_hard", False):
@@ -1061,6 +1078,18 @@ def derive_status(lead: Lead) -> str:
     if getattr(lead, "pricing_ready", False):
         return "SUCCEEDED"
     return "RUNNING"
+
+
+def workflow_vertical_for_ui(stored_vertical: str | None) -> str:
+    """Map registry/DB vertical ids to the workflow keys used in leads_list filters (painting/roofing/solar)."""
+    v = (stored_vertical or "").strip().lower()
+    if v in {"paintly", "painters_us"}:
+        return "painting"
+    if v == "roofing":
+        return "roofing"
+    if v == "solar":
+        return "solar"
+    return v or "painting"
 
 
 def public_url_for(request: Request, lead: Lead) -> str | None:
@@ -1074,6 +1103,11 @@ def compute_next_action(lead: Lead, job: Job | None) -> dict:
     lead_status = derive_status(lead)
     has_estimate = bool(getattr(lead, "estimate_html_key", None))
     has_public = bool(getattr(lead, "public_token", None))
+
+    # NEEDS_REVIEW without an estimate artifact is a manual review task,
+    # not a quote-detail task.
+    if lead_status == "NEEDS_REVIEW" and not has_estimate:
+        return {"label": "Controle uitvoeren", "href": f"/app/reviews/{lead.id}"}
 
     if not has_estimate:
         return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
@@ -1604,140 +1638,21 @@ def app_billing(
         .first()
     )
 
-    current_plan_code = (
-        getattr(tenant, "plan_code", None) if tenant is not None else None
-    )
-    current_plan_code = current_plan_code or DEFAULT_PLAN_CODE
-
-    subscription_status = (
-        getattr(tenant, "subscription_status", None) if tenant is not None else None
-    )
-    subscription_status = subscription_status or "inactive"
-
-    trial_ends_at = getattr(tenant, "trial_ends_at", None) if tenant is not None else None
-
-    trial_days_left: int | None
-    if not trial_ends_at:
-        trial_days_left = None
-    else:
-        from datetime import datetime, timezone
-
-        if getattr(trial_ends_at, "tzinfo", None) is None:
-            trial_ends_at = trial_ends_at.replace(tzinfo=timezone.utc)
-
-        now = datetime.now(timezone.utc)
-        delta = trial_ends_at - now
-        trial_days_left = max(int(delta.days), 0)
-
-    is_paid_or_trialing = subscription_status in ("trialing", "active")
-
-    current_plan_item = get_plan_item(current_plan_code) or PLAN_CATALOG[DEFAULT_PLAN_CODE]
-    _plan_i18n_keys = {
-        "core": "core",
-        "growth": "growth",
-        "pro": "pro",
-        "scale": "scale",
-    }
-    _plan_cta_keys = {
-        "core": "billing.cta.choose_core",
-        "growth": "billing.cta.choose_growth",
-        "pro": "billing.cta.choose_pro",
-        "scale": "billing.cta.choose_scale",
-    }
     request_lang = resolve_language(request)
-    current_plan_price_label = (
-        f"{current_plan_item.price_display} {translate('billing.price_period_monthly', lang=request_lang)}".strip()
+    state = compute_billing_page_state(
+        db=db,
+        tenant=tenant,
+        request_lang=request_lang,
+        billing_status_error=billing_status_error,
+        portal_error_no_customer=portal_error_no_customer,
     )
-    current_plan_i18n_key = _plan_i18n_keys.get(current_plan_item.code, current_plan_item.code)
-    current_plan_name = translate(
-        f"billing.plan.{current_plan_i18n_key}.name", lang=request_lang
-    )
-    billing_offer_usage = (
-        get_billing_offer_usage_view(db, tenant, lang=request_lang)
-        if tenant is not None
-        else None
-    )
-
-    trial_ends_at_display: str | None = None
-    if trial_ends_at is not None:
-        te = trial_ends_at
-        if getattr(te, "tzinfo", None) is None:
-            te = te.replace(tzinfo=timezone.utc)
-        trial_ends_at_display = te.astimezone(ZoneInfo("Europe/Amsterdam")).strftime(
-            "%d-%m-%Y"
-        )
-
-    subscription_status_label = {
-        "trialing": translate("billing.status.trialing", lang=request_lang),
-        "active": translate("billing.status.active", lang=request_lang),
-        "inactive": translate("billing.status.inactive", lang=request_lang),
-        "past_due": translate("billing.status.past_due", lang=request_lang),
-        "canceled": translate("billing.status.canceled", lang=request_lang),
-        "unpaid": translate("billing.status.unpaid", lang=request_lang),
-    }.get(
-        subscription_status,
-        subscription_status.replace("_", " ").title(),
-    )
-
-    plans = [
-        {
-            "code": item.code,
-            "name": translate(
-                f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.name",
-                lang=request_lang,
-            ),
-            "price_display": item.price_display,
-            "price_period": translate("billing.price_period_monthly", lang=request_lang),
-            "quote_limit_label": translate(
-                f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.limit_label",
-                lang=request_lang,
-            ),
-            "features": [
-                translate(
-                    f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.features.f1",
-                    lang=request_lang,
-                ),
-                translate(
-                    f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.features.f2",
-                    lang=request_lang,
-                ),
-                translate(
-                    f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.features.f3",
-                    lang=request_lang,
-                ),
-            ],
-            "tagline": translate(
-                f"billing.plan.{_plan_i18n_keys.get(item.code, item.code)}.subtitle",
-                lang=request_lang,
-            ),
-            "is_recommended": item.code == "growth",
-            "cta_label": translate(
-                _plan_cta_keys.get(item.code, "billing.cta.choose_plan"),
-                lang=request_lang,
-            ),
-        }
-        for item in (PLAN_CATALOG[c] for c in CANONICAL_PLAN_CODES)
-    ]
-
+    billing_ctx = billing_page_state_to_template_context(state)
     context = _dashboard_context(
         request,
         current_user,
         db,
         {
-            "title": translate("billing.title", lang=request_lang),
-            "plans": plans,
-            "current_plan_code": current_plan_code,
-            "current_plan_name": current_plan_name,
-            "current_plan_price_label": current_plan_price_label,
-            "subscription_status": subscription_status,
-            "subscription_status_label": subscription_status_label,
-            "trial_ends_at": trial_ends_at,
-            "trial_ends_at_display": trial_ends_at_display,
-            "trial_days_left": trial_days_left,
-            "is_paid_or_trialing": is_paid_or_trialing,
-            "billing_status_error": billing_status_error,
-            "portal_error_no_customer": portal_error_no_customer,
-            "billing_offer_usage": billing_offer_usage,
+            **billing_ctx,
             "feature_flags": tenant_feature_flags(tenant),
             "features": tenant_feature_ui(tenant),
         },
@@ -1765,10 +1680,9 @@ def app_billing_portal(
 
     try:
         ensure_stripe_api_key()
-        base = (os.getenv("APP_BASE_URL") or settings.APP_PUBLIC_BASE_URL or str(request.base_url)).rstrip("/")
         session = stripe.billing_portal.Session.create(
             customer=customer_id,
-            return_url=f"{base}/app/billing",
+            return_url=billing_return_url(request),
         )
     except stripe.error.StripeError as exc:
         raise HTTPException(
@@ -1838,11 +1752,6 @@ def app_billing_upgrade(
 
     try:
         ensure_stripe_api_key()
-        base = (
-            os.getenv("APP_BASE_URL")
-            or settings.APP_PUBLIC_BASE_URL
-            or str(request.base_url)
-        ).rstrip("/")
 
         # Existing subscribers must be updated in place. Creating a new subscription
         # here can unintentionally grant a fresh trial period.
@@ -1876,7 +1785,7 @@ def app_billing_upgrade(
             db.add(tenant)
             db.commit()
 
-            return {"redirect_url": f"{base}/app/billing?checkout=success"}
+            return {"redirect_url": billing_return_url(request, "checkout=success")}
 
         has_used_trial = tenant.trial_ends_at is not None
         customer_has_subscription = False
@@ -1902,8 +1811,8 @@ def app_billing_upgrade(
         checkout_payload: dict[str, Any] = {
             "mode": "subscription",
             "line_items": [{"price": price_id, "quantity": 1}],
-            "success_url": f"{base}/app/billing?checkout=success",
-            "cancel_url": f"{base}/app/billing?checkout=cancel",
+            "success_url": billing_return_url(request, "checkout=success"),
+            "cancel_url": billing_return_url(request, "checkout=cancel"),
             "client_reference_id": str(tenant.id),
             "metadata": {
                 "tenant_id": str(tenant.id),
@@ -1949,17 +1858,12 @@ def app_billing_topup(
 
     try:
         ensure_stripe_api_key()
-        base = (
-            os.getenv("APP_BASE_URL")
-            or settings.APP_PUBLIC_BASE_URL
-            or str(request.base_url)
-        ).rstrip("/")
 
         checkout_payload: dict[str, Any] = {
             "mode": "payment",
             "line_items": [{"price": price_id, "quantity": 1}],
-            "success_url": f"{base}/app/billing?topup=success",
-            "cancel_url": f"{base}/app/billing?topup=cancel",
+            "success_url": billing_return_url(request, "topup=success"),
+            "cancel_url": billing_return_url(request, "topup=cancel"),
             "client_reference_id": str(tenant.id),
             "metadata": {
                 "tenant_id": str(tenant.id),
@@ -2021,7 +1925,7 @@ def app_leads(
                 "public_url": public_url_for(request, lead),
                 "next_action": compute_next_action(lead, job),
                 "total": getattr(lead, "total", None),
-                "vertical": getattr(lead, "vertical", None) or "painting",
+                "vertical": workflow_vertical_for_ui(getattr(lead, "vertical", None)),
             }
         )
 
@@ -3645,6 +3549,277 @@ def app_reviews_list(
     return templates.TemplateResponse("app/reviews_list.html", context)
 
 
+def _json_dict_or_empty(raw: Any) -> dict[str, Any]:
+    if isinstance(raw, dict):
+        return dict(raw)
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            return {}
+    return {}
+
+
+def _first_non_empty(*values: Any) -> str | None:
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, str):
+            normalized = value.strip()
+            if normalized:
+                return normalized
+            continue
+        if isinstance(value, (int, float)):
+            return str(value)
+    return None
+
+
+def _review_photo_urls_for_lead(db: Session, lead: Lead) -> list[str]:
+    uploads = (
+        db.query(UploadRecord)
+        .filter(
+            UploadRecord.tenant_id == lead.tenant_id,
+            UploadRecord.lead_id == lead.id,
+            UploadRecord.status.in_([UploadStatus.uploaded, "uploaded"]),
+        )
+        .order_by(UploadRecord.id.desc())
+        .all()
+    )
+    storage = get_storage()
+    photo_urls: list[str] = []
+    seen: set[str] = set()
+    for upload in uploads:
+        object_key = (getattr(upload, "object_key", "") or "").strip()
+        if not object_key:
+            continue
+        tenant_prefix = f"{lead.tenant_id}/"
+        key = object_key
+        while key.startswith(tenant_prefix):
+            key = key[len(tenant_prefix) :]
+        key = key.lstrip("/")
+        try:
+            if hasattr(storage, "presigned_get_url"):
+                url = storage.presigned_get_url(
+                    tenant_id=str(lead.tenant_id),
+                    key=key,
+                    expires_seconds=3600,
+                )
+            else:
+                url = storage.public_url(
+                    tenant_id=str(lead.tenant_id),
+                    key=key,
+                )
+        except Exception:
+            continue
+        if isinstance(url, str) and url and url not in seen:
+            seen.add(url)
+            photo_urls.append(url)
+    return photo_urls
+
+
+def _review_detail_contract(db: Session, lead: Lead) -> dict[str, Any]:
+    intake = _json_dict_or_empty(getattr(lead, "intake_payload", None))
+    estimate = _json_dict_or_empty(getattr(lead, "estimate_json", None))
+    overrides = get_estimate_overrides(lead)
+    editor = _estimate_editor_initial_values(lead, overrides)
+
+    estimate_customer = (
+        dict(estimate.get("customer"))
+        if isinstance(estimate.get("customer"), dict)
+        else {}
+    )
+    estimate_project = (
+        dict(estimate.get("project"))
+        if isinstance(estimate.get("project"), dict)
+        else {}
+    )
+    estimate_totals = (
+        dict(estimate.get("totals"))
+        if isinstance(estimate.get("totals"), dict)
+        else {}
+    )
+    estimate_meta = (
+        dict(estimate.get("meta"))
+        if isinstance(estimate.get("meta"), dict)
+        else {}
+    )
+
+    needs_review_reasons = estimate_meta.get("needs_review_reasons")
+    if not isinstance(needs_review_reasons, list):
+        needs_review_reasons = []
+    normalized_reasons = [
+        str(reason).strip()
+        for reason in needs_review_reasons
+        if isinstance(reason, (str, int, float)) and str(reason).strip()
+    ]
+    if getattr(lead, "error_message", None):
+        normalized_reasons.append(str(getattr(lead, "error_message")))
+
+    customer_name = _first_non_empty(
+        overrides.get("customer_name"),
+        estimate_customer.get("name"),
+        intake.get("customer_name"),
+        intake.get("name"),
+        getattr(lead, "name", None),
+    )
+    customer_email = _first_non_empty(
+        overrides.get("customer_email"),
+        estimate_customer.get("email"),
+        intake.get("customer_email"),
+        intake.get("email"),
+        getattr(lead, "email", None),
+    )
+    customer_phone = _first_non_empty(
+        overrides.get("customer_phone"),
+        estimate_customer.get("phone"),
+        intake.get("customer_phone"),
+        intake.get("phone"),
+        intake.get("phone_number"),
+        getattr(lead, "phone", None),
+    )
+    project_location = _first_non_empty(
+        overrides.get("project_location"),
+        estimate.get("location"),
+        estimate_customer.get("location"),
+        estimate_customer.get("address"),
+        estimate.get("address"),
+        estimate_project.get("location"),
+        estimate_project.get("address"),
+        intake.get("project_location"),
+        intake.get("address"),
+        intake.get("project_address"),
+    )
+    square_meters = _first_non_empty(
+        overrides.get("square_meters"),
+        intake.get("square_meters"),
+        intake.get("area_sqm"),
+        intake.get("surface"),
+        intake.get("m2"),
+    )
+    job_type = _first_non_empty(
+        overrides.get("job_type"),
+        intake.get("job_type"),
+        intake.get("project_type"),
+    )
+    project_description = _first_non_empty(
+        overrides.get("project_description"),
+        estimate.get("project_description"),
+        intake.get("project_description"),
+        intake.get("description"),
+        getattr(lead, "notes", None),
+    )
+    included_work = _first_non_empty(
+        overrides.get("included_work"),
+        estimate.get("included_work"),
+        editor.get("included_work"),
+    )
+    public_notes = _first_non_empty(
+        overrides.get("public_notes"),
+        estimate.get("public_notes"),
+        editor.get("public_notes"),
+    )
+    excluded_notes = _first_non_empty(
+        overrides.get("excluded_notes"),
+        estimate.get("excluded_notes"),
+        editor.get("excluded_notes"),
+    )
+    discount_percent = _first_non_empty(
+        overrides.get("discount_percent"),
+        estimate.get("discount_percent"),
+        editor.get("discount_percent"),
+    )
+    vat_rate_percent = _first_non_empty(
+        overrides.get("vat_rate_percent"),
+        estimate.get("vat_rate_percent"),
+        editor.get("vat_rate_percent"),
+    )
+    manual_total = _first_non_empty(
+        overrides.get("manual_total"),
+        estimate.get("manual_total"),
+        editor.get("manual_total"),
+    )
+    subtotal_excl = _first_non_empty(
+        overrides.get("subtotal_excl"),
+        estimate_totals.get("pre_tax"),
+        estimate.get("subtotal_excl"),
+        editor.get("subtotal_excl"),
+    )
+
+    review_reason = _first_non_empty(
+        estimate_meta.get("review_reason"),
+        estimate_meta.get("status_reason"),
+        normalized_reasons[0] if normalized_reasons else None,
+        getattr(lead, "error_message", None),
+    )
+    status_reason = _first_non_empty(
+        estimate_meta.get("status_reason"),
+        estimate_meta.get("review_reason"),
+        normalized_reasons[0] if normalized_reasons else None,
+    )
+
+    return {
+        "lead_id": str(lead.id),
+        "status": getattr(lead, "status", None),
+        "review_reason": review_reason,
+        "status_reason": status_reason,
+        "error_info": getattr(lead, "error_message", None),
+        "created_at": getattr(lead, "created_at", None),
+        "updated_at": getattr(lead, "updated_at", None),
+        "customerName": customer_name,
+        "customerEmail": customer_email,
+        "customerPhone": customer_phone,
+        "projectLocation": project_location,
+        "squareMeters": square_meters,
+        "jobType": job_type,
+        "projectDescription": project_description,
+        "includedWork": included_work,
+        "publicNotes": public_notes,
+        "excludedNotes": excluded_notes,
+        "discountPercent": discount_percent,
+        "vatRatePercent": vat_rate_percent,
+        "manualTotal": manual_total,
+        "subtotalExcl": subtotal_excl,
+        "photoUrls": _review_photo_urls_for_lead(db, lead),
+        "review_reasons": normalized_reasons,
+        "lead": {
+            "id": str(lead.id),
+            "status": getattr(lead, "status", None),
+            "name": getattr(lead, "name", None),
+            "email": getattr(lead, "email", None),
+            "phone": getattr(lead, "phone", None),
+            "notes": getattr(lead, "notes", None),
+            "error_message": getattr(lead, "error_message", None),
+            "created_at": getattr(lead, "created_at", None),
+            "updated_at": getattr(lead, "updated_at", None),
+        },
+        "intake": intake or None,
+        "estimate": estimate or None,
+        "editor": editor or None,
+        "overrides": overrides or None,
+    }
+
+
+@router.get("/reviews/{lead_id}/detail")
+def app_review_detail_json(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    lead = (
+        db.query(Lead)
+        .filter(
+            Lead.id == lead_id,
+            Lead.tenant_id == str(current_user.tenant_id),
+        )
+        .first()
+    )
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return _review_detail_contract(db, lead)
+
+
 @router.get("/reviews/{lead_id}", response_class=HTMLResponse)
 def app_review_detail(
     request: Request,
@@ -3670,16 +3845,9 @@ def app_review_detail(
             )
         raise HTTPException(status_code=404, detail="Lead id not found in DB")
 
-    # reasons MVP: uit estimate_json.meta.needs_review_reasons
-    reasons = []
-    try:
-        if lead.estimate_json:
-            est = json.loads(lead.estimate_json)
-            reasons = (est.get("meta") or {}).get("needs_review_reasons") or []
-    except Exception:
-        reasons = []
+    detail = _review_detail_contract(db, lead)
+    reasons = detail.get("review_reasons") or []
 
-    # uploads (upload_records) voor debug/preview
     uploads = (
         db.query(UploadRecord)
         .filter(
@@ -3692,39 +3860,7 @@ def app_review_detail(
     )
 
     storage = get_storage()
-
-    # photo preview urls (uit upload_records.object_key)
-    photo_urls = []
-    for u in uploads:
-        object_key = (getattr(u, "object_key", "") or "").strip()
-        if not object_key:
-            continue
-
-        # object_key staat bij jou als "public/uploads/...."
-        # storage verwacht meestal key ZONDER tenant prefix:
-        tenant_prefix = f"{lead.tenant_id}/"
-        key = object_key
-        # Some historical records may contain the tenant prefix multiple times.
-        while key.startswith(tenant_prefix):
-            key = key[len(tenant_prefix) :]
-        key = key.lstrip("/")
-
-        try:
-            if hasattr(storage, "presigned_get_url"):
-                url = storage.presigned_get_url(
-                    tenant_id=str(lead.tenant_id),
-                    key=key,
-                    expires_seconds=3600,
-                )
-            else:
-                url = storage.public_url(
-                    tenant_id=str(lead.tenant_id),
-                    key=key,
-                )
-            photo_urls.append(url)
-        except Exception:
-            # nooit hard failen op preview
-            continue
+    photo_urls = detail.get("photoUrls") or []
 
     # estimate preview url
     estimate_preview_url = None

@@ -1,0 +1,222 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Simulation Preview{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Simulation Preview</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Bounded, directional view of expected operational effects if suggested adjustments (from control suggestions) were applied later.
+        Advisory preview only — not a precision forecast; nothing here is applied or persisted.
+      </p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">
+      Showing {{ shown_count }} scope{{ 's' if shown_count != 1 else '' }} ({{ scope_label }})
+      · API returned {{ api_total }} scope{{ 's' if api_total != 1 else '' }}
+    </p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_simulation_preview') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6 lg:grid-cols-8">
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope</span>
+        <select name="scope" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="pipelines" {% if filters.scope == "pipelines" %}selected{% endif %}>Pipelines</option>
+          <option value="verticals" {% if filters.scope == "verticals" %}selected{% endif %}>Verticals</option>
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope ID</span>
+        <input type="text" name="scope_id" value="{{ filters.scope_id or '' }}" placeholder="pipeline or vertical id" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Category</span>
+        <select name="category" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="" {% if not filters.category %}selected{% endif %}>all</option>
+          {% for option in category_options %}
+          <option value="{{ option }}" {% if filters.category == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Limit</span>
+        <input type="number" min="1" max="100" name="limit" value="{{ filters.limit }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Window (days)</span>
+        <input type="number" min="1" max="90" name="window_days" value="{{ filters.window_days }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lookback (days)</span>
+        <input type="number" min="1" max="365" name="lookback_days" value="{{ filters.lookback_days }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <div class="flex items-end gap-2 lg:col-span-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_simulation_preview') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+      <a
+        href="{{ url_for('ops_simulation_preview') }}?scope=pipelines&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&category={{ filters.category }}&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'pipelines' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Pipelines</a>
+      <a
+        href="{{ url_for('ops_simulation_preview') }}?scope=verticals&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&category={{ filters.category }}&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'verticals' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Verticals</a>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total scopes</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.total_scopes }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Scopes with previews</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.scopes_with_previews }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total preview items</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.total_previews }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Weak / fallback-only scopes</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.scopes_weak_only }}</p>
+      <p class="mt-0.5 text-[10px] leading-tight text-slate-500">Every preview is low confidence or <code class="rounded bg-slate-100 px-0.5">no_safe_adjustment</code></p>
+    </article>
+  </section>
+
+  {% if not items and api_total == 0 %}
+  <section class="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+    <p class="font-medium text-slate-800">No simulation preview results</p>
+    <p class="mt-2">There is no health scope data for this filter (e.g. empty tenant or no pipeline/vertical activity in lookback).</p>
+  </section>
+  {% elif not items %}
+  <section class="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+    <p class="font-medium text-slate-800">No items for selected scope or filters</p>
+    <p class="mt-2">Try clearing category / scope ID, widening the tenant, or increasing limit.</p>
+  </section>
+  {% else %}
+  <section class="space-y-3">
+    {% for row in items %}
+    {% set row_scope = row.scope or 'pipeline' %}
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45 ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+      <div class="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ row_scope }}</p>
+          <h3 class="text-base font-semibold text-slate-900">{{ row.scope_id or "—" }}</h3>
+          <p class="mt-1 text-sm text-slate-700">{{ row.summary or "—" }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <a href="{{ url_for('ops_control_suggestions') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&scope_id={{ row.scope_id or '' }}&category=&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">View Control Suggestions</a>
+          <a href="{{ url_for('ops_reasoning') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&limit={{ filters.limit }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">View Reasoning</a>
+          <a href="{{ url_for('ops_focus') }}?scope={{ filters.scope }}&scope_id={{ row.scope_id or '' }}&tenant_id={{ filters.tenant_id }}&limit=50" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">View Focus</a>
+          <a href="{{ url_for('ops_review') }}?scope={{ 'vertical' if row_scope == 'vertical' else 'pipeline' }}&scope_id={{ row.scope_id or '' }}&tenant_id={{ filters.tenant_id }}&limit=50" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">View Reviews</a>
+          <a href="{{ url_for('ops_runs') }}?tenant_id={{ filters.tenant_id }}&{{ 'vertical_id' if row_scope == 'vertical' else 'pipeline_name' }}={{ row.scope_id or '' }}&limit=50" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">View Runs</a>
+        </div>
+      </div>
+
+      <div class="mt-3 space-y-3">
+        {% for p in row.previews %}
+        {% set cat = (p.category or '') %}
+        {% set cat_l = cat|lower %}
+        {% set conf_l = (p.confidence or 'low')|lower %}
+        <article class="rounded-lg border p-3 {% if conf_l == 'low' %}border-slate-200 bg-slate-50/90 text-slate-700{% elif cat_l == 'confidence_threshold_tuning' %}border-amber-200 bg-amber-50/50{% elif cat_l == 'review_trigger_narrowing' %}border-sky-200 bg-sky-50/50{% elif cat_l == 'validation_step_tightening' %}border-orange-200 bg-orange-50/50{% elif cat_l == 'fallback_path_hardening' %}border-rose-200 bg-rose-50/50{% elif cat_l == 'margin_guardrail_adjustment' %}border-red-200 bg-red-50/40{% elif cat_l == 'no_safe_adjustment' %}border-slate-200 bg-slate-50/80 text-slate-600{% else %}border-slate-200 bg-slate-50{% endif %}">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="inline-flex items-center rounded-md bg-white/80 px-2 py-0.5 font-semibold text-slate-800 ring-1 ring-slate-200/80">{{ cat or "—" }}</span>
+              <span class="text-sm font-medium text-slate-900">{{ p.action or "—" }}</span>
+            </div>
+            {% if conf_l == 'high' %}
+            <span class="inline-flex shrink-0 items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">high</span>
+            {% elif conf_l == 'medium' %}
+            <span class="inline-flex shrink-0 items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">medium</span>
+            {% else %}
+            <span class="inline-flex shrink-0 items-center rounded-md bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">low</span>
+            {% endif %}
+          </div>
+          <p class="mt-2 text-sm leading-relaxed {% if conf_l == 'low' %}text-slate-600{% else %}text-slate-800{% endif %}">{{ p.simulation_summary or "—" }}</p>
+
+          {% if p.expected_impacts %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Expected impacts</p>
+            <ul class="mt-2 space-y-2">
+              {% for impact in p.expected_impacts %}
+              {% set dir_l = (impact.direction or '')|lower %}
+              <li class="rounded-md border border-slate-100 bg-white/60 px-3 py-2 text-xs text-slate-800">
+                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span class="font-semibold text-slate-900">{{ impact.metric or "—" }}</span>
+                  {% if dir_l == 'improving' %}
+                  <span class="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-800">{{ impact.direction or "—" }}</span>
+                  {% elif dir_l == 'stable' %}
+                  <span class="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">{{ impact.direction or "—" }}</span>
+                  {% else %}
+                  <span class="inline-flex items-center rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-800">{{ impact.direction or "—" }}</span>
+                  {% endif %}
+                  {% if impact.magnitude %}
+                  <span class="text-[11px] text-slate-500">{{ impact.magnitude }}</span>
+                  {% endif %}
+                </div>
+                {% if impact.rationale %}
+                <p class="mt-1 text-slate-600">{{ impact.rationale }}</p>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if p.risks %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Risks</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in p.risks %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if p.assumptions %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Assumptions</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in p.assumptions %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if p.safety_checks %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Safety checks</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in p.safety_checks %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </article>
+        {% else %}
+        <p class="text-sm text-slate-500 dark:text-slate-400">No preview rows for this scope (empty control-suggestion chain).</p>
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if summary_counts.scopes_weak_only > 0 and summary_counts.total_scopes > 0 and summary_counts.scopes_weak_only == summary_counts.total_scopes %}
+  <p class="text-xs text-slate-500">All visible scopes only show low-confidence or <code class="rounded bg-slate-100 px-1">no_safe_adjustment</code> previews — treat as conservative signal, not a tuning mandate.</p>
+  {% endif %}
+</div>
+{% endblock %}

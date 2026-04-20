@@ -1,47 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Founder Admin{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var k = "inversiq-theme";
+        var t = localStorage.getItem(k);
+        if (t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
   {% block head_extra %}{% endblock %}
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
-  {% set path = request.url.path %}
-  <header class="border-b border-slate-200 bg-white">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Internal</p>
-        <h1 class="text-lg font-semibold tracking-[-0.02em] text-slate-900">Founder Backoffice</h1>
+{% set path = request.url.path %}
+{% set nav_active = "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors bg-slate-100 text-slate-900 ring-1 ring-slate-200/70 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600/50" %}
+{% set nav_idle = "rounded-md px-2.5 py-1.5 text-sm transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-slate-100" %}
+<body class="min-h-full bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+  <header class="sticky top-0 z-40 border-b border-slate-200/90 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/90">
+    <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">Internal</p>
+            <h1 class="mt-0.5 text-lg font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Founder Backoffice</h1>
+            <p class="mt-1 max-w-md text-xs leading-relaxed text-slate-500 dark:text-slate-400">Platform tools · read-mostly</p>
+          </div>
+          <button
+            type="button"
+            id="theme-toggle"
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+            aria-label="Toggle color theme"
+            aria-pressed="false"
+          >
+            <span class="dark:hidden" aria-hidden="true">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
+            </span>
+            <span class="hidden dark:inline" aria-hidden="true">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
+            </span>
+          </button>
+        </div>
+
+        <nav class="min-w-0 flex-1 lg:max-w-none" aria-label="Founder navigation">
+          <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-x-6">
+            <div class="min-w-0">
+              <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Founder</p>
+              <div class="flex flex-wrap gap-1">
+                <a href="{{ url_for('founder_dashboard') }}" class="{{ nav_active if (path == '/founder' or path == '/founder/') else nav_idle }}">Dashboard</a>
+                <a href="{{ url_for('founder_tenants') }}" class="{{ nav_active if path.startswith('/founder/tenants') else nav_idle }}">Tenants</a>
+                <a href="{{ url_for('founder_outreach_queue') }}" class="{{ nav_active if path.startswith('/founder/outreach') else nav_idle }}">Outreach</a>
+              </div>
+            </div>
+            <div class="hidden sm:block sm:w-px sm:self-stretch sm:bg-slate-200 dark:sm:bg-slate-800" aria-hidden="true"></div>
+            <div class="min-w-0 flex-1">
+              <p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Operations</p>
+              <div class="flex flex-wrap gap-1">
+                <a href="{{ url_for('ops_runs') }}" class="{{ nav_active if path.startswith('/ops/runs') else nav_idle }}">Runs</a>
+                <a href="{{ url_for('ops_anomalies') }}" class="{{ nav_active if path.startswith('/ops/anomalies') else nav_idle }}">Anomalies</a>
+                <a href="{{ url_for('ops_intelligence') }}" class="{{ nav_active if path.startswith('/ops/intelligence') and not path.startswith('/ops/intelligence/health') else nav_idle }}">Intelligence</a>
+                <a href="{{ url_for('ops_intelligence_health') }}" class="{{ nav_active if path.startswith('/ops/intelligence/health') else nav_idle }}">Health</a>
+                <a href="{{ url_for('ops_review') }}" class="{{ nav_active if path.startswith('/ops/review') else nav_idle }}">Review</a>
+                <a href="{{ url_for('ops_focus') }}" class="{{ nav_active if path.startswith('/ops/focus') else nav_idle }}">Focus</a>
+                <a href="{{ url_for('ops_reasoning') }}" class="{{ nav_active if path.startswith('/ops/reasoning') else nav_idle }}">Reasoning</a>
+                <a href="{{ url_for('ops_control_suggestions') }}" class="{{ nav_active if path.startswith('/ops/control-suggestions') else nav_idle }}">Control</a>
+                <a href="{{ url_for('ops_simulation_preview') }}" class="{{ nav_active if path.startswith('/ops/simulation-preview') else nav_idle }}">Simulation</a>
+                <a href="{{ url_for('ops_proposed_changes') }}" class="{{ nav_active if path.startswith('/ops/proposed-changes') else nav_idle }}">Proposals</a>
+                <a href="{{ url_for('ops_apply_intents') }}" class="{{ nav_active if path.startswith('/ops/apply-intents') else nav_idle }}">Apply intents</a>
+                <a href="{{ url_for('ops_execution_requests') }}" class="{{ nav_active if path.startswith('/ops/execution-requests') else nav_idle }}">Execution requests</a>
+                <a href="{{ url_for('ops_execution_attempts') }}" class="{{ nav_active if path.startswith('/ops/execution-attempts') else nav_idle }}">Execution attempts</a>
+                <a href="{{ url_for('ops_execution_outcomes') }}" class="{{ nav_active if path.startswith('/ops/execution-outcomes') else nav_idle }}">Execution outcomes</a>
+              </div>
+            </div>
+          </div>
+        </nav>
       </div>
-      <nav class="flex items-center gap-1 text-sm" aria-label="Founder navigation">
-        <a
-          href="{{ url_for('founder_dashboard') }}"
-          class="rounded-md px-3 py-1.5 transition-colors {% if path == '/founder' or path == '/founder/' %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
-        >Dashboard</a>
-        <a
-          href="{{ url_for('founder_tenants') }}"
-          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/founder/tenants') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
-        >Tenants</a>
-        <a
-          href="{{ url_for('founder_outreach_queue') }}"
-          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/founder/outreach') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
-        >Outreach</a>
-        <a
-          href="{{ url_for('ops_runs') }}"
-          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/ops/runs') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
-        >Ops Runs</a>
-        <a
-          href="{{ url_for('ops_anomalies') }}"
-          class="rounded-md px-3 py-1.5 transition-colors {% if path.startswith('/ops/anomalies') %}bg-slate-100 font-medium text-slate-900{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}"
-        >Anomalies</a>
-      </nav>
     </div>
   </header>
 
-  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
     {% block content %}{% endblock %}
   </main>
+  <script>
+    (function () {
+      var KEY = "inversiq-theme";
+      function syncPressed() {
+        var dark = document.documentElement.classList.contains("dark");
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        var btn = document.getElementById("theme-toggle");
+        if (btn) btn.setAttribute("aria-pressed", dark ? "true" : "false");
+      }
+      syncPressed();
+      document.getElementById("theme-toggle")?.addEventListener("click", function () {
+        var next = document.documentElement.classList.contains("dark") ? "light" : "dark";
+        try {
+          localStorage.setItem(KEY, next);
+        } catch (e) {}
+        document.documentElement.classList.toggle("dark", next === "dark");
+        syncPressed();
+        window.dispatchEvent(new CustomEvent("inversiq-theme", { detail: { mode: next } }));
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -1,0 +1,123 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Execution Outcomes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Execution outcomes</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Post-execution evaluation — read-only; same data as <code class="rounded bg-slate-200/80 px-1 text-xs dark:bg-slate-800">GET /api/proposed-change-execution-outcomes</code>.
+      </p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">{{ items|length }} row{{ 's' if items|length != 1 else '' }}</p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_execution_outcomes') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <label class="text-sm md:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100" placeholder="required to load rows" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">outcome_status</span>
+        <select name="outcome_status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          {% for option in outcome_status_options %}
+          <option value="{{ option }}" {% if filters.outcome_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm md:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">evaluation_status</span>
+        <select name="evaluation_status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          {% for option in evaluation_status_options %}
+          <option value="{{ option }}" {% if filters.evaluation_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="flex items-end gap-2 md:col-span-6">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_execution_outcomes') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  {% if not filters.tenant_id %}
+  <section class="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+    <p class="font-medium text-slate-800 dark:text-slate-100">Enter a tenant ID</p>
+    <p class="mt-2">Outcomes are keyed by tenant — choose a tenant to load the list.</p>
+  </section>
+  {% elif not items %}
+  <section class="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+    <p class="font-medium text-slate-800 dark:text-slate-100">No execution outcomes</p>
+    <p class="mt-2">No rows for this tenant and filters.</p>
+  </section>
+  {% else %}
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-[56rem] w-full text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/90 text-left text-xs uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold">change_id</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Scope</th>
+            <th scope="col" class="px-4 py-3 font-semibold">evaluation_status</th>
+            <th scope="col" class="px-4 py-3 font-semibold">outcome_status</th>
+            <th scope="col" class="px-4 py-3 font-semibold">rollback</th>
+            <th scope="col" class="px-4 py-3 font-semibold">created_at</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Detail</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for row in items %}
+          {% set ev = (row.evaluation_status or '')|lower %}
+          <tr class="align-top transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+            <td class="px-4 py-3 font-mono text-xs text-slate-900 dark:text-slate-100">
+              {{ row.change_id or '—' }}
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-700 dark:text-slate-300">{{ row.scope_ui_label }}</td>
+            <td class="px-4 py-3">
+              {% if ev == 'improved' %}
+              <span class="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-950 ring-1 ring-emerald-200/80 dark:bg-emerald-950/35 dark:text-emerald-100">{{ row.evaluation_status }}</span>
+              {% elif ev == 'neutral' %}
+              <span class="inline-flex rounded-md bg-slate-200/90 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/75 dark:bg-slate-700/70 dark:text-slate-100">{{ row.evaluation_status }}</span>
+              {% elif ev == 'degraded' %}
+              <span class="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/80 dark:bg-amber-950/30 dark:text-amber-100">{{ row.evaluation_status }}</span>
+              {% elif ev == 'unstable' %}
+              <span class="inline-flex rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-950 ring-1 ring-rose-200/80 dark:bg-rose-950/35 dark:text-rose-100">{{ row.evaluation_status }}</span>
+              {% else %}
+              <span class="text-xs text-slate-700 dark:text-slate-300">{{ row.evaluation_status or '—' }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-800 dark:text-slate-200">{{ row.outcome_status or '—' }}</td>
+            <td class="px-4 py-3 text-xs">
+              {% if row.rollback_triggered %}
+              <span class="font-semibold text-rose-800 dark:text-rose-300">yes</span>
+              {% else %}
+              <span class="text-slate-500 dark:text-slate-400">no</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-xs tabular-nums text-slate-600 dark:text-slate-400">{{ row.created_at_display }}</td>
+            <td class="px-4 py-3 text-xs">
+              <details class="rounded-md border border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40">
+                <summary class="cursor-pointer list-none px-2 py-1.5 font-medium text-sky-800 dark:text-sky-300 [&::-webkit-details-marker]:hidden">Snapshots</summary>
+                <div class="space-y-2 border-t border-slate-200 px-2 pb-2 pt-2 dark:border-slate-700">
+                  <p class="text-[10px] font-semibold uppercase text-slate-500">observed_metrics_snapshot</p>
+                  <pre class="max-h-36 overflow-auto rounded border border-slate-200 bg-white p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ row.observed_metrics_snapshot_json or '—' }}</pre>
+                  <p class="text-[10px] font-semibold uppercase text-slate-500">deviation_snapshot</p>
+                  <pre class="max-h-36 overflow-auto rounded border border-slate-200 bg-white p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ row.deviation_snapshot_json or '—' }}</pre>
+                  <p class="text-[10px] font-semibold uppercase text-slate-500">expected_metrics_snapshot</p>
+                  <pre class="max-h-36 overflow-auto rounded border border-slate-200 bg-white p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ row.expected_metrics_snapshot_json or '—' }}</pre>
+                </div>
+              </details>
+              <a href="{{ url_for('ops_execution_outcome_detail', change_id=row.change_id) }}?tenant_id={{ filters.tenant_id }}" class="mt-2 inline-block text-[10px] font-medium text-sky-800 underline decoration-sky-300 underline-offset-2 hover:text-sky-950 dark:text-sky-300">Full page</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

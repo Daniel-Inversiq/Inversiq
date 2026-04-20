@@ -28,6 +28,7 @@ from app.modules.outreach.services.suggestion_queue_actions import (
     bulk_send_suggestions,
     bulk_skip_suggestions,
     normalize_suggestion_ids,
+    send_suggestion_by_id,
 )
 from app.services.founder_insights import get_tenant_health
 from app.i18n.service import setup_jinja_i18n
@@ -1048,5 +1049,83 @@ def founder_outreach_bulk_skip(
     return RedirectResponse(
         url=str(request.url_for("founder_outreach_queue"))
         + f"?bulk_skipped={ok}&bulk_skip_failed={bad}",
+        status_code=303,
+    )
+
+
+@router.post("/outreach/{suggestion_id}/update", name="founder_outreach_update")
+def founder_outreach_update(
+    suggestion_id: str,
+    request: Request,
+    subject: str = Form(...),
+    body: str = Form(...),
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_platform_admin),
+):
+    suggestion = (
+        db.query(OutboundSuggestion).filter(OutboundSuggestion.id == suggestion_id).first()
+    )
+    if suggestion is None:
+        return RedirectResponse(
+            url=str(request.url_for("founder_outreach_queue"))
+            + f"?edit_error=not_found&edit_id={suggestion_id}",
+            status_code=303,
+        )
+    if suggestion.status != "pending":
+        return RedirectResponse(
+            url=str(request.url_for("founder_outreach_queue"))
+            + f"?edit_error=not_pending&edit_id={suggestion_id}",
+            status_code=303,
+        )
+
+    next_subject = subject.strip()
+    next_body = body.strip()
+    if not next_subject or not next_body:
+        return RedirectResponse(
+            url=str(request.url_for("founder_outreach_queue"))
+            + f"?edit_error=empty_fields&edit_id={suggestion_id}",
+            status_code=303,
+        )
+
+    suggestion.subject = next_subject
+    suggestion.body = next_body
+    db.add(suggestion)
+    db.commit()
+
+    return RedirectResponse(
+        url=str(request.url_for("founder_outreach_queue")) + f"?edit_saved=1&edit_id={suggestion_id}",
+        status_code=303,
+    )
+
+
+@router.post("/outreach/{suggestion_id}/send", name="founder_outreach_send_one")
+def founder_outreach_send_one(
+    suggestion_id: str,
+    request: Request,
+    subject: str = Form(...),
+    body: str = Form(...),
+    db: Session = Depends(get_db),
+    gmail_service=Depends(get_gmail_service),
+    _admin: User = Depends(require_platform_admin),
+):
+    """
+    Send one suggestion using the subject/body from the form (persisted before send).
+    Ensures the email matches what the user last typed, including when they did not click Save first.
+    """
+    out = send_suggestion_by_id(
+        db, gmail_service, suggestion_id, subject=subject, body=body
+    )
+    if not out.get("ok"):
+        err = str(out.get("error", "send_failed"))
+        return RedirectResponse(
+            url=str(request.url_for("founder_outreach_queue"))
+            + "?"
+            + urlencode({"send_error": err, "edit_id": suggestion_id}),
+            status_code=303,
+        )
+    return RedirectResponse(
+        url=str(request.url_for("founder_outreach_queue"))
+        + "?"
+        + urlencode({"sent": "1", "sent_id": suggestion_id}),
         status_code=303,
     )

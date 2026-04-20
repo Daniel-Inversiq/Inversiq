@@ -121,7 +121,7 @@ class PaintlyAdapter(VerticalAdapter):
             "lead_id": lead_id,
             "tenant_id": tenant_id,
             "vertical": self.vertical_id,
-            "submit_url": submit_url or f"/intake/{self.vertical_id}/lead",
+            "submit_url": submit_url or f"/intake/v/{self.vertical_id}/lead",
         }
         if extra_context:
             context.update(extra_context)
@@ -412,6 +412,15 @@ class PaintlyAdapter(VerticalAdapter):
         db.add(lead)
         db.commit()
         db.refresh(lead)
+        log_activity_event(
+            db,
+            tenant_id=lead.tenant_id,
+            event_type="new_intake_request",
+            title=f"Nieuwe intake: {lead.name or 'Onbekende klant'}",
+            link_url=f"/app/leads/{lead.id}",
+            metadata={"lead_id": str(lead.id)},
+        )
+        db.commit()
         logger.info(
             "[DATA_DEBUG] lead fields lead_id=%s name=%r email=%r phone=%r address=%r location=%r",
             str(getattr(lead, "id", "")),

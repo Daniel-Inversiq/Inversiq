@@ -23,6 +23,7 @@ from app.modules.outreach.services.suggestion_queue_actions import (
     bulk_send_suggestions,
     bulk_skip_suggestions,
     normalize_suggestion_ids,
+    send_suggestion_by_id,
 )
 from app.modules.outreach.services.used_domains_service import UsedDomainsService
 from app.modules.outreach.models.outbound_message import OutboundMessage
@@ -389,47 +390,24 @@ def send_outbound_suggestion(
     """
     Send one approved suggestion and mark it as sent.
     Protected by BasicAuth on the /api prefix.
+    Uses the latest subject/body from the database (refresh before send).
     """
-    suggestion = (
-        db.query(OutboundSuggestion)
-        .filter(OutboundSuggestion.id == suggestion_id)
-        .first()
-    )
-    if not suggestion:
-        raise HTTPException(status_code=404, detail="Suggestion not found")
-    if suggestion.status == SuggestionStatus.sent.value:
-        raise HTTPException(status_code=409, detail="Suggestion already sent")
-    if suggestion.status == SuggestionStatus.skipped.value:
-        raise HTTPException(status_code=409, detail="Suggestion was skipped")
-
-    provider = _build_gmail_provider(gmail_service)
-    sender = EmailSenderService(db=db, gmail_provider=provider)
-    try:
-        record = sender.send_and_log(
-            recipient_email=suggestion.recipient_email,
-            subject=suggestion.subject,
-            body=suggestion.body,
-            campaign_id=suggestion.campaign_id,
-            sender_email=settings.GMAIL_SENDER_EMAIL,
-            variant_id=suggestion.variant_id,
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=502, detail=f"Gmail send failed: {exc}"
-        ) from exc
-
-    suggestion.status = SuggestionStatus.sent.value
-    db.commit()
-    db.refresh(suggestion)
+    out = send_suggestion_by_id(db, gmail_service, suggestion_id)
+    if not out.get("ok"):
+        err = str(out.get("error", ""))
+        if err == "not_found":
+            raise HTTPException(status_code=404, detail="Suggestion not found")
+        if err == "already_sent":
+            raise HTTPException(status_code=409, detail="Suggestion already sent")
+        if err == "was_skipped":
+            raise HTTPException(status_code=409, detail="Suggestion was skipped")
+        if err.startswith("invalid_status:"):
+            raise HTTPException(status_code=409, detail=err)
+        raise HTTPException(status_code=502, detail=f"Gmail send failed: {err}")
 
     return {
-        "suggestion": _serialize_suggestion(suggestion),
-        "outbound_message": {
-            "id": record.id,
-            "gmail_message_id": record.gmail_message_id,
-            "gmail_thread_id": record.gmail_thread_id,
-            "sent_at": record.sent_at,
-        },
+        "suggestion": out["suggestion"],
+        "outbound_message": out["outbound_message"],
     }
 
 

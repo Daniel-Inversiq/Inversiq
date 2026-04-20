@@ -1,0 +1,1271 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Proposed Changes{% endblock %}
+
+{% block content %}
+{% macro pc_list_filter_hiddens() -%}
+  <input type="hidden" name="scope_filter" value="{{ filters.scope }}" />
+  <input type="hidden" name="tenant_id_filter" value="{{ filters.tenant_id }}" />
+  <input type="hidden" name="scope_id_filter" value="{{ filters.scope_id or '' }}" />
+  <input type="hidden" name="change_id_filter" value="{{ filters.change_id or '' }}" />
+  <input type="hidden" name="limit_filter" value="{{ filters.limit }}" />
+  <input type="hidden" name="change_type_filter" value="{{ filters.change_type or '' }}" />
+  <input type="hidden" name="risk_level_filter" value="{{ filters.risk_level or '' }}" />
+  <input type="hidden" name="window_days_filter" value="{{ filters.window_days }}" />
+  <input type="hidden" name="lookback_days_filter" value="{{ filters.lookback_days }}" />
+  <input type="hidden" name="conflicts_only_filter" value="{{ filters.conflicts_only or '' }}" />
+  <input type="hidden" name="staleness_status_filter" value="{{ filters.staleness_status or 'all' }}" />
+  <input type="hidden" name="readiness_status_filter" value="{{ filters.readiness_status or 'all' }}" />
+  <input type="hidden" name="planning_status_filter" value="{{ filters.planning_status or 'all' }}" />
+{%- endmacro %}
+{% set co_param = '&conflicts_only=yes' if filters.conflicts_only == 'yes' else '' %}
+{% set ss_param = '&staleness_status=' ~ filters.staleness_status if filters.staleness_status and filters.staleness_status != 'all' else '' %}
+{% set rd_param = '&readiness_status=' ~ filters.readiness_status if filters.readiness_status and filters.readiness_status != 'all' else '' %}
+{% set ps_param = '&planning_status=' ~ filters.planning_status if filters.planning_status is defined and filters.planning_status and filters.planning_status != 'all' else '' %}
+{% set chg_param = '&change_id=' ~ filters.change_id if filters.change_id is defined and filters.change_id else '' %}
+<div class="space-y-6">
+  {% if pc_action_error %}
+  <div class="rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-2 text-sm text-rose-950 dark:border-rose-800/60 dark:bg-rose-950/25 dark:text-rose-100">
+    <p class="font-medium">Workflow action could not be applied</p>
+    <p class="mt-1 text-xs text-rose-900/90 dark:text-rose-200/90">{{ pc_action_error }}</p>
+  </div>
+  {% endif %}
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Proposed Changes</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Structured, reviewable change proposals derived from control suggestions and simulation-style preview logic.
+        Advisory intent only — nothing here is applied, approved, or queued for execution.
+      </p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">
+      Showing {{ shown_count }} scope{{ 's' if shown_count != 1 else '' }} ({{ scope_label }})
+      · API returned {{ api_total }} scope{{ 's' if api_total != 1 else '' }}
+    </p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_proposed_changes') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope</span>
+        <select name="scope" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="pipelines" {% if filters.scope == "pipelines" %}selected{% endif %}>Pipelines</option>
+          <option value="verticals" {% if filters.scope == "verticals" %}selected{% endif %}>Verticals</option>
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope ID</span>
+        <input type="text" name="scope_id" value="{{ filters.scope_id or '' }}" placeholder="pipeline or vertical id" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm lg:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Change ID</span>
+        <input type="text" name="change_id" value="{{ filters.change_id or '' }}" placeholder="optional — one proposal only" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Change type</span>
+        <select name="change_type" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="" {% if not filters.change_type %}selected{% endif %}>all</option>
+          {% for option in change_type_options %}
+          <option value="{{ option }}" {% if filters.change_type == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Risk level</span>
+        <select name="risk_level" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="" {% if not filters.risk_level %}selected{% endif %}>all</option>
+          {% for option in risk_level_options %}
+          <option value="{{ option }}" {% if filters.risk_level == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Limit</span>
+        <input type="number" min="1" max="100" name="limit" value="{{ filters.limit }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Window (days)</span>
+        <input type="number" min="1" max="90" name="window_days" value="{{ filters.window_days }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lookback (days)</span>
+        <input type="number" min="1" max="365" name="lookback_days" value="{{ filters.lookback_days }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm lg:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Conflicts</span>
+        <select name="conflicts_only" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="" {% if not filters.conflicts_only %}selected{% endif %}>All proposals</option>
+          <option value="yes" {% if filters.conflicts_only == 'yes' %}selected{% endif %}>With conflicts only</option>
+        </select>
+      </label>
+      <label class="text-sm lg:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Staleness</span>
+        <select name="staleness_status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          {% for option in staleness_status_options %}
+          <option value="{{ option }}" {% if filters.staleness_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm lg:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Approval readiness</span>
+        <select name="readiness_status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          {% for option in readiness_status_options %}
+          <option value="{{ option }}" {% if filters.readiness_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm lg:col-span-2">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Apply planning</span>
+        <select name="planning_status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          {% for option in planning_status_options %}
+          <option value="{{ option }}" {% if filters.planning_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="flex items-end gap-2 lg:col-span-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_proposed_changes') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+      <a
+        href="{{ url_for('ops_proposed_changes') }}?scope=pipelines&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&change_type={{ filters.change_type }}&risk_level={{ filters.risk_level }}&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}{{ co_param }}{{ ss_param }}{{ rd_param }}{{ ps_param }}{{ chg_param }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'pipelines' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Pipelines</a>
+      <a
+        href="{{ url_for('ops_proposed_changes') }}?scope=verticals&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&change_type={{ filters.change_type }}&risk_level={{ filters.risk_level }}&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}{{ co_param }}{{ ss_param }}{{ rd_param }}{{ ps_param }}{{ chg_param }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'verticals' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Verticals</a>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-slate-200/90 bg-slate-50/60 px-4 py-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/35">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Apply planning (visible proposals)</p>
+    <p class="mt-0.5 text-[11px] text-slate-500 dark:text-slate-500">Execution planning signals — “mark ready for apply” is allowed only when planning is <code class="rounded bg-slate-200/80 px-0.5 dark:bg-slate-800">planned</code> (server-attested).</p>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200/80 bg-emerald-50/50 px-3 py-1.5 text-sm tabular-nums text-emerald-950 dark:border-emerald-800/50 dark:bg-emerald-950/25 dark:text-emerald-100">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-300/90">Planned</span>
+        <span class="font-semibold">{{ apply_planning_summary.planned }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200/90 bg-rose-50/50 px-3 py-1.5 text-sm tabular-nums text-rose-950 dark:border-rose-800/50 dark:bg-rose-950/30 dark:text-rose-100">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-rose-900/90 dark:text-rose-300/90">Blocked from planning</span>
+        <span class="font-semibold">{{ apply_planning_summary.blocked_from_planning }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200/90 bg-amber-50/50 px-3 py-1.5 text-sm tabular-nums text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/25 dark:text-amber-100">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-900/90 dark:text-amber-300/90">Requires combined plan</span>
+        <span class="font-semibold">{{ apply_planning_summary.requires_combined_plan }}</span>
+      </span>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-slate-200/90 bg-slate-50/50 px-4 py-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/30">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Approval readiness (visible proposals)</p>
+    <p class="mt-0.5 text-[11px] text-slate-500 dark:text-slate-500">Governance signal — display only; does not block actions in this UI.</p>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5 text-sm tabular-nums text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-100">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/90 dark:text-emerald-300/90">Ready</span>
+        <span class="font-semibold">{{ readiness_summary.approval_ready }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200/90 bg-amber-50/55 px-3 py-1.5 text-sm tabular-nums text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/25 dark:text-amber-100">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-900/90 dark:text-amber-300/90">Warnings</span>
+        <span class="font-semibold">{{ readiness_summary.blocked_with_warnings }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200/90 bg-rose-50/55 px-3 py-1.5 text-sm tabular-nums text-rose-950 dark:border-rose-800/50 dark:bg-rose-950/30 dark:text-rose-100">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-rose-900/90 dark:text-rose-300/90">Blocked</span>
+        <span class="font-semibold">{{ readiness_summary.blocked }}</span>
+      </span>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-slate-200/90 bg-slate-50/40 px-4 py-3 shadow-sm">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Proposal staleness (visible)</p>
+    <p class="mt-0.5 text-[11px] text-slate-500">Read-only governance signal from the same scope as proposals — not blocking.</p>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200/80 bg-emerald-50/60 px-3 py-1.5 text-sm tabular-nums text-emerald-950">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-emerald-800/90">Fresh</span>
+        <span class="font-semibold">{{ staleness_summary.fresh }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200/80 bg-amber-50/50 px-3 py-1.5 text-sm tabular-nums text-amber-950">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-900/90">Aging</span>
+        <span class="font-semibold">{{ staleness_summary.aging }}</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200/90 bg-rose-50/50 px-3 py-1.5 text-sm tabular-nums text-rose-950">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-rose-900/90">Stale</span>
+        <span class="font-semibold">{{ staleness_summary.stale }}</span>
+      </span>
+      {% if staleness_summary.has_superseded %}
+      <span class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200/80 bg-indigo-50/50 px-3 py-1.5 text-sm tabular-nums text-indigo-950">
+        <span class="text-[10px] font-semibold uppercase tracking-wide text-indigo-900/90">Superseded</span>
+        <span class="font-semibold">{{ staleness_summary.superseded }}</span>
+      </span>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total scopes</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.total_scopes }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">With proposals</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.scopes_with_changes }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Proposals shown</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.total_changes }}</p>
+    </article>
+    <article class="rounded-lg border border-rose-200 bg-rose-50/50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-rose-700">High risk</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-rose-900">{{ summary_counts.high_risk }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Only no-action</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.scopes_only_no_action }}</p>
+      <p class="mt-0.5 text-[10px] leading-tight text-slate-500">Scopes where every proposal is <code class="rounded bg-slate-100 px-0.5">no_action_proposed</code></p>
+    </article>
+  </section>
+
+  <section class="rounded-xl border border-amber-200/70 bg-amber-50/25 px-4 py-3 shadow-sm">
+    <p class="text-xs font-semibold uppercase tracking-wide text-amber-900/90">Proposal conflicts</p>
+    <p class="mt-0.5 text-[11px] text-amber-900/70">Governance hints — review together when proposals overlap; not blocking.</p>
+    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <article class="rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Scopes w/ conflicts</p>
+        <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ conflict_summary.scopes_with_conflicts }}</p>
+      </article>
+      <article class="rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Conflicts (visible)</p>
+        <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ conflict_summary.total_conflicts }}</p>
+      </article>
+      <article class="rounded-lg border border-rose-200/80 bg-rose-50/50 px-3 py-2">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-rose-700">High severity</p>
+        <p class="mt-1 text-lg font-semibold tabular-nums text-rose-900">{{ conflict_summary.high_severity }}</p>
+      </article>
+      <article class="rounded-lg border border-amber-200/80 bg-amber-50/60 px-3 py-2">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-800">Medium severity</p>
+        <p class="mt-1 text-lg font-semibold tabular-nums text-amber-950">{{ conflict_summary.medium_severity }}</p>
+      </article>
+      <article class="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Low severity</p>
+        <p class="mt-1 text-lg font-semibold tabular-nums text-slate-800">{{ conflict_summary.low_severity }}</p>
+      </article>
+    </div>
+  </section>
+
+  {% if not items and api_total == 0 %}
+  <section class="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+    <p class="font-medium text-slate-800">No proposed change results</p>
+    <p class="mt-2">There is no health scope data for this filter (for example empty tenant or no pipeline/vertical activity in lookback).</p>
+  </section>
+  {% elif not items %}
+  <section class="rounded-xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+    <p class="font-medium text-slate-800">No items for selected scope or filters</p>
+    <p class="mt-2">Try clearing change type / risk / scope ID, widening the tenant, or increasing limit.</p>
+    {% if filters.conflicts_only == 'yes' %}
+    <p class="mt-2 text-xs text-slate-500">Conflicts-only mode hides scopes without overlapping proposals — turn it off to see all proposals again.</p>
+    {% endif %}
+  </section>
+  {% else %}
+  {% if only_no_action_shown %}
+  <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+    Every visible proposal is <code class="rounded bg-slate-100 px-1">no_action_proposed</code> — the system is not suggesting a structured parameter change for these scopes under current signals.
+  </p>
+  {% endif %}
+
+  <section class="space-y-3">
+    {% for row in items %}
+    {% set row_scope = row.scope or 'pipeline' %}
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45 ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+      <div class="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ row_scope }}</p>
+          <h3 class="text-base font-semibold text-slate-900">{{ row.scope_id or "—" }}</h3>
+          <p class="mt-1 text-sm text-slate-700">{{ row.summary or "—" }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <a href="{{ url_for('ops_simulation_preview') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&scope_id={{ row.scope_id or '' }}&category=&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">Simulation Preview</a>
+          <a href="{{ url_for('ops_control_suggestions') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&scope_id={{ row.scope_id or '' }}&category=&limit={{ filters.limit }}&window_days={{ filters.window_days }}&lookback_days={{ filters.lookback_days }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">Control Suggestions</a>
+          <a href="{{ url_for('ops_reasoning') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&limit={{ filters.limit }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">Reasoning</a>
+          <a href="{{ url_for('ops_focus') }}?scope={{ filters.scope }}&scope_id={{ row.scope_id or '' }}&tenant_id={{ filters.tenant_id }}&limit=50" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">Focus</a>
+          <a href="{{ url_for('ops_review') }}?scope={{ 'vertical' if row_scope == 'vertical' else 'pipeline' }}&scope_id={{ row.scope_id or '' }}&tenant_id={{ filters.tenant_id }}&limit=50" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">Reviews</a>
+          <a href="{{ url_for('ops_runs') }}?tenant_id={{ filters.tenant_id }}&{{ 'vertical_id' if row_scope == 'vertical' else 'pipeline_name' }}={{ row.scope_id or '' }}&limit=50" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">Runs</a>
+        </div>
+      </div>
+
+      {% set sc = row.scope_conflicts | default([], true) %}
+      {% if sc %}
+      <div class="mt-3 rounded-lg border border-amber-200/60 bg-amber-50/25 px-3 py-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Conflicts in this scope</p>
+        <ul class="mt-2 space-y-2">
+          {% for cf in sc %}
+          {% set cft = (cf.conflict_type or '') %}
+          {% set sev = (cf.severity or '')|lower %}
+          {% set tgt_cf = cf.target | default({}, true) %}
+          <li class="rounded border border-slate-200/90 bg-white/95 px-2.5 py-2 text-[11px] leading-snug text-slate-800">
+            <div class="flex flex-wrap items-center gap-1.5">
+              {% if cft == 'opposite_direction_conflict' %}
+              <span class="inline-flex rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-900">Opposite direction</span>
+              {% elif cft == 'high_risk_combination' %}
+              <span class="inline-flex rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-900">High-risk mix</span>
+              {% elif cft == 'duplicate_proposal' %}
+              <span class="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">Duplicate</span>
+              {% elif cft == 'same_target_overlap' %}
+              <span class="inline-flex rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-950">Same target</span>
+              {% elif cft == 'policy_area_overlap' %}
+              <span class="inline-flex rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-900">Policy overlap</span>
+              {% else %}
+              <span class="inline-flex rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-800">{{ cft or 'conflict' }}</span>
+              {% endif %}
+              {% if sev == 'high' %}
+              <span class="inline-flex rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-800 ring-1 ring-rose-200/80">high</span>
+              {% elif sev == 'medium' %}
+              <span class="inline-flex rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-200/80">medium</span>
+              {% elif sev == 'low' %}
+              <span class="inline-flex rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 ring-1 ring-slate-200/80">low</span>
+              {% endif %}
+            </div>
+            <p class="mt-1.5 font-medium text-slate-900">{{ cf.summary or '—' }}</p>
+            <p class="mt-1 text-[10px] text-slate-600">{{ cf.reason or '—' }}</p>
+            <p class="mt-1 text-[10px] text-slate-700"><span class="text-slate-500">Rec:</span> {{ cf.recommendation or '—' }}</p>
+            {% if tgt_cf.parameter %}
+            <p class="mt-1 text-[10px] text-slate-500">Target · <span class="font-medium text-slate-700">{{ tgt_cf.parameter }}</span></p>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="mt-3 space-y-3">
+        {% for c in row.proposed_changes %}
+        {% set ct = (c.change_type or '') %}
+        {% set ct_l = ct|lower %}
+        {% set st_l = (c.status or 'proposal_only')|lower %}
+        {% set ai = c.approval_intent or {} %}
+        {% set risk_l = (ai.risk_level or '')|lower %}
+        {% set tgt = c.target or {} %}
+        {% set pc = c.proposed_change | default({}, true) %}
+        {% set br = pc.bounded_range | default({}, true) %}
+        {% set rs = c.review_state | default({}, true) %}
+        {% set rv = (rs.status or 'pending')|lower %}
+        {% set rstat_raw = (c.readiness_status or '')|lower %}
+        {% set pst_raw = (c.planning_status or '')|lower %}
+        {% set wfp = (rs.workflow_phase or ('apply_intent' if rv == 'ready_for_apply' else 'review'))|lower %}
+        {% set pint = apply_intents_by_change_id.get(c.change_id) if apply_intents_by_change_id is defined and apply_intents_by_change_id and c.change_id else none %}
+        {% set erq = execution_requests_by_change_id.get(c.change_id) if execution_requests_by_change_id is defined and execution_requests_by_change_id and c.change_id else none %}
+        {% set exo = execution_outcomes_by_change_id.get(c.change_id) if execution_outcomes_by_change_id is defined and execution_outcomes_by_change_id and c.change_id else none %}
+        {% set attempts = execution_attempts_by_change_id.get(c.change_id) if execution_attempts_by_change_id is defined and execution_attempts_by_change_id and c.change_id else [] %}
+        {% set latest_attempt = attempts[0] if attempts else none %}
+        <article class="rounded-lg border p-3 {% if ct_l == 'no_action_proposed' %}border-slate-200 bg-slate-50/80 text-slate-600{% elif ct_l == 'threshold_adjustment' %}border-amber-200 bg-amber-50/50{% elif ct_l == 'review_trigger_adjustment' %}border-sky-200 bg-sky-50/50{% elif ct_l == 'validation_policy_adjustment' %}border-orange-200 bg-orange-50/50{% elif ct_l == 'fallback_policy_adjustment' %}border-rose-200 bg-rose-50/50{% elif ct_l == 'pricing_guardrail_adjustment' %}border-red-200 bg-red-50/40{% else %}border-slate-200 bg-slate-50{% endif %}">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900">{{ c.title or "—" }}</p>
+              <p class="mt-0.5 text-[11px] text-slate-500">{{ c.change_id or "—" }}</p>
+              <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Workflow</span>
+                {% if rv == 'approved' %}
+                <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-950 ring-1 ring-emerald-200/90 dark:bg-emerald-950/35 dark:text-emerald-100 dark:ring-emerald-800/60">approved</span>
+                {% elif rv == 'rejected' %}
+                <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-950 ring-1 ring-rose-200/85 dark:bg-rose-950/35 dark:text-rose-100 dark:ring-rose-800/55">rejected</span>
+                {% elif rv == 'archived' %}
+                <span class="inline-flex items-center rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/80 dark:bg-slate-700/80 dark:text-slate-100">archived</span>
+                {% elif rv == 'ready_for_apply' %}
+                <span class="inline-flex items-center rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-950 ring-1 ring-sky-200/90 dark:bg-sky-950/35 dark:text-sky-100 dark:ring-sky-800/55">ready_for_apply</span>
+                {% else %}
+                <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/85 dark:bg-amber-950/30 dark:text-amber-100 dark:ring-amber-800/50">{{ rv or 'pending' }}</span>
+                {% endif %}
+                {% if wfp == 'apply_intent' %}
+                <span class="inline-flex items-center rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-950 ring-1 ring-indigo-200/80 dark:bg-indigo-950/40 dark:text-indigo-100 dark:ring-indigo-800/55">apply_intent</span>
+                {% else %}
+                <span class="inline-flex items-center rounded-md bg-slate-200/90 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/70 dark:bg-slate-700/70 dark:text-slate-100 dark:ring-slate-600/60">review</span>
+                {% endif %}
+                {% if pint %}
+                {% set pist = (pint.status or '')|lower %}
+                {% if pist == 'ready_for_apply' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-950 ring-1 ring-indigo-200/75 dark:bg-indigo-950/35 dark:text-indigo-100 dark:ring-indigo-800/50" title="Persisted apply intent record">
+                  <span class="uppercase tracking-wide">Apply Intent</span>
+                  <span class="font-semibold text-sky-800 dark:text-sky-200/95">{{ pint.status }}</span>
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-200/90 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/70 dark:bg-slate-700/70 dark:text-slate-200" title="Persisted apply intent record (cancelled)">
+                  <span class="uppercase tracking-wide">Apply Intent</span>
+                  <span>{{ pint.status }}</span>
+                </span>
+                {% endif %}
+                {% endif %}
+                {% if erq %}
+                {% set erst = (erq.status or '')|lower %}
+                {% if erst == 'requested' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-950 ring-1 ring-indigo-200/80 dark:bg-indigo-950/35 dark:text-indigo-100 dark:ring-indigo-800/50" title="Persisted execution request record">
+                  <span class="uppercase tracking-wide">Execution Request</span>
+                  <span class="font-semibold text-sky-800 dark:text-sky-200/95">{{ erq.status }}</span>
+                </span>
+                {% elif erst == 'validated' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-950 ring-1 ring-emerald-200/85 dark:bg-emerald-950/30 dark:text-emerald-100 dark:ring-emerald-800/55" title="Persisted execution request record">
+                  <span class="uppercase tracking-wide">Execution Request</span>
+                  <span class="font-semibold">{{ erq.status }}</span>
+                </span>
+                {% elif erst == 'blocked' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-950 ring-1 ring-rose-200/85 dark:bg-rose-950/30 dark:text-rose-100 dark:ring-rose-800/55" title="Persisted execution request record">
+                  <span class="uppercase tracking-wide">Execution Request</span>
+                  <span class="font-semibold">{{ erq.status }}</span>
+                </span>
+                {% elif erst == 'cancelled' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-200/90 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/70 dark:bg-slate-700/70 dark:text-slate-200" title="Persisted execution request record">
+                  <span class="uppercase tracking-wide">Execution Request</span>
+                  <span class="font-semibold">{{ erq.status }}</span>
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-200/80" title="Persisted execution request record">
+                  <span class="uppercase tracking-wide">Execution Request</span>
+                  <span class="font-semibold">{{ erq.status }}</span>
+                </span>
+                {% endif %}
+                {% endif %}
+                {% if exo %}
+                {% set ex_ev = (exo.evaluation_status or '')|lower %}
+                {% if ex_ev == 'improved' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-950 ring-1 ring-emerald-200/85 dark:bg-emerald-950/35 dark:text-emerald-100 dark:ring-emerald-800/55" title="Post-execution outcome">
+                  <span class="uppercase tracking-wide">Outcome</span>
+                  <span class="font-semibold">{{ exo.evaluation_status }}</span>
+                </span>
+                {% elif ex_ev == 'neutral' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-200/90 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/75 dark:bg-slate-700/70 dark:text-slate-100 dark:ring-slate-600/55" title="Post-execution outcome">
+                  <span class="uppercase tracking-wide">Outcome</span>
+                  <span class="font-semibold">{{ exo.evaluation_status }}</span>
+                </span>
+                {% elif ex_ev == 'degraded' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/85 dark:bg-amber-950/30 dark:text-amber-100 dark:ring-amber-800/50" title="Post-execution outcome">
+                  <span class="uppercase tracking-wide">Outcome</span>
+                  <span class="font-semibold">{{ exo.evaluation_status }}</span>
+                </span>
+                {% elif ex_ev == 'unstable' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-950 ring-1 ring-rose-200/85 dark:bg-rose-950/35 dark:text-rose-100 dark:ring-rose-800/55" title="Post-execution outcome">
+                  <span class="uppercase tracking-wide">Outcome</span>
+                  <span class="font-semibold">{{ exo.evaluation_status }}</span>
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-200/80" title="Post-execution outcome">
+                  <span class="uppercase tracking-wide">Outcome</span>
+                  <span class="font-semibold">{{ exo.evaluation_status or '—' }}</span>
+                </span>
+                {% endif %}
+                {% endif %}
+                {% if latest_attempt %}
+                {% set att_st = (latest_attempt.status or '')|lower %}
+                {% if att_st == 'queued' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-950 ring-1 ring-indigo-200/80 dark:bg-indigo-950/35 dark:text-indigo-100 dark:ring-indigo-800/55" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">queued</span>
+                </span>
+                {% elif att_st == 'running' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-950 ring-1 ring-sky-200/85 dark:bg-sky-950/35 dark:text-sky-100 dark:ring-sky-800/55" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">running</span>
+                </span>
+                {% elif att_st == 'succeeded' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-950 ring-1 ring-emerald-200/85 dark:bg-emerald-950/35 dark:text-emerald-100 dark:ring-emerald-800/55" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">succeeded</span>
+                </span>
+                {% elif att_st == 'failed' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-950 ring-1 ring-rose-200/85 dark:bg-rose-950/35 dark:text-rose-100 dark:ring-rose-800/55" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">failed</span>
+                </span>
+                {% elif att_st == 'rolled_back' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/85 dark:bg-amber-950/30 dark:text-amber-100 dark:ring-amber-800/55" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">rolled_back</span>
+                </span>
+                {% elif att_st == 'cancelled' %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-200/90 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-300/70 dark:bg-slate-700/70 dark:text-slate-100 dark:ring-slate-600/55" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">cancelled</span>
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-800 ring-1 ring-slate-200/80" title="Most recent execution attempt">
+                  <span class="uppercase tracking-wide">Execution Attempts</span>
+                  <span class="font-semibold">{{ latest_attempt.status or '—' }}</span>
+                </span>
+                {% endif %}
+                {% endif %}
+                {% if rs.persisted %}
+                <span class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400" title="Saved to database">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> persisted
+                </span>
+                {% endif %}
+                {% if rs.updated_at %}
+                <span class="text-[10px] tabular-nums text-slate-400 dark:text-slate-500">
+                  {% if rs.updated_at.strftime is defined %}
+                  {{ rs.updated_at.strftime('%Y-%m-%d %H:%M') }} UTC
+                  {% else %}
+                  {{ rs.updated_at }}
+                  {% endif %}
+                </span>
+                {% endif %}
+              </div>
+              {% if exo %}
+              {% set ex_ev2 = (exo.evaluation_status or '')|lower %}
+              {% set ex_crit = (ex_ev2 == 'unstable') or exo.rollback_triggered %}
+              <div class="mt-2 rounded-md border px-2.5 py-1.5 text-[10px] leading-snug {% if ex_crit %}border-rose-300/90 bg-rose-50/70 text-rose-950 ring-1 ring-rose-200/70 dark:border-rose-800/60 dark:bg-rose-950/30 dark:text-rose-100 dark:ring-rose-900/40{% else %}border-slate-200/90 bg-white/60 text-slate-800 dark:border-slate-600 dark:bg-slate-950/25 dark:text-slate-200{% endif %}">
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Execution outcome</p>
+                <dl class="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                  <div><span class="text-slate-500 dark:text-slate-500">outcome_status</span> · <span class="font-semibold">{{ exo.outcome_status or '—' }}</span></div>
+                  <div><span class="text-slate-500 dark:text-slate-500">evaluation</span> · <span class="font-semibold">{{ exo.evaluation_status or '—' }}</span></div>
+                  <div class="tabular-nums"><span class="text-slate-500 dark:text-slate-500">recorded</span> · {{ exo.created_at_display }}</div>
+                  {% if exo.rollback_triggered %}
+                  <div><span class="text-rose-800 dark:text-rose-300 font-semibold">rollback_triggered</span></div>
+                  {% endif %}
+                </dl>
+                {% if ex_crit %}
+                <p class="mt-1.5 text-[10px] font-semibold text-rose-900 dark:text-rose-200">Rollback condition triggered</p>
+                {% endif %}
+                {% if exo.rollback_reason %}
+                <p class="mt-1.5 text-[10px] leading-snug text-rose-900/90 dark:text-rose-200/90">{{ exo.rollback_reason }}</p>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="inline-flex items-center rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-800 ring-1 ring-slate-200/80">{{ ct or "—" }}</span>
+              <span class="inline-flex items-center rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-900 ring-1 ring-violet-100 dark:bg-violet-950/30 dark:text-violet-100" title="Proposal lifecycle from engine">{{ st_l }}</span>
+              {% if risk_l == 'high' %}
+              <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-900">risk: {{ risk_l }}</span>
+              {% elif risk_l == 'medium' %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">risk: {{ risk_l }}</span>
+              {% elif risk_l == 'low' %}
+              <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-900">risk: {{ risk_l }}</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">risk: {{ risk_l or "—" }}</span>
+              {% endif %}
+              <span class="inline-flex items-center rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200/80">{{ ai.approval_type or "—" }}</span>
+            </div>
+          </div>
+
+          {% if pint %}
+          {% set pist = (pint.status or '')|lower %}
+          <div class="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug {% if pist == 'ready_for_apply' %}border-indigo-200/70 bg-indigo-50/25 text-slate-800 dark:border-indigo-800/45 dark:bg-indigo-950/20 dark:text-slate-200{% else %}border-slate-200 bg-slate-50/80 text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300{% endif %}">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Apply intent</p>
+            <dl class="mt-1.5 grid gap-1 text-[10px] sm:grid-cols-2">
+              <div><span class="text-slate-500 dark:text-slate-500">created</span> · <span class="tabular-nums">{{ pint.created_at_display }}</span></div>
+              <div><span class="text-slate-500 dark:text-slate-500">updated</span> · <span class="tabular-nums">{{ pint.updated_at_display }}</span></div>
+              <div class="sm:col-span-2"><span class="text-slate-500 dark:text-slate-500">scope</span> · {{ pint.scope_ui_label }}</div>
+              <div class="sm:col-span-2"><span class="text-slate-500 dark:text-slate-500">status</span> · {% if pist == 'ready_for_apply' %}<span class="font-semibold text-indigo-900 dark:text-indigo-200">{{ pint.status }}</span>{% else %}<span class="font-semibold text-slate-700 dark:text-slate-300">{{ pint.status }}</span>{% endif %} — {% if pist == 'ready_for_apply' %}<span class="text-emerald-800/90 dark:text-emerald-300/90">active</span>{% else %}<span class="text-slate-600 dark:text-slate-400">not active (cancelled)</span>{% endif %}</div>
+            </dl>
+          </div>
+          <details class="mt-2 rounded-md border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/35">
+            <summary class="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 [&::-webkit-details-marker]:hidden">Apply intent snapshots</summary>
+            <div class="space-y-3 border-t border-slate-200/80 px-3 pb-3 pt-2 dark:border-slate-800">
+              <p class="text-[10px] text-slate-500 dark:text-slate-500">Governance / payload captured when the intent was written. Optional fields only appear when present.</p>
+              <p class="text-[10px] text-slate-600 dark:text-slate-400">Flags: apply_plan={{ pint.has_apply_plan }} · preflight={{ pint.has_preflight }} · rollback={{ pint.has_rollback }}</p>
+              <div class="grid gap-3 md:grid-cols-2">
+                <div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">governance_snapshot</p>
+                  <pre class="mt-1 max-h-56 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ pint.governance_snapshot_json or '—' }}</pre>
+                </div>
+                <div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">proposal_payload</p>
+                  <pre class="mt-1 max-h-56 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ pint.proposal_payload_json or '—' }}</pre>
+                </div>
+                {% if pint.apply_plan_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">apply_plan_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ pint.apply_plan_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+                {% if pint.preflight_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">preflight_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ pint.preflight_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+                {% if pint.rollback_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">rollback_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ pint.rollback_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </details>
+          {% endif %}
+
+          {% if erq %}
+          {% set erst = (erq.status or '')|lower %}
+          <div class="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug
+            {% if erst == 'requested' %}border-indigo-200/70 bg-indigo-50/20 text-slate-800 dark:border-indigo-800/45 dark:bg-indigo-950/15 dark:text-slate-200
+            {% elif erst == 'validated' %}border-emerald-200/70 bg-emerald-50/20 text-slate-800 dark:border-emerald-800/45 dark:bg-emerald-950/15 dark:text-slate-200
+            {% elif erst == 'blocked' %}border-rose-200/80 bg-rose-50/25 text-slate-800 dark:border-rose-800/50 dark:bg-rose-950/20 dark:text-slate-200
+            {% elif erst == 'cancelled' %}border-slate-200 bg-slate-50/80 text-slate-700 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-300
+            {% else %}border-slate-200 bg-slate-50/70 text-slate-800{% endif %}">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Execution request</p>
+            <dl class="mt-1.5 grid gap-1 text-[10px] sm:grid-cols-2">
+              <div><span class="text-slate-500 dark:text-slate-500">status</span> · <span class="font-semibold">{{ erq.status }}</span></div>
+              <div class="sm:col-span-2"><span class="text-slate-500 dark:text-slate-500">change_type</span> · {{ erq.change_type or '—' }}</div>
+              <div><span class="text-slate-500 dark:text-slate-500">created</span> · <span class="tabular-nums">{{ erq.created_at_display }}</span></div>
+              <div><span class="text-slate-500 dark:text-slate-500">updated</span> · <span class="tabular-nums">{{ erq.updated_at_display }}</span></div>
+              <div class="sm:col-span-2"><span class="text-slate-500 dark:text-slate-500">scope</span> · {{ erq.scope_ui_label }}</div>
+            </dl>
+            <p class="mt-1.5 text-[10px] text-slate-500 dark:text-slate-500">Flags: plan={{ erq.has_execution_plan }} · preflight={{ erq.has_preflight }} · monitoring={{ erq.has_monitoring_plan }}</p>
+            {% set er_tenant = filters.tenant_id or erq.tenant_id %}
+            {% if er_tenant %}
+            <p class="mt-1.5">
+              <a href="{{ url_for('ops_execution_request_detail', change_id=erq.change_id) }}?tenant_id={{ er_tenant }}" class="text-[10px] font-medium text-sky-800 underline decoration-sky-300 underline-offset-2 hover:text-sky-950 dark:text-sky-300 dark:hover:text-sky-100">Full page detail</a>
+            </p>
+            {% endif %}
+          </div>
+          <details class="mt-2 rounded-md border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/35">
+            <summary class="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 [&::-webkit-details-marker]:hidden">Execution request snapshots</summary>
+            <div class="space-y-3 border-t border-slate-200/80 px-3 pb-3 pt-2 dark:border-slate-800">
+              <p class="text-[10px] text-slate-500 dark:text-slate-500">Frozen at request creation / last refresh. Optional blocks only render when present.</p>
+              <div class="grid gap-3 md:grid-cols-2">
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">governance_snapshot</p>
+                  <pre class="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ erq.governance_snapshot_json or '—' }}</pre>
+                </div>
+                {% if erq.apply_intent_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">apply_intent_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ erq.apply_intent_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+                {% if erq.execution_plan_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">execution_plan_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ erq.execution_plan_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+                {% if erq.preflight_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">preflight_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ erq.preflight_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+                {% if erq.monitoring_plan_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">monitoring_plan_snapshot</p>
+                  <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ erq.monitoring_plan_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+                {% if erq.blocking_reasons_snapshot_json %}
+                <div class="md:col-span-2">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">blocking_reasons_snapshot</p>
+                  <pre class="mt-1 max-h-32 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ erq.blocking_reasons_snapshot_json }}</pre>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </details>
+          {% endif %}
+
+          {% if exo %}
+          <details class="mt-2 rounded-md border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/35">
+            <summary class="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 [&::-webkit-details-marker]:hidden">Outcome metrics (JSON)</summary>
+            <div class="space-y-3 border-t border-slate-200/80 px-3 pb-3 pt-2 dark:border-slate-800">
+              <p class="text-[10px] text-slate-500 dark:text-slate-500">Observed, expected, and deviation snapshots from post-execution evaluation.</p>
+              <div class="grid gap-3 md:grid-cols-1">
+                <div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">observed_metrics_snapshot</p>
+                  <pre class="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ exo.observed_metrics_snapshot_json or '—' }}</pre>
+                </div>
+                <div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">deviation_snapshot</p>
+                  <pre class="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ exo.deviation_snapshot_json or '—' }}</pre>
+                </div>
+                <div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">expected_metrics_snapshot</p>
+                  <pre class="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-white/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ exo.expected_metrics_snapshot_json or '—' }}</pre>
+                </div>
+              </div>
+              {% set ex_tenant = filters.tenant_id or exo.tenant_id %}
+              {% if ex_tenant %}
+              <p class="text-[10px]">
+                <a href="{{ url_for('ops_execution_outcome_detail', change_id=exo.change_id) }}?tenant_id={{ ex_tenant }}" class="font-medium text-sky-800 underline decoration-sky-300 underline-offset-2 hover:text-sky-950 dark:text-sky-300 dark:hover:text-sky-100">Full outcome detail</a>
+              </p>
+              {% endif %}
+            </div>
+          </details>
+          {% endif %}
+
+          {% if latest_attempt %}
+          {% set latest_att_status = (latest_attempt.status or '')|lower %}
+          <div class="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug
+            {% if latest_att_status == 'queued' %}border-indigo-200/70 bg-indigo-50/25 text-slate-800 dark:border-indigo-800/45 dark:bg-indigo-950/20 dark:text-slate-200
+            {% elif latest_att_status == 'running' %}border-sky-200/70 bg-sky-50/25 text-slate-800 dark:border-sky-800/45 dark:bg-sky-950/20 dark:text-slate-200
+            {% elif latest_att_status == 'succeeded' %}border-emerald-200/70 bg-emerald-50/25 text-slate-800 dark:border-emerald-800/45 dark:bg-emerald-950/20 dark:text-slate-200
+            {% elif latest_att_status == 'failed' %}border-rose-200/80 bg-rose-50/30 text-slate-800 dark:border-rose-800/50 dark:bg-rose-950/20 dark:text-slate-200
+            {% elif latest_att_status == 'rolled_back' %}border-amber-200/80 bg-amber-50/30 text-slate-800 dark:border-amber-700/50 dark:bg-amber-950/20 dark:text-slate-200
+            {% elif latest_att_status == 'cancelled' %}border-slate-200 bg-slate-50/80 text-slate-700 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-300
+            {% else %}border-slate-200 bg-slate-50/70 text-slate-800{% endif %}">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Latest execution attempt</p>
+            <dl class="mt-1.5 grid gap-1 text-[10px] sm:grid-cols-2">
+              <div><span class="text-slate-500 dark:text-slate-500">attempt</span> · <span class="font-semibold">#{{ latest_attempt.attempt_number or '—' }}</span></div>
+              <div><span class="text-slate-500 dark:text-slate-500">status</span> · <span class="font-semibold">{{ latest_attempt.status or '—' }}</span></div>
+              <div><span class="text-slate-500 dark:text-slate-500">started</span> · <span class="tabular-nums">{{ latest_attempt.started_at_display }}</span></div>
+              <div><span class="text-slate-500 dark:text-slate-500">completed</span> · <span class="tabular-nums">{{ latest_attempt.completed_at_display }}</span></div>
+              {% if latest_attempt.failure_reason %}
+              <div class="sm:col-span-2"><span class="text-slate-500 dark:text-slate-500">failure_reason</span> · <span class="text-rose-900 dark:text-rose-300">{{ latest_attempt.failure_reason }}</span></div>
+              {% endif %}
+            </dl>
+          </div>
+          <details class="mt-2 rounded-md border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/35">
+            <summary class="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 [&::-webkit-details-marker]:hidden">
+              Execution attempts detail
+              <span class="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0 text-[10px] font-medium normal-case tracking-normal text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ attempts|length }}</span>
+            </summary>
+            <div class="space-y-2 border-t border-slate-200/80 px-3 pb-3 pt-2 dark:border-slate-800">
+              <p class="text-[10px] text-slate-500 dark:text-slate-500">Ordered newest first. Snapshots are captured at each lifecycle stage and shown as JSON.</p>
+              {% for att in attempts %}
+              {% set att_state = (att.status or '')|lower %}
+              <div class="rounded-md border border-slate-200 bg-white/90 px-2.5 py-2 dark:border-slate-700 dark:bg-slate-950/40">
+                <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                  <span class="font-semibold text-slate-800 dark:text-slate-100">Attempt #{{ att.attempt_number or '—' }}</span>
+                  {% if att_state == 'queued' %}
+                  <span class="inline-flex rounded bg-indigo-100 px-1.5 py-0.5 font-semibold text-indigo-900 dark:bg-indigo-900/35 dark:text-indigo-100">queued</span>
+                  {% elif att_state == 'running' %}
+                  <span class="inline-flex rounded bg-sky-100 px-1.5 py-0.5 font-semibold text-sky-900 dark:bg-sky-900/35 dark:text-sky-100">running</span>
+                  {% elif att_state == 'succeeded' %}
+                  <span class="inline-flex rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100">succeeded</span>
+                  {% elif att_state == 'failed' %}
+                  <span class="inline-flex rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-900 dark:bg-rose-900/35 dark:text-rose-100">failed</span>
+                  {% elif att_state == 'rolled_back' %}
+                  <span class="inline-flex rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-900 dark:bg-amber-900/35 dark:text-amber-100">rolled_back</span>
+                  {% elif att_state == 'cancelled' %}
+                  <span class="inline-flex rounded bg-slate-200 px-1.5 py-0.5 font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-100">cancelled</span>
+                  {% else %}
+                  <span class="inline-flex rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-800">{{ att.status or '—' }}</span>
+                  {% endif %}
+                  <span class="text-slate-500 dark:text-slate-500">request_id {{ att.execution_request_id or '—' }}</span>
+                </div>
+                <dl class="mt-1.5 grid gap-1 text-[10px] text-slate-700 dark:text-slate-300 sm:grid-cols-2">
+                  <div><span class="text-slate-500 dark:text-slate-500">started</span> · <span class="tabular-nums">{{ att.started_at_display }}</span></div>
+                  <div><span class="text-slate-500 dark:text-slate-500">completed</span> · <span class="tabular-nums">{{ att.completed_at_display }}</span></div>
+                  <div><span class="text-slate-500 dark:text-slate-500">created</span> · <span class="tabular-nums">{{ att.created_at_display }}</span></div>
+                  <div><span class="text-slate-500 dark:text-slate-500">updated</span> · <span class="tabular-nums">{{ att.updated_at_display }}</span></div>
+                  {% if att.failure_reason %}
+                  <div class="sm:col-span-2"><span class="text-slate-500 dark:text-slate-500">failure_reason</span> · <span class="text-rose-900 dark:text-rose-300">{{ att.failure_reason }}</span></div>
+                  {% endif %}
+                </dl>
+                <div class="mt-2 grid gap-2 md:grid-cols-3">
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">preflight_result_snapshot</p>
+                    <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-slate-50/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ att.preflight_result_snapshot_json or '—' }}</pre>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">execution_result_snapshot</p>
+                    <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-slate-50/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ att.execution_result_snapshot_json or '—' }}</pre>
+                  </div>
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-500">rollback_snapshot</p>
+                    <pre class="mt-1 max-h-40 overflow-auto rounded border border-slate-200 bg-slate-50/90 p-2 text-[10px] leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200">{{ att.rollback_snapshot_json or '—' }}</pre>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </details>
+          {% endif %}
+
+          <div class="mt-2 rounded-md border border-slate-200 bg-white/80 px-3 py-2 dark:border-slate-600 dark:bg-slate-950/30">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Persisted review</p>
+            {% set rnote = rs.note or '' %}
+            {% if rnote %}
+            <p class="mt-1 max-w-prose text-[11px] leading-snug text-slate-600 dark:text-slate-300" title="{{ rnote }}">{{ rnote|truncate(160) }}</p>
+            {% else %}
+            <p class="mt-1 text-[10px] text-slate-400">No note saved</p>
+            {% endif %}
+
+            {% if filters.tenant_id %}
+            <div class="mt-2 border-t border-slate-100 pt-2 dark:border-slate-700/80">
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Workflow actions</p>
+              <div class="mt-1.5 flex flex-wrap gap-1.5">
+                {% if rv == 'pending' and rstat_raw == 'approval_ready' %}
+                <form method="post" action="{{ url_for('ops_proposed_changes_action_approve') }}" class="inline">
+                  <input type="hidden" name="change_id" value="{{ c.change_id or '' }}" />
+                  <input type="hidden" name="tenant_id" value="{{ filters.tenant_id }}" />
+                  <input type="hidden" name="approval_readiness_status" value="{{ c.readiness_status or '' }}" />
+                  {{ pc_list_filter_hiddens() }}
+                  <button type="submit" class="inline-flex items-center rounded border border-emerald-300 bg-emerald-50/80 px-2 py-1 text-[10px] font-semibold text-emerald-950 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">Approve</button>
+                </form>
+                {% endif %}
+                {% if rv in ['pending', 'approved'] %}
+                <form method="post" action="{{ url_for('ops_proposed_changes_action_reject') }}" class="inline">
+                  <input type="hidden" name="change_id" value="{{ c.change_id or '' }}" />
+                  <input type="hidden" name="tenant_id" value="{{ filters.tenant_id }}" />
+                  {{ pc_list_filter_hiddens() }}
+                  <button type="submit" class="inline-flex items-center rounded border border-rose-300 bg-rose-50/80 px-2 py-1 text-[10px] font-semibold text-rose-900 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/35 dark:text-rose-100">Reject</button>
+                </form>
+                {% endif %}
+                {% if rv in ['rejected', 'approved', 'archived'] %}
+                <form method="post" action="{{ url_for('ops_proposed_changes_action_reopen') }}" class="inline">
+                  <input type="hidden" name="change_id" value="{{ c.change_id or '' }}" />
+                  <input type="hidden" name="tenant_id" value="{{ filters.tenant_id }}" />
+                  {{ pc_list_filter_hiddens() }}
+                  <button type="submit" class="inline-flex items-center rounded border border-slate-300 bg-white px-2 py-1 text-[10px] font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200">Reopen</button>
+                </form>
+                {% endif %}
+                {% if rv == 'approved' and pst_raw == 'planned' %}
+                <form method="post" action="{{ url_for('ops_proposed_changes_action_mark_ready_for_apply') }}" class="inline">
+                  <input type="hidden" name="change_id" value="{{ c.change_id or '' }}" />
+                  <input type="hidden" name="tenant_id" value="{{ filters.tenant_id }}" />
+                  <input type="hidden" name="apply_planning_status" value="{{ c.planning_status or '' }}" />
+                  {{ pc_list_filter_hiddens() }}
+                  <button type="submit" class="inline-flex items-center rounded border border-sky-300 bg-sky-50/90 px-2 py-1 text-[10px] font-semibold text-sky-950 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-100">Mark ready for apply</button>
+                </form>
+                {% endif %}
+                {% if rv == 'ready_for_apply' %}
+                <form method="post" action="{{ url_for('ops_proposed_changes_action_cancel_ready_for_apply') }}" class="inline">
+                  <input type="hidden" name="change_id" value="{{ c.change_id or '' }}" />
+                  <input type="hidden" name="tenant_id" value="{{ filters.tenant_id }}" />
+                  {{ pc_list_filter_hiddens() }}
+                  <button type="submit" class="inline-flex items-center rounded border border-indigo-300 bg-indigo-50/80 px-2 py-1 text-[10px] font-semibold text-indigo-950 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/35 dark:text-indigo-100">Cancel ready for apply</button>
+                </form>
+                {% endif %}
+              </div>
+              <p class="mt-1.5 text-[10px] leading-snug text-slate-500 dark:text-slate-400">
+                {% if rv == 'pending' %}
+                  {% if rstat_raw == 'approval_ready' %}
+                  <span class="text-emerald-800/90 dark:text-emerald-300/90">Approval ready — approve is allowed</span>
+                  {% else %}
+                  <span>Blocked by readiness — approve disabled until <code class="rounded bg-slate-200/80 px-0.5 dark:bg-slate-800">approval_ready</code></span>
+                  {% endif %}
+                {% elif rv == 'approved' %}
+                  {% if pst_raw == 'planned' %}
+                  <span class="text-sky-900/80 dark:text-sky-300/90">Apply planning is planned — mark ready for apply is allowed</span>
+                  {% elif pst_raw == 'requires_combined_plan' %}
+                  <span class="text-amber-900/80 dark:text-amber-300/90">Requires combined plan</span>
+                  {% elif pst_raw == 'blocked_from_planning' %}
+                  <span class="text-rose-800/80 dark:text-rose-300/90">Planning blocked</span>
+                  {% elif pst_raw %}
+                  <span>Cannot move to apply intent until planning is <code class="rounded bg-slate-200/80 px-0.5 dark:bg-slate-800">planned</code></span>
+                  {% endif %}
+                {% elif rv == 'ready_for_apply' %}
+                  <span class="text-indigo-900/80 dark:text-indigo-300/85">Apply intent — cancel returns to approved</span>
+                {% endif %}
+              </p>
+            </div>
+            {% else %}
+            <p class="mt-1 text-[10px] text-slate-500">Set tenant filter to load persisted review state, workflow actions, and save updates.</p>
+            {% endif %}
+          </div>
+
+          {% if c.readiness_status %}
+          {% set rstat = (c.readiness_status or '')|lower %}
+          {% set rsev = (c.readiness_severity or '')|lower %}
+          <div class="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug
+            {% if rstat == 'approval_ready' %}border-emerald-200/75 bg-emerald-50/35 text-slate-700 dark:border-emerald-800/50 dark:bg-emerald-950/25 dark:text-slate-200
+            {% elif rstat == 'blocked_with_warnings' %}border-amber-300/80 bg-amber-50/45 text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/20 dark:text-amber-100
+            {% elif rstat == 'blocked' %}border-rose-300/85 bg-rose-50/50 text-rose-950 dark:border-rose-800/55 dark:bg-rose-950/25 dark:text-rose-100
+            {% else %}border-slate-200 bg-slate-50 text-slate-800{% endif %}">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Approval readiness</p>
+            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {% if rstat == 'approval_ready' %}
+              <span class="inline-flex rounded bg-emerald-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">approval_ready</span>
+              {% elif rstat == 'blocked_with_warnings' %}
+              <span class="inline-flex rounded bg-amber-200/90 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950 dark:bg-amber-900/35 dark:text-amber-100">blocked_with_warnings</span>
+              {% elif rstat == 'blocked' %}
+              <span class="inline-flex rounded bg-rose-200/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-950 dark:bg-rose-900/35 dark:text-rose-100">blocked</span>
+              {% else %}
+              <span class="inline-flex rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-800">{{ rstat or '—' }}</span>
+              {% endif %}
+              {% if rsev == 'high' %}
+              <span class="inline-flex rounded bg-rose-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-900 ring-1 ring-rose-200/70 dark:bg-rose-900/30 dark:text-rose-100">severity: high</span>
+              {% elif rsev == 'medium' %}
+              <span class="inline-flex rounded bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/70 dark:bg-amber-900/30 dark:text-amber-100">severity: medium</span>
+              {% elif rsev == 'low' %}
+              <span class="inline-flex rounded bg-slate-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 ring-1 ring-slate-200/80 dark:bg-slate-700/50 dark:text-slate-200">severity: low</span>
+              {% endif %}
+            </div>
+            {% if c.readiness_summary %}
+            <p class="mt-1.5 {% if rstat == 'approval_ready' %}text-slate-600 dark:text-slate-300{% endif %}">{{ c.readiness_summary }}</p>
+            {% endif %}
+            {% set rblk = c.readiness_blocking_reasons | default([], true) %}
+            {% if rblk %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Blocking</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in rblk %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% set rwarn = c.readiness_warnings | default([], true) %}
+            {% if rwarn %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Warnings</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in rwarn %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% set rreq = c.readiness_required_actions | default([], true) %}
+            {% if rreq %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Required actions</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in rreq %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% if c.readiness_recommendation %}
+            <p class="mt-1.5 text-[10px] text-slate-600 dark:text-slate-400"><span class="font-medium text-slate-500 dark:text-slate-500">Rec:</span> {{ c.readiness_recommendation }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if c.planning_status %}
+          {% set pst = (c.planning_status or '')|lower %}
+          {% set psev = (c.planning_severity or '')|lower %}
+          <div class="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug
+            {% if pst == 'planned' %}border-emerald-200/70 bg-emerald-50/25 text-slate-700 dark:border-emerald-800/45 dark:bg-emerald-950/20 dark:text-slate-200
+            {% elif pst == 'blocked_from_planning' %}border-rose-300/85 bg-rose-50/45 text-rose-950 dark:border-rose-800/55 dark:bg-rose-950/25 dark:text-rose-100
+            {% elif pst == 'requires_combined_plan' %}border-amber-300/80 bg-amber-50/40 text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/20 dark:text-amber-100
+            {% else %}border-slate-200 bg-slate-50 text-slate-800{% endif %}">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Apply planning</p>
+            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {% if pst == 'planned' %}
+              <span class="inline-flex rounded bg-emerald-100/80 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 dark:bg-emerald-900/35 dark:text-emerald-100">planned</span>
+              {% elif pst == 'blocked_from_planning' %}
+              <span class="inline-flex rounded bg-rose-200/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-950 dark:bg-rose-900/35 dark:text-rose-100">blocked_from_planning</span>
+              {% elif pst == 'requires_combined_plan' %}
+              <span class="inline-flex rounded bg-amber-200/90 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950 dark:bg-amber-900/35 dark:text-amber-100">requires_combined_plan</span>
+              {% else %}
+              <span class="inline-flex rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-800">{{ pst or '—' }}</span>
+              {% endif %}
+              {% if psev == 'high' %}
+              <span class="inline-flex rounded bg-rose-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-900 ring-1 ring-rose-200/70 dark:bg-rose-900/30 dark:text-rose-100">severity: high</span>
+              {% elif psev == 'medium' %}
+              <span class="inline-flex rounded bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/70 dark:bg-amber-900/30 dark:text-amber-100">severity: medium</span>
+              {% elif psev == 'low' %}
+              <span class="inline-flex rounded bg-slate-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 ring-1 ring-slate-200/80 dark:bg-slate-700/50 dark:text-slate-200">severity: low</span>
+              {% endif %}
+            </div>
+            {% if c.planning_summary %}
+            <p class="mt-1.5 {% if pst == 'planned' %}text-slate-600 dark:text-slate-300{% endif %}">{{ c.planning_summary }}</p>
+            {% endif %}
+            {% if c.planning_execution_readiness and c.planning_execution_readiness != c.planning_status %}
+            <p class="mt-1 text-[10px] text-slate-600 dark:text-slate-400"><span class="font-medium text-slate-500">Execution readiness:</span> {{ c.planning_execution_readiness }}</p>
+            {% endif %}
+            {% set pblk = c.planning_blocking_reasons | default([], true) %}
+            {% if pblk %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Blocking</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in pblk %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% set pfc = c.planning_preflight_checks | default([], true) %}
+            {% if pfc %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Preflight</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in pfc %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% set pdep = c.planning_dependencies | default([], true) %}
+            {% if pdep %}
+            <p class="mt-1.5 text-[10px] font-medium text-amber-900/90 dark:text-amber-300/90">Plan together (dependencies)</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 font-mono text-[10px] text-amber-950 dark:text-amber-100">
+              {% for dep in pdep %}
+              <li>{{ dep }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% set pex = c.planning_execution_sequence | default([], true) %}
+            {% if pex %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Execution sequence</p>
+            <ol class="mt-0.5 list-decimal space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in pex %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ol>
+            {% endif %}
+            {% set prb = c.planning_rollback_plan | default([], true) %}
+            {% if prb %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Rollback thinking</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in prb %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% set psf = c.planning_safety_notes | default([], true) %}
+            {% if psf %}
+            <p class="mt-1.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">Safety</p>
+            <ul class="mt-0.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-700 dark:text-slate-300">
+              {% for line in psf %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% if c.planning_recommendation %}
+            <p class="mt-1.5 text-[10px] text-slate-600 dark:text-slate-400"><span class="font-medium text-slate-500 dark:text-slate-500">Rec:</span> {{ c.planning_recommendation }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% set rel = c.related_conflicts | default([], true) %}
+          {% if rel %}
+          <div class="mt-2 space-y-2 rounded-md border border-amber-200/70 bg-amber-50/35 px-2.5 py-2">
+            {% for cf in rel %}
+            {% set cft = (cf.conflict_type or '') %}
+            {% set sev = (cf.severity or '')|lower %}
+            {% set cft_pretty = cft|replace('_', ' ') %}
+            <div class="border-b border-amber-200/50 pb-2 last:border-b-0 last:pb-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="inline-flex rounded bg-amber-200/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-950">Conflict</span>
+                {% if sev == 'high' %}
+                <span class="inline-flex rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-900">high</span>
+                {% elif sev == 'medium' %}
+                <span class="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">medium</span>
+                {% elif sev == 'low' %}
+                <span class="inline-flex rounded bg-slate-200/90 px-1.5 py-0.5 text-[10px] font-semibold text-slate-800">low</span>
+                {% endif %}
+                <span class="text-[10px] text-slate-600">Part of <span class="font-medium text-slate-800">{{ cft_pretty }}</span></span>
+              </div>
+              <p class="mt-1 text-[11px] text-slate-800">{{ cf.summary|truncate(160) }}</p>
+              <p class="mt-0.5 text-[10px] text-slate-600">{{ cf.recommendation|truncate(140) }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if c.staleness_status %}
+          {% set sst = (c.staleness_status or '')|lower %}
+          {% set sev = (c.staleness_severity or '')|lower %}
+          <div class="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug
+            {% if sst == 'fresh' %}border-emerald-200/60 bg-emerald-50/20 text-slate-700
+            {% elif sst == 'aging' %}border-amber-200/80 bg-amber-50/40 text-amber-950
+            {% elif sst == 'stale' %}border-rose-300/85 bg-rose-50/55 text-rose-950
+            {% elif sst == 'superseded' %}border-indigo-200/80 bg-indigo-50/45 text-indigo-950
+            {% else %}border-slate-200 bg-slate-50 text-slate-800{% endif %}">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Staleness</span>
+              {% if sst == 'fresh' %}
+              <span class="inline-flex rounded bg-emerald-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900">fresh</span>
+              {% elif sst == 'aging' %}
+              <span class="inline-flex rounded bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950">aging</span>
+              {% elif sst == 'stale' %}
+              <span class="inline-flex rounded bg-rose-200/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-950">stale</span>
+              {% elif sst == 'superseded' %}
+              <span class="inline-flex rounded bg-indigo-200/80 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-950">superseded</span>
+              {% else %}
+              <span class="inline-flex rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-800">{{ sst or '—' }}</span>
+              {% endif %}
+              {% if sev == 'high' %}
+              <span class="inline-flex rounded bg-rose-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-rose-900 ring-1 ring-rose-200/70">severity: high</span>
+              {% elif sev == 'medium' %}
+              <span class="inline-flex rounded bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950 ring-1 ring-amber-200/70">severity: medium</span>
+              {% elif sev == 'low' %}
+              <span class="inline-flex rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 ring-1 ring-slate-200/80">severity: low</span>
+              {% endif %}
+            </div>
+            {% if c.staleness_summary %}
+            <p class="mt-1.5 {% if sst == 'fresh' %}text-slate-600{% endif %}">{{ c.staleness_summary }}</p>
+            {% endif %}
+            {% if c.staleness_reason and sst != 'fresh' %}
+            <p class="mt-1 text-[10px] text-slate-600">{{ c.staleness_reason }}</p>
+            {% endif %}
+            {% if c.staleness_recommendation and sst != 'fresh' %}
+            <p class="mt-1 text-[10px] text-slate-600"><span class="font-medium text-slate-500">Rec:</span> {{ c.staleness_recommendation }}</p>
+            {% endif %}
+            {% set st_sig = c.staleness_signals | default([], true) %}
+            {% if st_sig %}
+            <ul class="mt-1.5 list-disc space-y-0.5 pl-4 text-[10px] text-slate-600">
+              {% for sig in st_sig %}
+              <li>{{ sig }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% set audit_hist = c.audit_history | default([], true) %}
+          <details class="mt-3 rounded-md border border-slate-200 bg-slate-50/70">
+            <summary class="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 [&::-webkit-details-marker]:hidden">
+              <span class="inline-flex items-center gap-2">
+                History
+                {% if audit_hist %}
+                <span class="rounded-full bg-slate-200/80 px-1.5 py-0 text-[10px] font-medium normal-case tracking-normal text-slate-600">{{ audit_hist|length }}</span>
+                {% endif %}
+              </span>
+            </summary>
+            <div class="border-t border-slate-200/80 px-3 pb-3 pt-2">
+              {% if not filters.tenant_id %}
+              <p class="text-[11px] leading-relaxed text-slate-500">Set tenant filter to load audit history.</p>
+              {% elif not audit_hist %}
+              <p class="text-[11px] text-slate-500">No audit history yet</p>
+              {% else %}
+              <ul class="space-y-2">
+                {% for ev in audit_hist %}
+                {% set et = (ev.event_type or '')|lower %}
+                <li class="rounded border border-slate-100 bg-white/90 px-2.5 py-2 text-[11px] leading-snug text-slate-700">
+                  <div class="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                    <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+                      {% if et == 'created' %}
+                      <span class="inline-flex shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-900">Created</span>
+                      <span class="text-slate-600">— {{ ev.new_status or '—' }}</span>
+                      {% elif et == 'status_changed' %}
+                      {% set ns = (ev.new_status or '')|lower %}
+                      <span class="inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide
+                        {% if ns == 'approved' %}bg-emerald-100 text-emerald-900
+                        {% elif ns == 'rejected' %}bg-rose-100 text-rose-900
+                        {% elif ns == 'archived' %}bg-slate-200 text-slate-800
+                        {% elif ns == 'pending' %}bg-amber-100 text-amber-900
+                        {% else %}bg-slate-100 text-slate-800{% endif %}">Changed</span>
+                      <span class="text-slate-700"><span class="text-slate-500">{{ ev.previous_status or '—' }}</span> → <span class="font-medium">{{ ev.new_status or '—' }}</span></span>
+                      {% elif et == 'note_updated' %}
+                      <span class="inline-flex shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-900">Note updated</span>
+                      {% else %}
+                      <span class="inline-flex shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-800">{{ ev.event_type or 'event' }}</span>
+                      {% endif %}
+                    </div>
+                    {% if ev.created_at %}
+                    <span class="shrink-0 text-[10px] tabular-nums text-slate-400">
+                      {% if ev.created_at.strftime is defined %}
+                      {{ ev.created_at.strftime('%Y-%m-%d %H:%M') }} UTC
+                      {% else %}
+                      {{ ev.created_at }}
+                      {% endif %}
+                    </span>
+                    {% endif %}
+                  </div>
+                  {% if et == 'note_updated' %}
+                  <div class="mt-1.5 grid gap-0.5 text-[10px] text-slate-600">
+                    <p><span class="text-slate-400">Was:</span> {{ (ev.previous_note or '—')|truncate(96) }}</p>
+                    <p><span class="text-slate-400">Now:</span> {{ (ev.new_note or '—')|truncate(96) }}</p>
+                  </div>
+                  {% endif %}
+                  {% if ev.actor %}
+                  <p class="mt-1 text-[10px] text-slate-500">Actor: {{ ev.actor }}</p>
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+          </details>
+
+          <div class="mt-3 rounded-md border border-slate-200 bg-white/80 px-3 py-2 dark:border-slate-600 dark:bg-slate-950/30">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Note &amp; manual status</p>
+            <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Prefer workflow actions above for approve / reject / reopen / apply-intent transitions; use this for notes, archive, or edge cases.</p>
+            <form method="post" action="{{ url_for('ops_proposed_changes_update_state') }}" class="mt-2 space-y-2">
+              <input type="hidden" name="change_id" value="{{ c.change_id or '' }}" />
+              <input type="hidden" name="tenant_id" value="{{ filters.tenant_id }}" />
+              <input type="hidden" name="scope_type" value="{{ row.scope or 'pipeline' }}" />
+              <input type="hidden" name="scope_id" value="{{ row.scope_id or '' }}" />
+              <input type="hidden" name="category" value="{{ c.category or '' }}" />
+              <input type="hidden" name="change_type" value="{{ c.change_type or '' }}" />
+              <input type="hidden" name="title" value="{{ c.title or '' }}" />
+              {{ pc_list_filter_hiddens() }}
+              <div class="flex flex-wrap items-center gap-2">
+                <select name="status" class="min-w-[7.5rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[11px] text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100">
+                  {% for option in proposed_change_review_status_options %}
+                  <option value="{{ option }}" {% if rv == option %}selected{% endif %}>{{ option }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="inline-flex shrink-0 items-center rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Save</button>
+              </div>
+              <input type="text" name="note" value="{{ rnote }}" placeholder="note" class="w-full max-w-md rounded-md border border-slate-300 px-2 py-1.5 text-[11px] text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100" />
+            </form>
+          </div>
+
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-md border border-slate-100 bg-white/70 px-3 py-2 text-xs">
+              <p class="font-semibold uppercase tracking-wide text-slate-500">Target</p>
+              <dl class="mt-1 space-y-0.5 text-slate-800">
+                <div><span class="text-slate-500">parameter</span> · <span class="font-medium">{{ tgt.parameter or "—" }}</span></div>
+                <div><span class="text-slate-500">scope_type</span> · <span class="font-medium">{{ tgt.scope_type or "—" }}</span></div>
+                <div><span class="text-slate-500">scope_id</span> · <span class="font-medium">{{ tgt.scope_id or "—" }}</span></div>
+              </dl>
+            </div>
+            <div class="rounded-md border border-slate-100 bg-white/70 px-3 py-2 text-xs">
+              <p class="font-semibold uppercase tracking-wide text-slate-500">Proposed change</p>
+              <dl class="mt-1 space-y-0.5 text-slate-800">
+                <div><span class="text-slate-500">direction</span> · <span class="font-medium">{{ pc.direction or "—" }}</span></div>
+                <div><span class="text-slate-500">suggested_delta</span> · <span class="font-medium">{% if pc.suggested_delta is defined and pc.suggested_delta is not none %}{{ pc.suggested_delta }}{% else %}—{% endif %}</span></div>
+                <div>
+                  <span class="text-slate-500">bounded_range</span> ·
+                  <span class="font-medium">
+                    {% if br %}
+                    min {{ br.min | default("—", true) }} · max {{ br.max | default("—", true) }}
+                    {% else %}
+                    —
+                    {% endif %}
+                  </span>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <div class="mt-3 rounded-md border border-slate-100 bg-white/60 px-3 py-2 text-sm leading-relaxed text-slate-800">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</p>
+            <p class="mt-1 {% if ct_l == 'no_action_proposed' %}text-slate-600{% endif %}">{{ c.reason or "—" }}</p>
+          </div>
+
+          {% if c.expected_effect %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Expected effect</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in c.expected_effect %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if c.preconditions %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Preconditions</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in c.preconditions %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if c.rollback_hint %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Rollback hint</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in c.rollback_hint %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if c.evidence %}
+          <div class="mt-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Evidence</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {% for line in c.evidence %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
+            <span>requires_human_review: <span class="font-medium text-slate-700">{{ ai.requires_human_review }}</span></span>
+            <span>category (source): <span class="font-medium text-slate-700">{{ c.category or "—" }}</span></span>
+          </div>
+        </article>
+        {% else %}
+        <p class="text-sm text-slate-500 dark:text-slate-400">No proposed change rows for this scope after filters.</p>
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

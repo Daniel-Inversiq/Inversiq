@@ -2,40 +2,40 @@
 {% macro plan_badge(code) -%}
   {% set c = (code or "starter_99") | string %}
   {% if c == "pro_199" %}
-  <span class="inline-flex items-center rounded-md bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-500/25">Pro</span>
+  <span class="inline-flex items-center rounded-md bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-500/25 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-500/35">Pro</span>
   {% elif c == "business_399" %}
-  <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-500/30">Business</span>
+  <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-500/30 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-500/35">Business</span>
   {% else %}
-  <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-400/25">Starter</span>
+  <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-400/25 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-500/30">Starter</span>
   {% endif %}
 {%- endmacro %}
 
 {% macro status_badge(status) -%}
   {% if status == "active" %}
-  <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20">Active</span>
+  <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-500/30">Active</span>
   {% else %}
-  <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/15">Inactive</span>
+  <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/15 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-500/25">Inactive</span>
   {% endif %}
 {%- endmacro %}
 
 {% macro at_risk_badge() -%}
-<span class="ml-1.5 inline-flex shrink-0 items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 ring-1 ring-inset ring-amber-600/25">At risk</span>
+<span class="ml-1.5 inline-flex shrink-0 items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 ring-1 ring-inset ring-amber-600/25 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-500/30">At risk</span>
 {%- endmacro %}
 
 {# founder_insights.get_tenant_health: healthy | warning | at_risk #}
 {% macro insight_health_badge(health, reason, compact=true) -%}
 <div class="flex min-w-0 flex-col gap-1">
   {% if health == 'healthy' %}
-  <span class="inline-flex w-fit items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-600/20" title="{{ reason or '' }}">Healthy</span>
+  <span class="inline-flex w-fit items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-950/45 dark:text-emerald-300 dark:ring-emerald-500/30" title="{{ reason or '' }}">Healthy</span>
   {% elif health == 'warning' %}
-  <span class="inline-flex w-fit items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-500/30" title="{{ reason or '' }}">Warning</span>
+  <span class="inline-flex w-fit items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-500/30 dark:bg-amber-950/45 dark:text-amber-200 dark:ring-amber-500/35" title="{{ reason or '' }}">Warning</span>
   {% elif health == 'at_risk' %}
-  <span class="inline-flex w-fit items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-900 ring-1 ring-inset ring-rose-500/30" title="{{ reason or '' }}">At risk</span>
+  <span class="inline-flex w-fit items-center rounded-md bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-900 ring-1 ring-inset ring-rose-500/30 dark:bg-rose-950/45 dark:text-rose-200 dark:ring-rose-500/35" title="{{ reason or '' }}">At risk</span>
   {% else %}
-  <span class="inline-flex w-fit items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-400/25" title="{{ reason or '' }}">—</span>
+  <span class="inline-flex w-fit items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-400/25 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-500/25" title="{{ reason or '' }}">—</span>
   {% endif %}
   {% if reason %}
-  <span class="{% if compact %}max-w-[11rem] truncate text-[10px]{% else %}max-w-xl text-[13px]{% endif %} leading-snug text-slate-600" title="{{ reason }}">{{ reason }}</span>
+  <span class="{% if compact %}max-w-[11rem] truncate text-[10px]{% else %}max-w-xl text-[13px]{% endif %} leading-snug text-slate-600 dark:text-slate-400" title="{{ reason }}">{{ reason }}</span>
   {% endif %}
 </div>
 {%- endmacro %}
@@ -50,10 +50,10 @@
 
 {% macro empty_state(title, description) -%}
   <div class="flex flex-col items-center justify-center px-6 py-12 text-center sm:py-14">
-    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400" aria-hidden="true">
+    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500" aria-hidden="true">
       <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4m16 0h-2M4 13h2m0 0V9h8v4m-8 4h8m0-4v4" /></svg>
     </div>
-    <p class="mt-4 text-sm font-medium text-slate-900">{{ title }}</p>
-    <p class="mt-1 max-w-sm text-sm text-slate-500">{{ description }}</p>
+    <p class="mt-4 text-sm font-medium text-slate-900 dark:text-slate-100">{{ title }}</p>
+    <p class="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{{ description }}</p>
   </div>
 {%- endmacro %}

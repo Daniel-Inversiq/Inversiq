@@ -14,6 +14,13 @@ from app.modules.outreach.models.outbound_message import OutboundMessage  # noqa
 from app.modules.outreach.models.message_reply import MessageReply  # noqa
 from app.modules.outreach.models.outbound_suggestion import OutboundSuggestion  # noqa
 from app.models.pipeline_run import PipelineRun, PipelineStepRun  # noqa
+from app.models.run_review_state import RunReviewState  # noqa
+from app.models.proposed_change_review_state import ProposedChangeReviewState  # noqa
+from app.models.proposed_change_audit_event import ProposedChangeAuditEvent  # noqa
+from app.models.proposed_change_apply_intent import ProposedChangeApplyIntent  # noqa
+from app.models.proposed_change_execution_request import ProposedChangeExecutionRequest  # noqa
+from app.models.proposed_change_execution_outcome import ProposedChangeExecutionOutcome  # noqa
+from app.models.proposed_change_execution_attempt import ProposedChangeExecutionAttempt  # noqa
 from app.models.activity_event import ActivityEvent  # noqa
 from app.models.engine_event import EngineEvent  # noqa
 from app.models.lead_feedback import LeadFeedback  # noqa

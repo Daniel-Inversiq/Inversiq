@@ -22,6 +22,7 @@ from app.billing.dependencies import require_active_subscription_for_write
 from app.models import Lead, Tenant
 from app.models.user import User
 from app.models.upload_record import UploadRecord, UploadStatus
+from app.services.activity_service import log_activity_event
 
 from app.services.s3_keys import _safe_filename
 from app.services.storage import (
@@ -163,6 +164,34 @@ def _local_path_if_available(
         if base_dir:
             return str(Path(str(base_dir)) / tenant_id / key_without_tenant)
     return None
+
+
+def _log_upload_activity(db: Session, lead: Lead) -> None:
+    try:
+        upload_count = (
+            db.query(UploadRecord)
+            .filter(
+                UploadRecord.tenant_id == str(getattr(lead, "tenant_id", "") or ""),
+                UploadRecord.lead_id == str(getattr(lead, "id", "") or ""),
+                UploadRecord.status == UploadStatus.uploaded,
+            )
+            .count()
+        )
+        log_activity_event(
+            db,
+            tenant_id=str(getattr(lead, "tenant_id", "") or ""),
+            event_type="upload_completed",
+            title=f"Upload ontvangen: {lead.name or 'Onbekende klant'}",
+            link_url=f"/app/leads/{lead.id}",
+            metadata={"lead_id": str(lead.id), "uploaded_count": upload_count},
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception(
+            "UPLOAD_ACTIVITY_LOG_FAILED lead_id=%s",
+            getattr(lead, "id", None),
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -516,6 +545,7 @@ async def complete_upload(
         except Exception:
             db.rollback()
             raise
+    _log_upload_activity(db, lead)
 
     # ------------------------------------------------------------------
     # Paintly-specific auto-generation timing:
@@ -686,6 +716,7 @@ async def public_complete_upload(
         except Exception:
             db.rollback()
             raise
+    _log_upload_activity(db, lead)
 
     lead_id_value = str(getattr(lead, "id", req.lead_id) or req.lead_id)
     try:

@@ -33,6 +33,10 @@ from app import models  # noqa: F401  (registreert SQLAlchemy modellen)
 from app.middleware.request_id import RequestIdMiddleware
 from app.verticals import register_verticals
 from app.routers.app_me import router as app_me_router
+from app.routers.app_leads import router as app_leads_router
+from app.routers.app_uploads import router as app_uploads_router
+from app.routers.app_jobs import router as app_jobs_router
+from app.routers.app_settings import router as app_settings_router
 from app.routers import settings_pricing_page
 from fastapi.templating import Jinja2Templates
 
@@ -57,6 +61,27 @@ from app.routers.engine_events import router as engine_events_router
 from app.routers.lead_feedback import router as lead_feedback_router
 from app.routers.business_metrics import router as business_metrics_router
 from app.routers.anomalies import router as anomalies_router
+from app.routers.intelligence import router as intelligence_router
+from app.routers.review_inbox import router as review_inbox_router
+from app.routers.review_state import router as review_state_router
+from app.routers.health import router as health_router
+from app.routers.trends import router as trends_router
+from app.routers.focus import router as focus_router
+from app.routers.reasoning import router as reasoning_router
+from app.routers.control_suggestions import router as control_suggestions_router
+from app.routers.simulation_preview import router as simulation_preview_router
+from app.routers.proposed_changes import router as proposed_changes_router
+from app.routers.proposed_change_state import router as proposed_change_state_router
+from app.routers.proposed_change_audit import router as proposed_change_audit_router
+from app.routers.proposal_conflicts import router as proposal_conflicts_router
+from app.routers.proposal_staleness import router as proposal_staleness_router
+from app.routers.proposal_approval_readiness import router as proposal_approval_readiness_router
+from app.routers.proposal_apply_planning import router as proposal_apply_planning_router
+from app.routers.proposed_change_actions import router as proposed_change_actions_router
+from app.routers.proposed_change_apply_intents import router as proposed_change_apply_intents_router
+from app.routers.proposed_change_execution_requests import router as proposed_change_execution_requests_router
+from app.routers.proposed_change_execution_outcomes import router as proposed_change_execution_outcomes_router
+from app.routers.proposed_change_execution_attempts import router as proposed_change_execution_attempts_router
 from app.i18n.service import SUPPORTED_LANGS, set_language_cookie, setup_jinja_i18n
 from app.routers import processing
 
@@ -191,6 +216,10 @@ app.include_router(engine_events_router)
 app.include_router(processing.router)
 app.include_router(auth_router)
 app.include_router(app_me_router)
+app.include_router(app_leads_router)
+app.include_router(app_uploads_router)
+app.include_router(app_jobs_router)
+app.include_router(app_settings_router)
 app.include_router(tenant_pricing.router)
 app.include_router(settings_pricing_page.router)
 app.include_router(settings_logo.router)
@@ -209,6 +238,27 @@ app.include_router(founder_router)
 app.include_router(lead_feedback_router)
 app.include_router(business_metrics_router)
 app.include_router(anomalies_router)
+app.include_router(intelligence_router)
+app.include_router(review_inbox_router)
+app.include_router(review_state_router)
+app.include_router(health_router)
+app.include_router(trends_router)
+app.include_router(focus_router)
+app.include_router(reasoning_router)
+app.include_router(control_suggestions_router)
+app.include_router(simulation_preview_router)
+app.include_router(proposed_changes_router)
+app.include_router(proposed_change_state_router)
+app.include_router(proposed_change_audit_router)
+app.include_router(proposal_conflicts_router)
+app.include_router(proposal_staleness_router)
+app.include_router(proposal_approval_readiness_router)
+app.include_router(proposal_apply_planning_router)
+app.include_router(proposed_change_actions_router)
+app.include_router(proposed_change_apply_intents_router)
+app.include_router(proposed_change_execution_requests_router)
+app.include_router(proposed_change_execution_outcomes_router)
+app.include_router(proposed_change_execution_attempts_router)
 
 
 # DEV-only routes (hardening)

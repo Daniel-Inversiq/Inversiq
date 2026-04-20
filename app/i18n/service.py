@@ -9,7 +9,7 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from jinja2 import pass_context
 
-DEFAULT_LANG = "nl"
+DEFAULT_LANG = "en"
 SUPPORTED_LANGS = {"nl", "en"}
 COOKIE_NAME = "lang"
 I18N_DIR = Path(__file__).resolve().parent
@@ -68,7 +68,7 @@ def resolve_language(request: Request, fallback: str = DEFAULT_LANG) -> str:
     1) ?lang=xx
     2) cookie: lang
     3) Accept-Language header
-    4) fallback (nl)
+    4) fallback (en)
     """
     q_lang = _normalize_lang(request.query_params.get("lang"))
     if q_lang in SUPPORTED_LANGS:

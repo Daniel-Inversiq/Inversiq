@@ -32,6 +32,7 @@ from app.verticals.painting.google_calendar_service import (
 from app.verticals.painting.google_calendar_quote import build_google_event_payload
 from app.verticals.registry import get as get_vertical
 from app.core.settings import settings
+from app.services.activity_service import log_activity_event
 from app.verticals.painting.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
@@ -43,6 +44,35 @@ paintly_templates = Jinja2Templates(directory="app/verticals/painting/templates"
 setup_jinja_i18n(templates)
 setup_jinja_i18n(paintly_templates)
 logger = logging.getLogger(__name__)
+
+
+def _log_quote_activity(
+    db: Session,
+    *,
+    lead: Lead,
+    event_type: str,
+    title: str,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    try:
+        log_activity_event(
+            db,
+            tenant_id=str(getattr(lead, "tenant_id", "") or ""),
+            event_type=event_type,
+            title=title,
+            link_url=f"/app/leads/{lead.id}",
+            metadata={"lead_id": str(lead.id), **(metadata or {})},
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception(
+            "QUOTE_ACTIVITY_LOG_FAILED lead=%s event_type=%s",
+            getattr(lead, "id", None),
+            event_type,
+        )
+
+
 def _tenant_missing_wall_rate(tenant: Tenant | None) -> bool:
     pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
     return pricing.get("walls_rate_eur_per_sqm") in (None, "")
@@ -309,6 +339,13 @@ def _set_failed(db: Session, lead: Lead, msg: str, http_status: int = 400):
     lead.error_message = msg
     lead.updated_at = datetime.utcnow()
     db.commit()
+    _log_quote_activity(
+        db,
+        lead=lead,
+        event_type="processing_failed",
+        title=f"Verwerking mislukt: {lead.name or 'Onbekende klant'}",
+        metadata={"reason": msg},
+    )
 
     inc("quotes_failed_total")
     logger.warning("LEAD %s FAILED reason=%s", lead.id, msg)
@@ -634,6 +671,13 @@ def publish_quote(
 
     inc("quotes_running_total")
     logger.info("LEAD %s status=RUNNING files=%s", lead.id, len(files))
+    _log_quote_activity(
+        db,
+        lead=lead,
+        event_type="processing_started",
+        title=f"Verwerking gestart: {lead.name or 'Onbekende klant'}",
+        metadata={"files_count": len(files)},
+    )
 
     try:
         vertical_id = (lead.vertical or "paintly").strip() or "paintly"
@@ -681,6 +725,17 @@ def publish_quote(
         lead.status = new_status
         lead.updated_at = datetime.utcnow()
         db.commit()
+        _log_quote_activity(
+            db,
+            lead=lead,
+            event_type="review_required" if new_status == "NEEDS_REVIEW" else "quote_ready",
+            title=(
+                f"Controle vereist: {lead.name or 'Onbekende klant'}"
+                if new_status == "NEEDS_REVIEW"
+                else f"Offerte klaar: {lead.name or 'Onbekende klant'}"
+            ),
+            metadata={"status": new_status},
+        )
 
         # Best-effort persist reasons if the model supports it.
         try:
@@ -790,6 +845,13 @@ def publish_quote(
         lead.error_message = str(e)
         lead.updated_at = datetime.utcnow()
         db.commit()
+        _log_quote_activity(
+            db,
+            lead=lead,
+            event_type="processing_failed",
+            title=f"Verwerking mislukt: {lead.name or 'Onbekende klant'}",
+            metadata={"reason": str(e)},
+        )
 
         inc("quotes_failed_total")
         logger.exception("LEAD %s publish_failed", lead.id)

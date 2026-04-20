@@ -1,15 +1,14 @@
 {% if intake_url %}
-<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3
-            rounded-xl border border-neutral-200/90 bg-white shadow-none px-4 py-3.5">
+<div class="flex flex-col gap-2 rounded-lg border border-neutral-200/90 bg-white px-3 py-2.5 shadow-none sm:flex-row sm:items-center sm:gap-3 sm:px-4 sm:py-2.5">
 
   <!-- Link icon + URL -->
-  <div class="flex items-center gap-3 min-w-0 flex-1">
-    <svg class="h-4 w-4 text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="flex min-w-0 flex-1 items-center gap-2.5">
+    <svg class="h-4 w-4 shrink-0 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
             d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
     </svg>
     <div class="min-w-0 flex-1">
-      <p class="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-0.5">Intake-link</p>
+      <p class="mb-0.5 text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-400">Intake-link</p>
       <p class="truncate font-mono text-[12px] text-neutral-600">{{ intake_url }}</p>
     </div>
   </div>
@@ -55,7 +54,7 @@
        target="_blank"
        rel="noopener noreferrer"
        class="ui-btn-secondary">
-      <svg class="h-3 w-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="h-3 w-3 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
       </svg>

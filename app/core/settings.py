@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     # Public URL for links (intake, etc.). Falls back to APP_PUBLIC_BASE_URL when empty.
     APP_BASE_URL: str = ""
     APP_PUBLIC_BASE_URL: str = "http://127.0.0.1:8000"
+    # When set (e.g. Next.js app origin), billing Stripe return URLs and /billing paths target the shell.
+    APP_SHELL_PUBLIC_BASE_URL: str = ""
     SUPPORT_EMAIL: str = ""
     # E.164 or local display number for WhatsApp (e.g. +31612345678)
     SUPPORT_WHATSAPP: str = ""
@@ -104,7 +106,12 @@ class Settings(BaseSettings):
     LOCAL_STORAGE_PATH: str = "data"
 
     # --- CORS ---
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    ALLOWED_ORIGINS: str = (
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000,"
+        "http://localhost:8000,"
+        "http://127.0.0.1:8000"
+    )
 
     # --- HubSpot ---
     HUBSPOT_ENABLED: bool = False
@@ -146,7 +153,19 @@ class Settings(BaseSettings):
     # Helpers
     @property
     def allowed_origins_list(self) -> List[str]:
-        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+        configured = [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+        # Keep local frontend/dev origins available even when ALLOWED_ORIGINS
+        # is overridden to backend-only hosts in env.
+        local_dev = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:8001",
+            "http://127.0.0.1:8001",
+        ]
+        merged = dict.fromkeys([*configured, *local_dev])
+        return list(merged)
 
     @property
     def s3_upload_allowed_types_list(self) -> List[str]:

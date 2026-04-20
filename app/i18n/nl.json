@@ -2,7 +2,22 @@
   "common": {
     "subscription": "Abonnement",
     "manage_subscription": "Beheer abonnement",
-    "upgrade_to_pro": "Upgrade naar Pro"
+    "upgrade_to_pro": "Upgrade naar Pro",
+    "auth": {
+      "not_logged_in": "Niet ingelogd"
+    },
+    "actions": {
+      "retry": "Opnieuw proberen",
+      "open": "Open",
+      "open_lead": "Open lead",
+      "copy": "Kopieer",
+      "copied": "Gekopieerd"
+    },
+    "states": {
+      "unknown": "Onbekend"
+    },
+    "yes": "Ja",
+    "no": "Nee"
   },
   "billing": {
     "title": "Abonnement",
@@ -43,7 +58,11 @@
       "upgrade_to_pro": "Upgrade naar Pro",
       "choose_starter": "Kies Starter",
       "choose_pro": "Kies Pro",
-      "choose_business": "Kies Business"
+      "choose_business": "Kies Business",
+      "choose_core": "Start met Core",
+      "choose_growth": "Start met Growth",
+      "choose_scale": "Contact opnemen",
+      "choose_plan": "Kies een plan"
     },
     "js": {
       "upgrade_failed": "Kiezen van abonnement mislukt. Probeer het later opnieuw.",
@@ -55,6 +74,36 @@
       "portal_unexpected": "Er ging iets mis bij het openen van abonnementsbeheer."
     },
     "plan": {
+      "core": {
+        "name": "Core",
+        "subtitle": "Voor kleinere teams die snel willen starten",
+        "limit_label": "30 aanvragen / maand",
+        "features": {
+          "f1": "30 aanvragen per maand",
+          "f2": "1 workflow",
+          "f3": "Standaard regels en output"
+        }
+      },
+      "growth": {
+        "name": "Growth",
+        "subtitle": "Voor groeiende teams met meer volume en automatisering",
+        "limit_label": "150 aanvragen / maand",
+        "features": {
+          "f1": "150 aanvragen per maand",
+          "f2": "1–2 workflows",
+          "f3": "Automatisering en advanced regels"
+        }
+      },
+      "scale": {
+        "name": "Scale",
+        "subtitle": "Voor grotere teams met maatwerk en integraties",
+        "limit_label": "Onbeperkt volume",
+        "features": {
+          "f1": "Onbeperkt aanvragen",
+          "f2": "Custom workflows",
+          "f3": "Integraties en API"
+        }
+      },
       "starter": {
         "name": "Starter",
         "subtitle": "Voor zelfstandige schilders die snel professioneel willen starten.",
@@ -339,5 +388,561 @@
       "no_results_title": "Geen offertes gevonden",
       "no_results_subtitle": "Pas je filters aan of maak direct een nieuwe offerte."
     }
+  },
+  "dashboard": {
+    "header": {
+      "kicker": "Dashboard",
+      "title": "Performance center",
+      "subtitle": "Overzicht van prestaties, omzet en recente activiteit in een operationele cockpit."
+    },
+    "kpi": {
+      "section_title": "KPI overzicht",
+      "snapshot_label": "Laatste backend snapshot",
+      "conversion": {
+        "label": "Conversie",
+        "description": "Getekende offertes ratio"
+      },
+      "open_quotes": {
+        "label": "Open offertes",
+        "description": "Actie vereist in pipeline"
+      },
+      "accepted": {
+        "label": "Akkoord",
+        "description": "Status: signed"
+      },
+      "total_status_rows": {
+        "label": "Totaal statusregels",
+        "pending": "Pending: {pending}"
+      }
+    },
+    "analytics": {
+      "kicker": "Analytics",
+      "title": "Omzet en pipeline verdeling",
+      "subtitle": "Gebruik deze signalen om capaciteit en opvolging bij te sturen.",
+      "revenue_trend": "Omzetverloop",
+      "status_distribution": "Statusverdeling"
+    },
+    "activity": {
+      "kicker": "Recente activiteit",
+      "title": "Events en opvolging",
+      "subtitle": "Realtime veranderingen binnen je tenant, op tijdlijn gesorteerd.",
+      "empty": "Nog geen activiteit beschikbaar.",
+      "open_item": "Open item",
+      "actions": {
+        "open_lead": "Open lead",
+        "open_offer": "Open offerte",
+        "view_send_quote": "Bekijk/verstuur offerte"
+      },
+      "timeline_title": "Volledige tijdlijn",
+      "groups": {
+        "needs_attention": {
+          "title": "Aandacht nodig",
+          "description": "Items die direct operatoractie vereisen."
+        },
+        "new_requests": {
+          "title": "Nieuwe aanvragen",
+          "description": "Nieuwe intake-aanvragen die de workflow binnenkomen."
+        },
+        "recently_completed": {
+          "title": "Recent afgerond",
+          "description": "Offertes die zojuist klaar zijn."
+        }
+      },
+      "event_type": {
+        "created": "Aangemaakt",
+        "updated": "Bijgewerkt",
+        "status_changed": "Status gewijzigd",
+        "follow_up": "Opvolging",
+        "note_added": "Notitie toegevoegd",
+        "quote_sent": "Offerte verzonden",
+        "quote_viewed": "Offerte bekeken",
+        "quote_accepted": "Offerte geaccepteerd",
+        "quote_rejected": "Offerte afgewezen",
+        "upload_received": "Upload ontvangen",
+        "new_intake_request": "Nieuwe intake aanvraag",
+        "upload_completed": "Upload voltooid",
+        "processing_started": "Verwerking gestart",
+        "quote_ready": "Offerte klaar",
+        "review_required": "Controle vereist",
+        "processing_failed": "Verwerking mislukt"
+      }
+    },
+    "meta": {
+      "latest_revenue_point": "Laatste omzetpunt",
+      "recent_events": "Recente events",
+      "recent_events_count": "{count} activiteit-items geladen uit backend."
+    },
+    "empty": {
+      "title": "Geen data beschikbaar",
+      "description": "De API gaf geen dashboardgegevens terug. Dit kan gebeuren in een lege tenant omgeving."
+    },
+    "errors": {
+      "load_failed_title": "Dashboard laden mislukt",
+      "inactive_session": "Je sessie is niet actief. Log in via de FastAPI auth-flow zodat de access_token cookie wordt meegestuurd.",
+      "unauthenticated": "Niet geauthenticeerd (401). Log opnieuw in zodat de sessiecookie wordt meegestuurd.",
+      "forbidden": "Geen toegang tot tenant-data (403). Controleer of je account aan de juiste tenant is gekoppeld.",
+      "network": "Backend niet bereikbaar. Controleer API base URL, CORS en of FastAPI draait.",
+      "unknown": "Onbekende fout bij dashboard laden."
+    },
+    "charts": {
+      "status_distribution_aria": "Statusverdeling",
+      "donut_center_label": "Totaal"
+    },
+    "operational": {
+      "header_kicker": "Overzicht",
+      "title": "Operationeel overzicht",
+      "subtitle": "Realtime inzicht in aanvragen, voortgang en aandachtspunten.",
+      "errors": {
+        "load_failed_title": "Overzicht kon niet geladen worden",
+        "load_failed_description": "Een of meer gegevensbronnen reageren niet. Vernieuw om opnieuw te laden."
+      },
+      "kpi": {
+        "new_requests": { "label": "Nieuwe aanvragen", "hint": "Intake dossiers" },
+        "open_quotes": { "label": "Open offertes", "hint": "Nog niet geaccepteerd" },
+        "active_jobs": { "label": "Actieve klussen", "hint": "Gepland of in uitvoering" },
+        "review_queue": { "label": "Review wachtrij", "hint": "Handmatige actie" }
+      },
+      "intake": {
+        "label": "Intake-link"
+      },
+      "activity": {
+        "kicker": "Activiteit",
+        "title": "Intake (laatste 7 dagen)",
+        "subtitle": "Pipeline-runs per dag ({count} in deze weergave).",
+        "scheduled_label": "Gepland",
+        "body": "Weekvolume intake vind je onder Inzichten. Dit blok blijft gericht op wat vandaag actie vraagt."
+      },
+      "distribution": {
+        "kicker": "Verdeling",
+        "title": "Status",
+        "subtitle": "Offertes en klussen",
+        "no_data": "Nog geen statusdata."
+      },
+      "analytics_section": {
+        "kicker": "Inzichten",
+        "title": "Trends en statusmix",
+        "subtitle": "Volume en verdeling — gescheiden van het operationele werk hierboven.",
+        "line_title": "Intake-activiteit",
+        "line_description": "Pipeline-runs per dag (laatste 7 dagen).",
+        "donut_title": "Statusverdeling",
+        "donut_description": "Offertes en klussen per status."
+      },
+      "attention": {
+        "title": "Aandacht nodig",
+        "description": "Review, fouten of onzekere runs.",
+        "footer_link": "Naar review",
+        "empty_title": "Niets dat wacht",
+        "empty_description": "Geen open review- of faalstatussen."
+      },
+      "new_requests_panel": {
+        "title": "Nieuwe aanvragen",
+        "description": "Laatste intake — eerste contact met de klant.",
+        "footer_link": "Open offertes",
+        "empty_title": "Nog geen aanvragen",
+        "empty_description": "Deel je intake-link om hier verzoeken te zien."
+      },
+      "recent_done": {
+        "title": "Recent afgerond",
+        "description": "Afgeronde klussen, meest recent eerst.",
+        "footer_pipeline": "Open offertewaarde in pijplijn:",
+        "empty_title": "Nog geen afgeronde klussen",
+        "empty_description": "Afgeronde werkorders verschijnen hier met datum."
+      },
+      "job_done_secondary": "Afgerond {date}"
+    }
+  },
+  "review_queue": {
+    "header": {
+      "kicker": "Review",
+      "title": "Handmatige review wachtrij",
+      "subtitle": "Dossiers met onzekere of mislukte verwerking die operator-interventie nodig hebben."
+    },
+    "kpi": {
+      "review_required": "Review vereist",
+      "processing_failed": "Verwerking mislukt",
+      "other_flags": "Overige flags"
+    },
+    "empty": {
+      "title": "Geen review-items",
+      "description": "Er staan momenteel geen dossiers in de review wachtrij.",
+      "hint": "Zodra AI iets niet zeker kan verwerken, verschijnt het dossier hier met status en directe actie."
+    }
+  },
+  "agenda_page": {
+    "header": {
+      "kicker": "Agenda",
+      "title": "Geplande klussen en opvolging",
+      "subtitle": "Planningsoverzicht op basis van huidige scheduled werkdata."
+    },
+    "kpi": {
+      "upcoming": "Komend",
+      "past": "Voorbije items",
+      "total": "Totaal gepland"
+    },
+    "empty": {
+      "title": "Nog geen geplande items",
+      "description": "Er zijn momenteel geen klussen met een planning.",
+      "hint": "Deze pagina gebruikt nu scheduled job-data als lichte planning. Zodra er meer kalenderdata beschikbaar is, kan dit worden uitgebreid naar dag/weekweergave."
+    }
+  },
+  "shell": {
+    "search_placeholder": "Zoeken",
+    "apps_aria": "Apps en snelkoppelingen",
+    "notifications_aria": "Meldingen",
+    "notifications_title": "Meldingen",
+    "notifications_empty": "Geen notificaties",
+    "notifications_sample": "Voorbeeldmelding — koppel hier je feed.",
+    "settings_aria": "Instellingen",
+    "guide": "Handleiding"
+  },
+  "offers": {
+    "errors": {
+      "not_logged_in_description": "Log in zodat tenant-gebonden offertes kunnen worden opgehaald.",
+      "load_failed_title": "Offertes laden mislukt",
+      "unauthenticated": "Niet geauthenticeerd (401). Log opnieuw in.",
+      "forbidden": "Geen toegang tot offertes voor deze tenant (403).",
+      "network": "Backend niet bereikbaar. Controleer of FastAPI draait.",
+      "unknown": "Onbekende fout bij laden van offertes."
+    },
+    "empty": {
+      "title": "Geen offertes gevonden",
+      "description": "Er zijn nog geen pipeline/offerte-runs zichtbaar voor tenant {tenant_id}."
+    },
+    "partial": {
+      "title": "Offertes deels geladen",
+      "description": "{count} offertebedragen konden niet worden opgehaald. De lijst blijft zichtbaar; bedragen tonen \"Nog niet berekend\" totdat detaildata beschikbaar is."
+    },
+    "list": {
+      "header": {
+        "kicker": "Offertes",
+        "title": "Tenant offerte-overzicht",
+        "subtitle": "Realtime lijst van recente offertes op basis van pipeline-runs en beschikbare offertebedragen.",
+        "detail_line": "Intake-aanvragen en gegenereerde offertes tot akkoord door de klant."
+      },
+      "table": {
+        "customer_project": "Klant / Project",
+        "status": "Status",
+        "value": "Waarde",
+        "created": "Aangemaakt",
+        "updated": "Bijgewerkt",
+        "action": "Actie"
+      },
+      "amount": {
+        "not_calculated": "Nog niet berekend"
+      },
+      "unknown_customer": "Onbekende klant",
+      "project_details_unavailable": "Projectdetails nog niet beschikbaar",
+      "lead_run_meta": "Lead: {lead_id} | Run #{run_id}",
+      "actions": {
+        "open_offer": "Open offerte detail",
+        "open_public_quote": "Open publieke offerte"
+      },
+      "empty_help": {
+        "what_you_see_title": "Wat je hier ziet",
+        "what_you_see_body": "Intake-aanvragen en gegenereerde offertes die nog niet zijn geaccepteerd.",
+        "data_check_title": "Data-check",
+        "data_check_no_runs": "Nog geen run-data beschikbaar voor dit tenant.",
+        "data_check_outside_statuses": "{count} runs gevonden, maar momenteel buiten de Offertes-statussen."
+      },
+      "stats": {
+        "open_quotes": "Open offertes",
+        "in_preparation": "In voorbereiding",
+        "sent_or_followed": "Verzonden / opgevolgd"
+      },
+      "empty_actions": {
+        "open_dashboard": "Open Overzicht",
+        "open_review": "Open Review"
+      }
+    },
+    "detail": {
+      "not_available": "Niet beschikbaar",
+      "unknown_customer": "Onbekende klant",
+      "no_email": "Geen e-mail",
+      "header": {
+        "kicker": "Offerte detail",
+        "meta": "Lead {lead_id} - tenant {tenant_id}"
+      },
+      "actions": {
+        "back_to_leads": "Terug naar leads",
+        "back_to_offers": "Terug naar offertes"
+      },
+      "next_action": {
+        "title": "Volgende actie",
+        "offer_ready": "De offerte is klaar. Open de klantgerichte offertepagina om te controleren en te versturen.",
+        "review_lead": "De offerte is nog niet klaar. Open de leadpagina en rond eerst de intakecontrole af.",
+        "open_offer": "Open publieke offerte",
+        "open_lead": "Open leadpagina"
+      },
+      "ready_panel": {
+        "title": "Handoff bij offerte klaar",
+        "description": "Wanneer deze offerte klaar is, open je eerst de klantgerichte offertepagina als verzend- en controlemoment.",
+        "primary_action": "Bekijk/verstuur publieke offerte",
+        "secondary_action": "Open offerte detail"
+      },
+      "handoff": {
+        "title": "Na offerte klaar",
+        "subtitle": "Gebruik dit handoff-pad om van offerte naar uitvoering te gaan.",
+        "steps": {
+          "send_quote": "1) Verstuur of deel de publieke offerte met de klant.",
+          "track_acceptance": "2) Volg de klantreactie en zet status naar accepted/signed bij akkoord.",
+          "convert_to_job": "3) Zet geaccepteerd werk om naar een operationele job."
+        },
+        "actions": {
+          "open_public_quote": "Open publieke offerte",
+          "open_leads": "Open leads",
+          "open_jobs": "Open jobs"
+        }
+      },
+      "errors": {
+        "session_expired": "Je sessie is verlopen. Log opnieuw in om offertedetails te bekijken.",
+        "load_failed_title": "Offerte detail laden mislukt",
+        "load_failed_description": "Controleer of de backend draait en je tenant toegang heeft tot deze lead.",
+        "lead_not_found_title": "Lead niet gevonden",
+        "lead_not_found_description": "Deze lead hoort niet bij je tenant of bestaat niet meer."
+      },
+      "cards": {
+        "status": {
+          "label": "Status",
+          "last_run": "Laatste run: {datetime}"
+        },
+        "quote_value": {
+          "label": "Offerte waarde",
+          "source": "Bron: /quotes/{lead_id}/json"
+        },
+        "customer": {
+          "label": "Klant",
+          "open_public": "Open publieke offerteweergave"
+        }
+      },
+      "project_context": {
+        "title": "Project context",
+        "description": "Beschrijving",
+        "address": "Adres"
+      }
+    }
+  },
+  "customers": {
+    "header": {
+      "kicker": "Klanten / leads",
+      "title": "Tenant klantoverzicht",
+      "subtitle": "Gebruik leads om intake-details eerst te valideren en ga daarna door naar offertedetail."
+    },
+    "errors": {
+      "not_logged_in_description": "Log in om klant- en leaddata op te halen.",
+      "load_failed_title": "Klanten laden mislukt",
+      "load_failed_description": "Backendresponse voor /app/leads kon niet geladen worden."
+    },
+    "empty": {
+      "title": "Geen leads gevonden",
+      "description": "Er zijn nog geen klanten/leads in deze tenant."
+    },
+    "table": {
+      "name": "Naam",
+      "email": "Email",
+      "status": "Status",
+      "action": "Actie"
+    },
+    "actions": {
+      "open_lead": "Open lead",
+      "open_offer": "Open offerte"
+    }
+  },
+  "workflows": {
+    "header": {
+      "kicker": "Workflows",
+      "title": "Pipeline runs"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in om workflow runs op te halen.",
+      "load_failed_title": "Workflowoverzicht laden mislukt",
+      "load_failed_description": "De endpoint /api/pipeline-runs kon niet geladen worden."
+    },
+    "empty": {
+      "title": "Geen runs gevonden",
+      "description": "Voor tenant {tenant_id} zijn nog geen workflow runs aanwezig."
+    },
+    "table": {
+      "run": "Run",
+      "lead": "Lead",
+      "status": "Status",
+      "created": "Aangemaakt",
+      "action": "Actie"
+    },
+    "actions": {
+      "open_run": "Open run",
+      "open_lead": "Open lead"
+    }
+  },
+  "uploads": {
+    "header": {
+      "kicker": "Uploads",
+      "title": "Tenant uploadoverzicht"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in om uploads op te halen.",
+      "load_failed_title": "Uploads laden mislukt",
+      "load_failed_description": "De endpoint /app/uploads kon niet geladen worden."
+    },
+    "empty": {
+      "title": "Geen uploads gevonden",
+      "description": "Er zijn nog geen geverifieerde uploads in deze tenant."
+    },
+    "table": {
+      "file": "Bestand",
+      "status": "Status",
+      "type": "Type",
+      "size": "Grootte",
+      "created": "Aangemaakt",
+      "lead": "Lead",
+      "action": "Actie"
+    }
+  },
+  "jobs": {
+    "header": {
+      "kicker": "Taken / jobs",
+      "title": "Tenant takenoverzicht",
+      "subtitle": "Alleen geaccepteerd werk in uitvoering, inclusief planning en voortgang."
+    },
+    "kpi": {
+      "scheduled": "Gepland",
+      "in_progress": "In uitvoering",
+      "done": "Afgerond"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in om taken/jobs op te halen.",
+      "load_failed_title": "Taken laden mislukt",
+      "load_failed_description": "De endpoint /app/jobs kon niet geladen worden."
+    },
+    "empty": {
+      "title": "Geen taken gevonden",
+      "description": "Er zijn nog geen jobs in deze tenant.",
+      "hint": "Klussen tonen alleen geaccepteerd of ondertekend werk. Nieuwe aanvragen vind je onder Offertes.",
+      "link_quotes": "Naar Offertes",
+      "link_agenda": "Open Agenda"
+    },
+    "table": {
+      "job": "Job",
+      "status": "Status",
+      "lead": "Lead",
+      "scheduled": "Gepland",
+      "started": "Gestart",
+      "finished": "Afgerond",
+      "action": "Actie"
+    }
+  },
+  "settings": {
+    "header": {
+      "title": "Tenant instellingen"
+    },
+    "loading": "Instellingen laden...",
+    "errors": {
+      "not_logged_in_description": "Log in om instellingen te bekijken en te wijzigen.",
+      "load_failed_title": "Instellingen laden mislukt",
+      "load_failed_description": "De endpoint /app/settings/company kon niet geladen worden."
+    },
+    "validation": {
+      "company_name_required": "Vul een bedrijfsnaam in.",
+      "support_email_invalid": "Vul een geldig e-mailadres in."
+    },
+    "feedback": {
+      "saved": "Instellingen opgeslagen.",
+      "save_failed": "Opslaan mislukt. Controleer je sessie en probeer opnieuw.",
+      "logo_select_first": "Kies eerst een logo-bestand.",
+      "logo_saved": "Logo opgeslagen.",
+      "logo_upload_failed": "Logo upload mislukt. Gebruik PNG/JPEG en probeer opnieuw."
+    },
+    "form": {
+      "company_name": "Bedrijfsnaam",
+      "support_email": "Support e-mail",
+      "support_email_hint": "Support e-mail volgt momenteel het account e-mailadres.",
+      "company_logo": "Bedrijfslogo",
+      "open_current_logo": "Huidig logo openen",
+      "no_logo": "Nog geen logo ingesteld.",
+      "upload_logo": "Logo uploaden",
+      "uploading_logo": "Logo uploaden...",
+      "save": "Instellingen opslaan",
+      "saving": "Opslaan..."
+    }
+  },
+  "nav": {
+    "workspace": "Workspace",
+    "tenant_workspace": "Tenant workspace",
+    "groups": {
+      "core": "Core",
+      "system": "System"
+    },
+    "items": {
+      "dashboard": "Overzicht",
+      "quotes": "Offertes",
+      "jobs": "Klussen",
+      "review": "Review",
+      "agenda": "Agenda",
+      "settings": "Instellingen"
+    },
+    "footer": {
+      "subscription": "Abonnement",
+      "support": "Support",
+      "logout": "Logout"
+    }
+  },
+  "topbar": {
+    "session_checking": "Sessie controleren...",
+    "logged_in_as": "Ingelogd als {email} ({tenant_id})"
+  },
+  "workflow_detail": {
+    "header": {
+      "kicker": "Workflow run",
+      "run": "Run #{run_id}",
+      "meta": "Tenant {tenant_id} - Lead {lead_id}"
+    },
+    "errors": {
+      "invalid_run_id_title": "Ongeldige run id",
+      "invalid_run_id_description": "De workflow run id in de URL is niet geldig.",
+      "not_logged_in_description": "Log in om workflow details op te halen.",
+      "load_failed_title": "Run detail laden mislukt",
+      "load_failed_description": "De endpoint /api/pipeline-runs/{run_id}/debug kon niet geladen worden."
+    },
+    "cards": {
+      "status": "Status",
+      "recoverability": "Herstelbaarheid",
+      "events": "Gebeurtenissen",
+      "review": "Review"
+    },
+    "steps": {
+      "title": "Stap samenvatting",
+      "total": "Totaal stappen",
+      "completed": "Voltooid",
+      "failed": "Mislukt",
+      "skipped": "Overgeslagen",
+      "failure_step": "Foutstap",
+      "error_category": "Foutcategorie"
+    },
+    "actions": {
+      "open_linked_offer": "Open gekoppelde lead offerte"
+    }
+  },
+  "status": {
+    "pending": "In afwachting",
+    "completed": "Afgerond",
+    "failed": "Mislukt",
+    "uploaded": "Geupload",
+    "scheduled": "Gepland",
+    "running": "Bezig",
+    "processing": "Verwerken",
+    "succeeded": "Geslaagd",
+    "accepted": "Geaccepteerd",
+    "signed": "Getekend",
+    "done": "Klaar",
+    "rejected": "Afgewezen",
+    "error": "Fout",
+    "new": "Nieuw",
+    "viewed": "Bekeken",
+    "sent": "Verzonden",
+    "draft": "Concept",
+    "ready": "Gereed",
+    "in_progress": "Bezig",
+    "unknown": "Onbekend",
+    "active": "Actief",
+    "skipped": "Overgeslagen"
   }
 }

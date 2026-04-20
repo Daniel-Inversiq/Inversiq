@@ -25,8 +25,12 @@ class EmailSenderService:
         prompt_version: Optional[str] = None,
         soul_version: Optional[str] = None,
         variant_id: Optional[str] = None,
+        prepare_body: bool = True,
     ) -> OutboundMessage:
-        prepared_body = self._prepare_outreach_body(body)
+        if prepare_body:
+            prepared_body = self._prepare_outreach_body(body)
+        else:
+            prepared_body = (body or "").replace("\r\n", "\n").replace("\r", "\n").strip()
         result = self.gmail.send_email(
             to_email=recipient_email,
             subject=subject,

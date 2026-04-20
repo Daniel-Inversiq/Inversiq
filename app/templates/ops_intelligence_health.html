@@ -1,0 +1,106 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Intelligence Health{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Intelligence Health</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Internal read-only overview of pipeline and vertical health.</p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Showing {{ shown_count }} of {{ total }}</p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_intelligence_health') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Health status</span>
+        <select name="health_status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="">All</option>
+          {% for option in health_status_options %}
+          <option value="{{ option }}" {% if filters.health_status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pipeline name</span>
+        <input type="text" name="pipeline_name" value="{{ filters.pipeline_name }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Vertical ID</span>
+        <input type="text" name="vertical_id" value="{{ filters.vertical_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Limit</span>
+        <input type="number" min="1" max="200" name="limit" value="{{ filters.limit }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <div class="flex items-end gap-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_intelligence_health') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-[96rem] w-full text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/90 text-left text-xs uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold">Pipeline / Vertical</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Health</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Failed rate</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Needs review rate</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Low confidence rate</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Key signal counts</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Top recommendation</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for row in items %}
+          <tr class="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+            <td class="px-4 py-3 align-top text-slate-900">
+              <div class="font-medium">{{ row.pipeline_name or "—" }}</div>
+              <div class="font-mono text-xs text-slate-500">{{ row.vertical_id or "—" }}</div>
+            </td>
+            <td class="px-4 py-3 align-top">
+              {% set health = row.health_status %}
+              {% if health == "unhealthy" %}
+              <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">unhealthy</span>
+              {% elif health == "watch" %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">watch</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">{{ health or "healthy" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ "%.1f%%"|format((row.failed_rate or 0) * 100) }}</td>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ "%.1f%%"|format((row.needs_review_rate or 0) * 100) }}</td>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ "%.1f%%"|format((row.low_confidence_rate or 0) * 100) }}</td>
+            <td class="px-4 py-3 align-top text-xs text-slate-700">
+              {% if row.signal_counts %}
+              {% for key, value in row.signal_counts.items() %}
+              <div class="font-mono">{{ key }}: {{ value }}</div>
+              {% endfor %}
+              {% else %}
+              <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top text-slate-700">
+              <div class="max-w-xl truncate" title="{{ row.top_recommendation or '' }}">{{ row.top_recommendation or "—" }}</div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">No health items found for current filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

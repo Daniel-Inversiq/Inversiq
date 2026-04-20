@@ -7,24 +7,38 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["DM Sans", "system-ui", "sans-serif"] },
+          boxShadow: {
+            "intake-card": "0 1px 2px rgba(15, 23, 42, 0.05), 0 16px 40px -12px rgba(15, 23, 42, 0.1)",
+            "intake-glow": "0 0 0 1px rgba(163, 230, 53, 0.18), 0 8px 28px -8px rgba(163, 230, 53, 0.12)",
+          },
+        },
+      },
+    };
+  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <style>
-    body { font-family: 'DM Sans', system-ui, sans-serif; }
-    * { transition: border-color 0.15s ease, background-color 0.15s ease; }
-
+    body { font-family: "DM Sans", system-ui, sans-serif; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
     .upload-zone {
-      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23cbd5e1' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
+      background-color: #f7f8f5;
+      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='14' ry='14' stroke='%23d4d4d8' stroke-width='2' stroke-dasharray='10%2c8'/%3e%3c/svg%3e");
     }
     .upload-zone:hover {
-      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23334155' stroke-width='2' stroke-dasharray='8%2c8'/%3e%3c/svg%3e");
+      background-color: #f1f3ee;
+      background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='14' ry='14' stroke='%23a3e635' stroke-opacity='0.55' stroke-width='2' stroke-dasharray='10%2c8'/%3e%3c/svg%3e");
     }
-
     .field-error {
       border-color: #f43f5e !important;
-      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.08) !important;
+      box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12) !important;
     }
-
     @keyframes ai-spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -32,246 +46,266 @@
   </style>
 </head>
 
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
 
-<!-- HEADER -->
-<div class="border-b border-slate-200 bg-white">
-  <div class="mx-auto max-w-3xl px-6 py-4">
-    <div class="flex items-center gap-2.5">
-      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
-        </svg>
-      </div>
-      <div>
-        <div class="text-[14px] font-semibold tracking-tight text-slate-900">
-          {% if tenant is defined and tenant %}
-            {{ (tenant.company_name if tenant else none) or (tenant.name if tenant else none) or "Schilderofferte aanvragen" }}
-          {% else %}
-            Schilderofferte aanvragen
-          {% endif %}
+<div class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-8%,rgba(163,230,53,0.07),transparent_52%),linear-gradient(180deg,#fafaf8_0%,#f4f4f5_100%)]"></div>
+
+<div class="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+
+    <header class="mb-8 sm:mb-10">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200/90 bg-white shadow-intake-card ring-1 ring-lime-500/12">
+          <svg class="h-6 w-6 text-lime-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+          </svg>
         </div>
-        <div class="text-[11px] text-slate-500">Gratis en vrijblijvend</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div class="mx-auto max-w-3xl px-6 py-8" x-data="{ step: 1 }">
-
-<input type="hidden" id="currentStep" x-model.number="step" />
-
-<!-- PROGRESS -->
-<div class="mb-6 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-  <div class="mb-2 flex items-center justify-between">
-    <span class="text-[11px] text-slate-500">Stap <span x-text="step"></span> van 4</span>
-    <span class="text-[11px] font-semibold text-slate-800" x-text="['Jouw gegevens', 'Project details', 'Foto\'s', 'Controleer'][step - 1]"></span>
-  </div>
-  <div class="h-1.5 rounded-full bg-slate-200">
-    <div class="h-1.5 rounded-full bg-slate-900 transition-all duration-300" :style="`width: ${(step / 4) * 100}%`"></div>
-  </div>
-</div>
-
-<div id="msgErr" class="mb-4 hidden rounded border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700"></div>
-
-<form id="intakeForm" method="post" action="{{ submit_url }}" enctype="multipart/form-data">
-  <input type="hidden" name="tenant_id" value="{{ tenant.id if tenant is defined and tenant else '' }}" />
-  <input type="hidden" name="vertical" value="{{ vertical or 'paintly' }}" />
-  <input type="hidden" name="area_unit" value="sqm" />
-  <input type="hidden" id="country" name="country" value="NL" />
-  <input type="hidden" name="lead_id" id="lead_id" value="" />
-  <input type="hidden" name="address" id="fullAddress" value="" />
-
-  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-
-    <!-- Step title -->
-    <div class="border-b border-slate-100 bg-slate-50/70 px-6 py-5">
-      <h2 class="text-[16px] font-semibold tracking-[-0.02em] text-slate-900" x-show="step === 1">Jouw gegevens</h2>
-      <h2 class="text-[16px] font-semibold tracking-[-0.02em] text-slate-900" x-show="step === 2">Project details</h2>
-      <h2 class="text-[16px] font-semibold tracking-[-0.02em] text-slate-900" x-show="step === 3">Foto's van het werk</h2>
-      <h2 class="text-[16px] font-semibold tracking-[-0.02em] text-slate-900" x-show="step === 4">Controleer en verstuur</h2>
-      <p class="mt-1 text-[12px] text-slate-500" x-show="step === 3">Hoe beter de foto's, hoe nauwkeuriger de prijs</p>
-    </div>
-
-    <!-- Step content -->
-    <div class="px-6 py-6">
-
-      <!-- Step 1: Contact -->
-      <section data-step="1" x-show="step === 1" class="space-y-5">
-        <div>
-          <label for="name" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Volledige naam *</label>
-          <input id="name" name="name" type="text" autocomplete="name" required
-            class="step-1-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-            placeholder="Jan Jansen" />
-        </div>
-        <div>
-          <label for="email" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">E-mailadres *</label>
-          <input id="email" name="email" type="email" autocomplete="email" required
-            class="step-1-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-            placeholder="jan@voorbeeld.nl" />
-        </div>
-        <div>
-          <label for="phone" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Telefoonnummer *</label>
-          <input id="phone" name="phone" type="tel" autocomplete="tel" required
-            class="step-1-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-            placeholder="+31 6 12345678" />
-        </div>
-      </section>
-
-      <!-- Step 2: Work details -->
-      <section data-step="2" x-show="step === 2" class="space-y-5">
-        <div>
-          <span class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Wat wil je laten schilderen? *</span>
-          <div id="jobTypeGroup" class="grid gap-1.5 sm:grid-cols-2">
-            <label class="cursor-pointer">
-              <input type="radio" name="job_type" value="interior" class="peer sr-only step-2-input" checked />
-              <span class="inline-flex h-8 w-full items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#f6f7f9] peer-checked:border-[#111318] peer-checked:bg-[#111318] peer-checked:text-white">Binnen</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="job_type" value="exterior" class="peer sr-only step-2-input" />
-              <span class="inline-flex h-8 w-full items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#f6f7f9] peer-checked:border-[#111318] peer-checked:bg-[#111318] peer-checked:text-white">Buiten</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="job_type" value="both" class="peer sr-only step-2-input" />
-              <span class="inline-flex h-8 w-full items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#f6f7f9] peer-checked:border-[#111318] peer-checked:bg-[#111318] peer-checked:text-white">Binnen &amp; buiten</span>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="job_type" value="other_repair" class="peer sr-only step-2-input" />
-              <span class="inline-flex h-8 w-full items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#f6f7f9] peer-checked:border-[#111318] peer-checked:bg-[#111318] peer-checked:text-white">Overig / herstelwerk</span>
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label for="square_meters" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Oppervlakte (m²) *</label>
-          <input id="square_meters" name="square_meters" type="number" min="5" step="1" required
-            class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-            placeholder="35" />
-          <p class="mt-1 text-[11px] text-slate-500">Weet je het niet precies? Een schatting is prima.</p>
-        </div>
-
-        <div id="otherRepairWrapper" class="hidden">
-          <label for="other_repair_details" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Wat moet er gebeuren?</label>
-          <input id="other_repair_details" name="other_repair_details" type="text"
-            class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-            placeholder="Bijv. houtrot herstel, kozijn reparatie of schuurwerk" disabled />
-        </div>
-
-        <div class="grid gap-2 sm:grid-cols-3">
-          <div class="sm:col-span-3">
-            <label for="street" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Adres *</label>
-            <input id="street" name="street" type="text" autocomplete="street-address" required
-              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-              placeholder="Straat en huisnummer" />
-          </div>
-          <div>
-            <input id="city" name="city" type="text" autocomplete="address-level2" required
-              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-              placeholder="Woonplaats" />
-          </div>
-          <div>
-            <input id="zip" name="zip" type="text" autocomplete="postal-code" required
-              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-              placeholder="Postcode" />
-          </div>
-          <div>
-            <input id="state" name="state" type="text" autocomplete="address-level1" required
-              class="step-2-input h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-[13px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-              placeholder="Provincie" />
-          </div>
-        </div>
-
-        <div>
-          <label for="project_description" class="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">Omschrijving *</label>
-          <textarea id="project_description" name="project_description" rows="4" required
-            class="step-2-input min-h-[116px] w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-[13px] text-slate-900 outline-none resize-y placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
-            placeholder="Bijv. woonkamer en hal, alleen wanden, kleine reparaties gewenst."></textarea>
-        </div>
-      </section>
-
-      <!-- Step 3: Photos -->
-      <section data-step="3" x-show="step === 3" class="space-y-4">
-        <label class="upload-zone block cursor-pointer rounded-xl bg-slate-50 p-6 transition hover:bg-slate-100/70" for="files">
-          <input type="file" id="files" name="files" multiple accept="image/*" class="hidden" />
-          <div class="text-center">
-            <div class="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-400">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-              </svg>
-            </div>
-            <div class="text-[13px] font-semibold text-slate-900">Klik om foto's toe te voegen</div>
-            <div class="mt-0.5 text-[11px] text-slate-500">1–5 foto's · JPG, PNG of WebP · max 15 MB per foto</div>
-          </div>
-          <div id="fileList" class="mt-3 space-y-1.5"></div>
-          <div id="uploadStatus" class="mt-2 text-center text-[11px] text-[#9ca3af]">Nog geen bestanden geselecteerd</div>
-          <div id="photoKeysContainer"></div>
-        </label>
-      </section>
-
-      <!-- Step 4: Review -->
-      <section data-step="4" x-show="step === 4" class="space-y-4">
-        <div class="rounded-lg border border-slate-200 bg-slate-50/70 px-5 py-4.5">
-          <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Jouw gegevens</div>
-          <dl class="space-y-2 text-[12px]">
-            <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
-              <dt class="text-[#9ca3af]">Naam</dt><dd id="summaryName" class="font-semibold text-[#111318] text-right">-</dd>
-            </div>
-            <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
-              <dt class="text-[#9ca3af]">E-mail</dt><dd id="summaryEmail" class="font-semibold text-[#111318] text-right">-</dd>
-            </div>
-            <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
-              <dt class="text-[#9ca3af]">Telefoon</dt><dd id="summaryPhone" class="font-semibold text-[#111318] text-right">-</dd>
-            </div>
-            <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
-              <dt class="text-[#9ca3af]">Werkzaamheden</dt><dd id="summaryJobType" class="font-semibold text-[#111318] text-right">-</dd>
-            </div>
-            <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
-              <dt class="text-[#9ca3af]">Oppervlakte</dt><dd id="summaryArea" class="font-semibold text-[#111318] text-right">-</dd>
-            </div>
-            <div class="flex justify-between gap-3 border-b border-[#e8eaee] pb-2">
-              <dt class="text-[#9ca3af]">Locatie</dt><dd id="summaryAddress" class="font-semibold text-[#111318] text-right">-</dd>
-            </div>
-            <div class="flex justify-between gap-3">
-              <dt class="text-[#9ca3af]">Foto's</dt><dd id="summaryPhotos" class="font-semibold text-[#111318] text-right">0</dd>
-            </div>
-          </dl>
-        </div>
-      <p class="text-[11px] text-slate-500">Gratis en vrijblijvend. Binnen een paar minuten geregeld.</p>
-      </section>
-    </div>
-
-    <!-- Navigation -->
-    <div class="border-t border-slate-100 bg-slate-50/60 px-6 py-4">
-      <div class="flex items-center justify-between gap-2">
-        <button type="button" id="prevBtn" x-show="step > 1" @click="step = Math.max(step - 1, 1)"
-          class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-[12px] font-medium text-slate-700 transition hover:bg-slate-100">
-          Vorige
-        </button>
-        <div class="ml-auto flex items-center gap-2">
-          <button type="button" id="nextBtn" x-show="step < 4"
-            class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-5 text-[12px] font-semibold text-white transition hover:bg-slate-800">
-            Ga verder
-          </button>
-          <button type="submit" id="submitBtn" x-show="step === 4"
-            class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-5 text-[12px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-            Offerte aanvragen
-          </button>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-lime-700/90">Aanvraag</p>
+          <h1 class="mt-2 text-[1.4rem] font-semibold tracking-[-0.03em] text-zinc-900 sm:text-[1.55rem]">
+            Vraag je schilderofferte aan
+          </h1>
+          <p class="mt-2 max-w-xl text-[14px] leading-relaxed text-zinc-600">
+            {% if tenant is defined and tenant %}
+              {{ (tenant.company_name if tenant else none) or (tenant.name if tenant else none) or "Inversiq" }} beoordeelt je aanvraag professioneel en reageert snel.
+            {% else %}
+              Professionele beoordeling en een snelle reactie op je aanvraag.
+            {% endif %}
+          </p>
+          <p class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-zinc-500">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="h-1.5 w-1.5 rounded-full bg-lime-500/90" aria-hidden="true"></span>
+              Geen verplichtingen
+            </span>
+            <span class="hidden text-zinc-300 sm:inline" aria-hidden="true">·</span>
+            <span>Je gegevens worden veilig verwerkt</span>
+          </p>
         </div>
       </div>
+    </header>
+
+    <div class="w-full flex-1" x-data="{ step: 1 }">
+
+      <input type="hidden" id="currentStep" x-model.number="step" />
+
+      <!-- Progress -->
+      <div class="mb-6 rounded-2xl border border-zinc-200/90 bg-white/95 px-5 py-4 shadow-sm">
+        <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <span class="text-[11px] font-medium text-zinc-500">Stap <span class="tabular-nums font-semibold text-zinc-800" x-text="step"></span> van 4</span>
+          <span class="text-[12px] font-semibold text-zinc-800" x-text="['Jouw gegevens', 'Project details', 'Foto\'s', 'Controleer'][step - 1]"></span>
+        </div>
+        <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+          <div class="h-full rounded-full bg-gradient-to-r from-lime-500 to-lime-400 transition-all duration-300 ease-out" :style="`width: ${(step / 4) * 100}%`"></div>
+        </div>
+      </div>
+
+      <div id="msgErr" class="mb-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] leading-snug text-rose-900 shadow-sm"></div>
+
+      <form id="intakeForm" method="post" action="{{ submit_url }}" enctype="multipart/form-data">
+        <input type="hidden" name="tenant_id" value="{{ tenant.id if tenant is defined and tenant else '' }}" />
+        <input type="hidden" name="vertical" value="{{ vertical or 'paintly' }}" />
+        <input type="hidden" name="area_unit" value="sqm" />
+        <input type="hidden" id="country" name="country" value="NL" />
+        <input type="hidden" name="lead_id" id="lead_id" value="" />
+        <input type="hidden" name="address" id="fullAddress" value="" />
+
+        <div class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white text-zinc-900 shadow-intake-card ring-1 ring-zinc-900/[0.04]">
+
+          <!-- Step title -->
+          <div class="border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-white px-6 py-5 sm:px-8">
+            <h2 class="text-[1.0625rem] font-semibold tracking-[-0.02em] text-zinc-900" x-show="step === 1">Jouw gegevens</h2>
+            <h2 class="text-[1.0625rem] font-semibold tracking-[-0.02em] text-zinc-900" x-show="step === 2">Project details</h2>
+            <h2 class="text-[1.0625rem] font-semibold tracking-[-0.02em] text-zinc-900" x-show="step === 3">Foto's van het werk</h2>
+            <h2 class="text-[1.0625rem] font-semibold tracking-[-0.02em] text-zinc-900" x-show="step === 4">Controleer en verstuur</h2>
+            <p class="mt-1.5 text-[13px] leading-relaxed text-zinc-500" x-show="step === 3">Hoe beter de foto's, hoe nauwkeuriger de prijs</p>
+          </div>
+
+          <!-- Step content -->
+          <div class="px-6 py-7 sm:px-8">
+
+            <!-- Step 1: Contact -->
+            <section data-step="1" x-show="step === 1" class="space-y-7">
+              <div>
+                <label for="name" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Volledige naam *</label>
+                <input id="name" name="name" type="text" autocomplete="name" required
+                  class="step-1-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="Jan Jansen" />
+              </div>
+              <div>
+                <label for="email" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">E-mailadres *</label>
+                <input id="email" name="email" type="email" autocomplete="email" required
+                  class="step-1-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="jan@voorbeeld.nl" />
+              </div>
+              <div>
+                <label for="phone" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Telefoonnummer *</label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" required
+                  class="step-1-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="+31 6 12345678" />
+              </div>
+            </section>
+
+            <!-- Step 2: Work details -->
+            <section data-step="2" x-show="step === 2" class="space-y-7">
+              <div>
+                <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Wat wil je laten schilderen? *</span>
+                <div id="jobTypeGroup" class="grid gap-2 sm:grid-cols-2">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="job_type" value="interior" class="peer sr-only step-2-input" checked />
+                    <span class="inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-white peer-checked:border-lime-500/70 peer-checked:bg-lime-50 peer-checked:text-zinc-900 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-lime-400/45">Binnen</span>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="job_type" value="exterior" class="peer sr-only step-2-input" />
+                    <span class="inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-white peer-checked:border-lime-500/70 peer-checked:bg-lime-50 peer-checked:text-zinc-900 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-lime-400/45">Buiten</span>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="job_type" value="both" class="peer sr-only step-2-input" />
+                    <span class="inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-white peer-checked:border-lime-500/70 peer-checked:bg-lime-50 peer-checked:text-zinc-900 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-lime-400/45">Binnen &amp; buiten</span>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="job_type" value="other_repair" class="peer sr-only step-2-input" />
+                    <span class="inline-flex min-h-[2.5rem] w-full items-center justify-center rounded-xl border border-zinc-200/90 bg-zinc-50/80 px-3 text-[13px] font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-white peer-checked:border-lime-500/70 peer-checked:bg-lime-50 peer-checked:text-zinc-900 peer-checked:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-lime-400/45">Overig / herstelwerk</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label for="square_meters" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Oppervlakte (m²) *</label>
+                <input id="square_meters" name="square_meters" type="number" min="5" step="1" required
+                  class="step-2-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="35" />
+                <p class="mt-2 text-[12px] leading-relaxed text-zinc-500">Weet je het niet precies? Een schatting is prima.</p>
+              </div>
+
+              <div id="otherRepairWrapper" class="hidden">
+                <label for="other_repair_details" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Wat moet er gebeuren?</label>
+                <input id="other_repair_details" name="other_repair_details" type="text"
+                  class="step-2-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="Bijv. houtrot herstel, kozijn reparatie of schuurwerk" disabled />
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-3">
+                <div class="sm:col-span-3">
+                  <label for="street" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Adres *</label>
+                  <input id="street" name="street" type="text" autocomplete="street-address" required
+                    class="step-2-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                    placeholder="Straat en huisnummer" />
+                </div>
+                <div>
+                  <label for="city" class="sr-only">Woonplaats</label>
+                  <input id="city" name="city" type="text" autocomplete="address-level2" required
+                    class="step-2-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                    placeholder="Woonplaats" />
+                </div>
+                <div>
+                  <label for="zip" class="sr-only">Postcode</label>
+                  <input id="zip" name="zip" type="text" autocomplete="postal-code" required
+                    class="step-2-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                    placeholder="Postcode" />
+                </div>
+                <div>
+                  <label for="state" class="sr-only">Provincie</label>
+                  <input id="state" name="state" type="text" autocomplete="address-level1" required
+                    class="step-2-input min-h-[2.75rem] w-full rounded-xl border border-zinc-200 bg-white px-4 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                    placeholder="Provincie" />
+                </div>
+              </div>
+
+              <div>
+                <label for="project_description" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-600">Omschrijving *</label>
+                <textarea id="project_description" name="project_description" rows="4" required
+                  class="step-2-input min-h-[7.25rem] w-full resize-y rounded-xl border border-zinc-200 bg-white px-4 py-3 text-[0.9375rem] text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-lime-500/60 focus:ring-2 focus:ring-lime-400/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="Bijv. woonkamer en hal, alleen wanden, kleine reparaties gewenst."></textarea>
+              </div>
+            </section>
+
+            <!-- Step 3: Photos -->
+            <section data-step="3" x-show="step === 3" class="space-y-4">
+              <label class="upload-zone block cursor-pointer rounded-2xl p-6 transition" for="files">
+                <input type="file" id="files" multiple accept="image/*" class="hidden" />
+                <div class="text-center">
+                  <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200/90 bg-white text-lime-700/80 shadow-sm ring-1 ring-lime-500/12">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                  </div>
+                  <div class="text-[14px] font-semibold text-zinc-900">Klik om foto's toe te voegen</div>
+                  <div class="mt-1 text-[12px] text-zinc-500">1–5 foto's · JPG, PNG of WebP · max 15 MB per foto</div>
+                </div>
+                <div id="fileList" class="mt-4 space-y-2"></div>
+                <div id="uploadStatus" class="mt-3 text-center text-[12px] text-zinc-500">Nog geen bestanden geselecteerd</div>
+                <div id="photoKeysContainer"></div>
+              </label>
+            </section>
+
+            <!-- Step 4: Review -->
+            <section data-step="4" x-show="step === 4" class="space-y-4">
+              <div class="rounded-xl border border-zinc-200 bg-zinc-50/80 px-5 py-5">
+                <div class="mb-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Jouw gegevens</div>
+                <dl class="space-y-2.5 text-[13px]">
+                  <div class="flex justify-between gap-3 border-b border-zinc-200/90 pb-2.5">
+                    <dt class="text-zinc-500">Naam</dt><dd id="summaryName" class="max-w-[58%] text-right font-semibold text-zinc-900">-</dd>
+                  </div>
+                  <div class="flex justify-between gap-3 border-b border-zinc-200/90 pb-2.5">
+                    <dt class="text-zinc-500">E-mail</dt><dd id="summaryEmail" class="max-w-[58%] break-all text-right font-semibold text-zinc-900">-</dd>
+                  </div>
+                  <div class="flex justify-between gap-3 border-b border-zinc-200/90 pb-2.5">
+                    <dt class="text-zinc-500">Telefoon</dt><dd id="summaryPhone" class="max-w-[58%] text-right font-semibold text-zinc-900">-</dd>
+                  </div>
+                  <div class="flex justify-between gap-3 border-b border-zinc-200/90 pb-2.5">
+                    <dt class="text-zinc-500">Werkzaamheden</dt><dd id="summaryJobType" class="max-w-[58%] text-right font-semibold text-zinc-900">-</dd>
+                  </div>
+                  <div class="flex justify-between gap-3 border-b border-zinc-200/90 pb-2.5">
+                    <dt class="text-zinc-500">Oppervlakte</dt><dd id="summaryArea" class="max-w-[58%] text-right font-semibold text-zinc-900">-</dd>
+                  </div>
+                  <div class="flex justify-between gap-3 border-b border-zinc-200/90 pb-2.5">
+                    <dt class="text-zinc-500">Locatie</dt><dd id="summaryAddress" class="max-w-[58%] text-right font-semibold text-zinc-900">-</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-zinc-500">Foto's</dt><dd id="summaryPhotos" class="text-right font-semibold text-zinc-900">0</dd>
+                  </div>
+                </dl>
+              </div>
+              <p class="text-[12px] leading-relaxed text-zinc-500">Gratis en vrijblijvend. Binnen een paar minuten geregeld.</p>
+            </section>
+          </div>
+
+          <!-- Navigation -->
+          <div class="border-t border-zinc-100 bg-zinc-50/70 px-6 py-5 sm:px-8">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <button type="button" id="prevBtn" x-show="step > 1" @click="step = Math.max(step - 1, 1)"
+                class="inline-flex min-h-[2.75rem] items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 text-[13px] font-semibold text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400/45">
+                Vorige
+              </button>
+              <div class="ml-auto flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+                <button type="button" id="nextBtn" x-show="step < 4"
+                  class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-zinc-900 px-6 text-[13px] font-semibold text-white shadow-md shadow-zinc-900/15 ring-1 ring-zinc-900/5 transition hover:bg-zinc-800 hover:shadow-lg hover:shadow-lime-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400/50 sm:w-auto">
+                  Ga verder
+                </button>
+                <button type="submit" id="submitBtn" x-show="step === 4"
+                  class="inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-zinc-900 px-6 text-[13px] font-semibold text-white shadow-md shadow-lime-500/15 ring-1 ring-lime-500/25 transition hover:bg-zinc-800 hover:shadow-lg hover:shadow-lime-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400/50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
+                  Offerte aanvragen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
-  </div>
-</form>
+
+    <footer class="mt-auto border-t border-zinc-200/90 py-8 text-center text-[11px] text-zinc-500">
+      <span class="text-zinc-400">Powered by</span> Inversiq
+    </footer>
+
 </div>
 
-<div id="aiOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(248,249,250,0.88);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;align-items:center;justify-content:center;">
-  <div style="max-width:320px;width:100%;margin:0 20px;border-radius:6px;padding:28px 24px 24px;background:#ffffff;box-shadow:0 1px 4px rgba(0,0,0,0.06),0 4px 20px rgba(0,0,0,0.07);border:1px solid #e5e7eb;text-align:center;">
-    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-      <div style="height:20px;width:20px;border-radius:50%;border:2px solid #e5e7eb;border-top-color:#6b7280;animation:ai-spin 0.8s linear infinite;"></div>
+<div id="aiOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-900/25 backdrop-blur-sm" style="display:none;">
+  <div class="mx-5 w-full max-w-[22rem] rounded-2xl border border-zinc-200/90 bg-white p-7 text-center shadow-intake-card ring-1 ring-zinc-900/[0.05]">
+    <div class="mb-4 flex justify-center">
+      <div class="h-9 w-9 rounded-full border-2 border-zinc-200 border-t-lime-500" style="animation: ai-spin 0.8s linear infinite;"></div>
     </div>
-    <div style="font-size:14px;font-weight:500;color:#111827;margin-bottom:5px;">We verwerken je aanvraag</div>
-    <div style="font-size:12px;color:#9ca3af;margin-bottom:14px;">Dit duurt meestal een paar seconden.</div>
-    <div id="aiStatusLine" style="font-size:12px;color:#6b7280;transition:opacity 0.25s;">Foto's analyseren...</div>
+    <div class="text-[15px] font-semibold text-zinc-900">We verwerken je aanvraag</div>
+    <div class="mt-1.5 text-[13px] text-zinc-500">Dit duurt meestal een paar seconden.</div>
+    <div id="aiStatusLine" class="mt-4 text-[13px] font-medium text-zinc-700 transition-opacity">Foto's analyseren...</div>
   </div>
 </div>
 <script>
@@ -375,17 +409,17 @@
 
   function createFileRow(file) {
     const row = document.createElement("div");
-    row.className = "flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5";
+    row.className = "flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 shadow-sm";
     row.innerHTML = `
       <div class="flex items-center gap-3 min-w-0">
         <div class="min-w-0">
-          <div class="truncate text-[12px] font-medium text-slate-900">${file.name}</div>
-          <div class="text-[11px] text-slate-500">${formatBytes(file.size)}</div>
+          <div class="truncate text-[12px] font-medium text-zinc-900">${file.name}</div>
+          <div class="text-[11px] text-zinc-500">${formatBytes(file.size)}</div>
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <span class="status-badge inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-700">Bezig...</span>
-        <button type="button" class="remove-file-btn hidden text-[11px] font-medium text-slate-500 hover:text-rose-600">Verwijder</button>
+        <span class="status-badge inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-800">Bezig...</span>
+        <button type="button" class="remove-file-btn hidden text-[11px] font-medium text-zinc-500 hover:text-rose-600">Verwijder</button>
       </div>
     `;
     return {
@@ -399,12 +433,37 @@
     const total = form.querySelectorAll("input[name='photo_keys']").length;
     if (total > 0) {
       uploadStatus.textContent = `✓ ${total} foto('s) gereed`;
-      uploadStatus.className = "mt-2 text-center text-[11px] font-medium text-emerald-600";
+      uploadStatus.className = "mt-3 text-center text-[12px] font-medium text-emerald-700";
     } else {
       uploadStatus.textContent = "Nog geen bestanden geselecteerd.";
-      uploadStatus.className = "mt-2 text-center text-[11px] text-[#9ca3af]";
+      uploadStatus.className = "mt-3 text-center text-[12px] text-zinc-500";
     }
     if (getStep() === 4) fillSummary();
+  }
+
+  function currentTenantIdFromForm() {
+    return (form.querySelector('input[name="tenant_id"]')?.value || "").trim();
+  }
+
+  function intakeDraftTenantStorageKey() {
+    try {
+      return "intake_draft_tid:" + (window.location.pathname || "");
+    } catch (_) {
+      return "intake_draft_tid:";
+    }
+  }
+
+  function resetStaleIntakeSession(message) {
+    leadId = null;
+    if (leadIdInput) leadIdInput.value = "";
+    try {
+      sessionStorage.removeItem(intakeDraftTenantStorageKey());
+    } catch (_) {}
+    if (photoKeysContainer) photoKeysContainer.innerHTML = "";
+    if (fileList) fileList.innerHTML = "";
+    if (fileInput) fileInput.value = "";
+    refreshUploadedStatus();
+    if (message) showErrorBox(message);
   }
 
   function selectedJobTypeLabel() {
@@ -499,6 +558,9 @@
     fd.append("name", name);
     fd.append("email", email);
     fd.append("phone", phone);
+    // Must match final submit: upsert scopes by tenant_id; without this, draft leads use dev-tenant and final POST 404s.
+    const tid = (form.querySelector('input[name="tenant_id"]')?.value || "").trim();
+    if (tid) fd.append("tenant_id", tid);
 
     const sqm = (form.querySelector("#square_meters")?.value || "").toString();
     if (sqm) fd.append("square_meters", sqm);
@@ -512,10 +574,23 @@
   }
 
   async function ensureLeadId() {
+    const tid = currentTenantIdFromForm();
+    let stored = null;
+    try {
+      stored = sessionStorage.getItem(intakeDraftTenantStorageKey());
+    } catch (_) {}
+    if (leadId && tid && stored !== tid) {
+      resetStaleIntakeSession(
+        "Je sessie kwam niet overeen met deze pagina. Upload je foto's opnieuw om verder te gaan."
+      );
+    }
     if (leadId) return leadId;
     uploadStatus.textContent = "Aanvraag wordt aangemaakt...";
     leadId = await createDraftLeadViaForm();
     if (leadIdInput) leadIdInput.value = String(leadId);
+    try {
+      if (tid) sessionStorage.setItem(intakeDraftTenantStorageKey(), tid);
+    } catch (_) {}
     uploadStatus.textContent = `Aanvraag aangemaakt (#${leadId}). Foto's worden geupload...`;
     return leadId;
   }
@@ -575,7 +650,7 @@
     const files = Array.from(this.files || []);
     if (files.length === 0) {
       uploadStatus.textContent = "Nog geen bestanden geselecteerd.";
-      uploadStatus.className = "mt-2 text-center text-[11px] text-[#9ca3af]";
+      uploadStatus.className = "mt-3 text-center text-[12px] text-zinc-500";
       return;
     }
     if (files.length > MAX_FILES) {
@@ -592,7 +667,7 @@
     uploadInProgress = true;
     if (submitBtn) submitBtn.disabled = true;
     uploadStatus.textContent = `${files.length} foto('s) worden geupload...`;
-    uploadStatus.className = "mt-2 text-center text-[11px] font-medium text-[#111318]";
+    uploadStatus.className = "mt-3 text-center text-[12px] font-medium text-zinc-800";
 
     try {
       let uploaded = 0;
@@ -603,7 +678,7 @@
         const keyInput = createHiddenPhotoKey(key);
         uploaded += 1;
         badge.textContent = "Geupload";
-        badge.className = "status-badge inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700";
+        badge.className = "status-badge inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-800";
         if (removeBtn) {
           removeBtn.classList.remove("hidden");
           removeBtn.addEventListener("click", () => {
@@ -626,7 +701,7 @@
       fileList.innerHTML = "";
       photoKeysContainer.innerHTML = "";
       uploadStatus.textContent = "Upload mislukt";
-      uploadStatus.className = "mt-2 text-center text-[11px] font-medium text-rose-600";
+      uploadStatus.className = "mt-3 text-center text-[12px] font-medium text-rose-600";
     } finally {
       uploadInProgress = false;
       if (submitBtn) submitBtn.disabled = false;
@@ -670,6 +745,24 @@
       if (oneLine) formData.set("address", oneLine);
 
       const res = await fetch(SUBMIT_URL, { method: "POST", body: formData });
+      if (res.status === 404) {
+        let detail = "";
+        try {
+          const t404 = (res.headers.get("content-type") || "").toLowerCase();
+          if (t404.includes("application/json")) {
+            const j = await res.json();
+            detail = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail ?? j);
+          }
+        } catch (_) {}
+        resetStaleIntakeSession(null);
+        const isLeadMissing = /lead not found/i.test(detail);
+        showErrorBox(
+          isLeadMissing
+            ? "Deze aanvraag hoort niet bij deze pagina (sessie verouderd). Ververs de pagina en upload je foto's opnieuw."
+            : "Aanvraag niet gevonden. Ververs de pagina en probeer opnieuw."
+        );
+        return;
+      }
       if (res.redirected) { window.location.href = res.url; return; }
       const loc = res.headers.get("location");
       if ([301, 302, 303, 307, 308].includes(res.status) && loc) { window.location.href = loc; return; }
@@ -685,6 +778,10 @@
     } catch (_) {
       showErrorBox("Onverwachte fout bij het versturen van de aanvraag.");
     } finally {
+      try {
+        const overlay = document.getElementById("aiOverlay");
+        if (overlay) overlay.style.display = "none";
+      } catch (_) {}
       submitBtn.disabled = false;
       submitBtn.innerHTML = oldBtnText;
     }

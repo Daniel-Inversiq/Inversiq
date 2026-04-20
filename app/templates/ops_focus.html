@@ -1,0 +1,157 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Focus{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Focus Queue</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Internal read-only priority queue for operator attention.</p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Showing {{ shown_count }} of {{ total }} for {{ scope_label }}</p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_focus') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope</span>
+        <select name="scope" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="pipelines" {% if filters.scope == "pipelines" %}selected{% endif %}>Pipelines</option>
+          <option value="verticals" {% if filters.scope == "verticals" %}selected{% endif %}>Verticals</option>
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope ID</span>
+        <input type="text" name="scope_id" value="{{ filters.scope_id or '' }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Priority</span>
+        <select name="priority" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="">All</option>
+          {% for option in priority_options %}
+          <option value="{{ option }}" {% if filters.priority == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Limit</span>
+        <input type="number" min="1" max="200" name="limit" value="{{ filters.limit }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <div class="md:col-span-2 flex items-end gap-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_focus') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+    <div class="mt-3 flex items-center gap-2 text-xs">
+      <a
+        href="{{ url_for('ops_focus') }}?scope=pipelines&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&priority={{ filters.priority }}&limit={{ filters.limit }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'pipelines' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Pipelines</a>
+      <a
+        href="{{ url_for('ops_focus') }}?scope=verticals&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&priority={{ filters.priority }}&limit={{ filters.limit }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'verticals' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Verticals</a>
+      <span class="text-slate-300 dark:text-slate-600">|</span>
+      <a
+        href="{{ url_for('ops_reasoning') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&limit={{ filters.limit }}"
+        class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800"
+      >View Reasoning (same filters)</a>
+    </div>
+  </section>
+
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-[92rem] w-full text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/90 text-left text-xs uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold">Pipeline / Vertical</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Priority</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Focus score</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Health</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Trend</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Key issues</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Recommendation / reason</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for row in items %}
+          <tr class="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50 {% if row.severity == 'critical' %}bg-rose-50/50{% endif %}">
+            <td class="px-4 py-3 align-top text-slate-900">
+              <div class="font-medium">{{ row.scope_id or "—" }}</div>
+              <div class="text-xs uppercase tracking-wide text-slate-500">{{ row.scope or scope_kind_singular }}</div>
+            </td>
+            <td class="px-4 py-3 align-top">
+              {% set sev = row.severity %}
+              {% if sev == "critical" %}
+              <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">critical</span>
+              {% elif sev == "high" %}
+              <span class="inline-flex items-center rounded-md bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">high</span>
+              {% elif sev == "medium" %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">medium</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ sev or "low" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ row.priority_score }}</td>
+            <td class="px-4 py-3 align-top">
+              {% set health = row.health_status %}
+              {% if health == "unhealthy" %}
+              <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">unhealthy</span>
+              {% elif health == "watch" %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">watch</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">{{ health or "healthy" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top text-slate-700">{{ row.trend or "stable" }}</td>
+            <td class="px-4 py-3 align-top text-xs text-slate-700">
+              {% if row.key_issues %}
+              <div class="max-w-sm space-y-1">
+                {% for issue in row.key_issues[:3] %}
+                <div class="truncate" title="{{ issue }}">{{ issue }}</div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top text-slate-700">
+              <div class="max-w-xl truncate" title="{{ row.recommendation or '' }}">{{ row.recommendation or "—" }}</div>
+              <div class="mt-1 max-w-xl truncate text-xs text-slate-500" title="{{ row.reason or '' }}">{{ row.reason or "—" }}</div>
+            </td>
+            <td class="px-4 py-3 align-top">
+              {% set scope_type = (row.scope or scope_kind_singular or 'pipeline') %}
+              {% set run_scope_key = 'pipeline_name' if scope_type == 'pipeline' else 'vertical_id' %}
+              <div class="flex flex-col items-start gap-2">
+                <a
+                  href="{{ url_for('ops_reasoning') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&scope_id={{ row.scope_id or '' }}&limit={{ filters.limit }}"
+                  class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                >View Reasoning</a>
+                <a
+                  href="{{ url_for('ops_runs') }}?tenant_id={{ filters.tenant_id }}&{{ run_scope_key }}={{ row.scope_id or '' }}&limit=50"
+                  class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                >View Runs</a>
+                <a
+                  href="{{ url_for('ops_review') }}?tenant_id={{ filters.tenant_id }}&scope={{ scope_type }}&scope_id={{ row.scope_id or '' }}{% if row.severity in ['critical', 'high'] %}&review_priority=high{% endif %}&limit=50"
+                  class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                >View Reviews</a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">No focus items found for current filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -16,7 +16,7 @@ def list_leads(
     leads = (
         db.query(Lead)
         .filter(Lead.tenant_id == user.tenant_id)
-        .order_by(Lead.id.desc())
+        .order_by(Lead.created_at.desc(), Lead.id.desc())
         .limit(200)
         .all()
     )

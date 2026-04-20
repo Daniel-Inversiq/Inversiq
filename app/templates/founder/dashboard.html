@@ -4,183 +4,194 @@
 {% block title %}Founder Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-7">
-  <header class="flex flex-col gap-4 border-b border-slate-200/90 pb-5 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900">Platform overview</h2>
-      <p class="mt-1 text-sm text-slate-500">Founder metrics · live snapshot</p>
+<div class="space-y-10">
+  <header class="flex flex-col gap-6 border-b border-slate-200/90 pb-8 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div class="space-y-2">
+      <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Overview</p>
+      <div>
+        <h2 class="text-2xl font-semibold tracking-[-0.03em] text-slate-900 dark:text-slate-50">Platform snapshot</h2>
+        <p class="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">Live tenant, billing, and pipeline metrics · refreshes on load</p>
+      </div>
     </div>
-    <a href="{{ url_for('founder_tenants') }}" class="inline-flex w-full shrink-0 items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-slate-900/10 transition hover:bg-slate-800 sm:w-auto">
+    <a href="{{ url_for('founder_tenants') }}" class="inline-flex w-full shrink-0 items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-slate-900/15 transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:shadow-slate-950/20 dark:hover:bg-white sm:w-auto">
       View all tenants
     </a>
   </header>
 
   {% if at_risk_tenants %}
-  <section class="rounded-xl border border-rose-200/70 bg-rose-50/50 px-4 py-3.5 text-sm shadow-sm ring-1 ring-rose-900/[0.06]" aria-label="Tenants at risk">
-    <p class="text-sm font-semibold text-rose-950">⚠️ Tenants at risk ({{ at_risk_tenants | length }})</p>
-    <ul class="mt-2.5 list-none space-y-2">
-      {% for row in at_risk_tenants %}
-      <li class="flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
-        <a href="{{ url_for('founder_tenant_detail', tenant_id=row.id) }}" class="shrink-0 font-medium text-slate-900 underline decoration-rose-200/80 underline-offset-2 hover:decoration-rose-400">{{ row.name }}</a>
-        <span class="text-[13px] text-slate-600">{{ row.reason }}</span>
-      </li>
-      {% endfor %}
-    </ul>
+  <section class="rounded-2xl border border-rose-200/80 bg-rose-50/60 px-5 py-4 shadow-sm ring-1 ring-rose-900/[0.04] dark:border-rose-900/50 dark:bg-rose-950/30 dark:ring-rose-500/10" aria-label="Tenants at risk">
+    <div class="flex items-start gap-3">
+      <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300" aria-hidden="true">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-rose-950 dark:text-rose-100">Tenants at risk ({{ at_risk_tenants | length }})</p>
+        <ul class="mt-3 list-none space-y-2.5">
+          {% for row in at_risk_tenants %}
+          <li class="flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
+            <a href="{{ url_for('founder_tenant_detail', tenant_id=row.id) }}" class="shrink-0 font-medium text-slate-900 underline decoration-rose-300/90 underline-offset-2 hover:decoration-rose-500 dark:text-slate-100 dark:decoration-rose-700 dark:hover:decoration-rose-400">{{ row.name }}</a>
+            <span class="text-[13px] text-slate-600 dark:text-slate-400">{{ row.reason }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </section>
   {% endif %}
 
-  {# Row 1 — primary KPIs #}
+  {# Primary KPIs #}
   <section aria-labelledby="dash-primary-kpi">
     <h3 id="dash-primary-kpi" class="sr-only">Primary metrics</h3>
-    <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-      <article class="flex min-h-[8rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.05] sm:min-h-[8.5rem] sm:p-6">
-        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total tenants</p>
-        <p class="mt-1 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">{{ stats.total_tenants }}</p>
-        <p class="mt-2 text-[10px] tabular-nums text-slate-400">+{{ stats.new_signups_7d }} last 7 days</p>
+    <div class="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+      <article class="group flex min-h-[8.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.04] transition dark:border-slate-700/70 dark:bg-slate-900/45 dark:shadow-none dark:ring-slate-700/40 sm:min-h-[9rem] sm:p-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Total tenants</p>
+        <p class="mt-2 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">{{ stats.total_tenants }}</p>
+        <p class="mt-2 text-[11px] tabular-nums text-slate-400 dark:text-slate-500">+{{ stats.new_signups_7d }} last 7 days</p>
       </article>
-      <article class="flex min-h-[8rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.05] sm:min-h-[8.5rem] sm:p-6">
-        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Active tenants</p>
-        <p class="mt-1 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">{{ stats.active_tenants }}</p>
-        <p class="mt-2 text-[10px] text-slate-400">Billable or recent activity</p>
+      <article class="group flex min-h-[8.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.04] transition dark:border-slate-700/70 dark:bg-slate-900/45 dark:shadow-none dark:ring-slate-700/40 sm:min-h-[9rem] sm:p-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Active tenants</p>
+        <p class="mt-2 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">{{ stats.active_tenants }}</p>
+        <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Billable or recent activity</p>
       </article>
-      <article class="flex min-h-[8rem] flex-col justify-between rounded-2xl border border-indigo-200/50 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-md shadow-indigo-900/[0.06] ring-1 ring-indigo-900/[0.08] sm:min-h-[8.5rem] sm:p-6">
-        <p class="text-[10px] font-semibold uppercase tracking-wider text-indigo-800/80">Est. MRR</p>
-        <p class="mt-1 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">{{ stats.estimated_mrr_fmt }}</p>
-        <p class="mt-2 text-[10px] text-indigo-900/45">List · active subs</p>
+      <article class="group flex min-h-[8.5rem] flex-col justify-between rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/90 to-white p-5 shadow-md shadow-indigo-900/[0.06] ring-1 ring-indigo-900/[0.06] dark:border-indigo-500/25 dark:from-indigo-950/40 dark:to-slate-900/60 dark:shadow-indigo-950/20 dark:ring-indigo-500/15 sm:min-h-[9rem] sm:p-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-800/90 dark:text-indigo-300/90">Est. MRR</p>
+        <p class="mt-2 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">{{ stats.estimated_mrr_fmt }}</p>
+        <p class="mt-2 text-[11px] text-indigo-900/50 dark:text-indigo-400/70">List · active subs</p>
       </article>
-      <article class="flex min-h-[8rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.05] sm:min-h-[8.5rem] sm:p-6">
-        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total leads</p>
-        <p class="mt-1 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">{{ stats.total_leads }}</p>
+      <article class="group flex min-h-[8.5rem] flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.04] transition dark:border-slate-700/70 dark:bg-slate-900/45 dark:shadow-none dark:ring-slate-700/40 sm:min-h-[9rem] sm:p-6">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Total leads</p>
+        <p class="mt-2 tabular-nums text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">{{ stats.total_leads }}</p>
+        <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Across all tenants</p>
       </article>
     </div>
   </section>
 
-  {# Row 2 — distribution (donuts) #}
-  <section aria-labelledby="dash-distribution" class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-md shadow-slate-900/[0.03] ring-1 ring-slate-900/[0.04] sm:p-8">
-    <div class="mb-6 border-b border-slate-100 pb-5">
-      <h3 id="dash-distribution" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Distribution</h3>
-      <p class="mt-0.5 text-[11px] text-slate-400">Plans &amp; billing state</p>
+  {# Distribution #}
+  <section aria-labelledby="dash-distribution" class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm ring-1 ring-slate-900/[0.03] dark:border-slate-700/70 dark:bg-slate-900/40 dark:ring-slate-700/35 sm:p-8">
+    <div class="mb-8 border-b border-slate-100 pb-6 dark:border-slate-800">
+      <h3 id="dash-distribution" class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Distribution</h3>
+      <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Plans and subscription state</p>
     </div>
-    <div class="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
-      <div class="flex flex-col px-1 sm:px-2">
-        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900">Plan mix</h4>
-        <p class="mt-0.5 text-[11px] text-slate-400">Starter · Pro · Business</p>
-        <div class="relative mx-auto mt-6 h-64 w-full max-w-xs sm:h-72 lg:h-80">
+    <div class="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-14">
+      <div class="flex flex-col px-0.5 sm:px-1">
+        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">Plan mix</h4>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Starter · Pro · Business</p>
+        <div class="relative mx-auto mt-7 h-64 w-full max-w-xs sm:h-72 lg:h-80">
           <canvas id="founderChartPlan" aria-label="Plan distribution chart"></canvas>
         </div>
       </div>
-      <div class="flex flex-col border-t border-slate-100 pt-10 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
-        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900">Subscription status</h4>
-        <p class="mt-0.5 text-[11px] text-slate-400">Stripe subscription state</p>
-        <div class="relative mx-auto mt-6 h-64 w-full max-w-xs sm:h-72 lg:h-80">
+      <div class="flex flex-col border-t border-slate-100 pt-12 dark:border-slate-800 lg:border-l lg:border-t-0 lg:pl-14 lg:pt-0">
+        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">Subscription status</h4>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Stripe subscription state</p>
+        <div class="relative mx-auto mt-7 h-64 w-full max-w-xs sm:h-72 lg:h-80">
           <canvas id="founderChartStatus" aria-label="Subscription status chart"></canvas>
         </div>
       </div>
     </div>
   </section>
 
-  {# Row 3 — performance (bars) #}
-  <section aria-labelledby="dash-performance" class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-md shadow-slate-900/[0.03] ring-1 ring-slate-900/[0.04] sm:p-8">
-    <div class="mb-6 border-b border-slate-100 pb-5">
-      <h3 id="dash-performance" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Performance</h3>
-      <p class="mt-0.5 text-[11px] text-slate-400">Tenant leaders · all-time top 10</p>
+  {# Performance #}
+  <section aria-labelledby="dash-performance" class="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm ring-1 ring-slate-900/[0.03] dark:border-slate-700/70 dark:bg-slate-900/40 dark:ring-slate-700/35 sm:p-8">
+    <div class="mb-8 border-b border-slate-100 pb-6 dark:border-slate-800">
+      <h3 id="dash-performance" class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Performance</h3>
+      <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Tenant leaders · all-time top 10</p>
     </div>
-    <div class="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
-      <div class="flex flex-col px-1 sm:px-2">
-        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900">Top tenants — leads</h4>
-        <p class="mt-0.5 text-[11px] text-slate-400">By lead volume · snapshot</p>
-        <div id="founderChartTopLeadsWrap" class="relative mt-6 min-h-64 w-full lg:min-h-72">
+    <div class="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-14">
+      <div class="flex flex-col px-0.5 sm:px-1">
+        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">Top tenants — leads</h4>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">By lead volume · snapshot</p>
+        <div id="founderChartTopLeadsWrap" class="relative mt-7 min-h-64 w-full lg:min-h-72">
           <canvas id="founderChartTopLeads"></canvas>
         </div>
       </div>
-      <div class="flex flex-col border-t border-slate-100 pt-10 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
-        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900" id="founderChartTopBarTitle">Top tenants</h4>
-        <p class="mt-0.5 text-[11px] text-slate-400" id="founderChartTopBarSubtitle">—</p>
-        <div id="founderChartTopBarWrap" class="relative mt-6 min-h-64 w-full lg:min-h-72">
+      <div class="flex flex-col border-t border-slate-100 pt-12 dark:border-slate-800 lg:border-l lg:border-t-0 lg:pl-14 lg:pt-0">
+        <h4 class="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100" id="founderChartTopBarTitle">Top tenants</h4>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500" id="founderChartTopBarSubtitle">—</p>
+        <div id="founderChartTopBarWrap" class="relative mt-7 min-h-64 w-full lg:min-h-72">
           <canvas id="founderChartTopBar"></canvas>
         </div>
       </div>
     </div>
   </section>
 
-  {# Secondary metrics — compact #}
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <section aria-labelledby="dash-plan-mix" class="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 shadow-sm sm:p-5">
-      <h3 id="dash-plan-mix" class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Plan mix</h3>
-      <div class="mt-3 grid grid-cols-3 gap-2">
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 text-center shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Free</p>
-          <div class="mt-1.5 flex justify-center">{{ founder.plan_badge("starter_99") }}</div>
-          <p class="mt-1.5 tabular-nums text-lg font-semibold text-slate-900">{{ stats.free_tenants }}</p>
+  {# Secondary metrics #}
+  <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+    <section aria-labelledby="dash-plan-mix" class="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/30 sm:p-6">
+      <h3 id="dash-plan-mix" class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Plan mix</h3>
+      <div class="mt-4 grid grid-cols-3 gap-3">
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 text-center shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Free</p>
+          <div class="mt-2 flex justify-center">{{ founder.plan_badge("starter_99") }}</div>
+          <p class="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100">{{ stats.free_tenants }}</p>
         </article>
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 text-center shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Pro</p>
-          <div class="mt-1.5 flex justify-center">{{ founder.plan_badge("pro_199") }}</div>
-          <p class="mt-1.5 tabular-nums text-lg font-semibold text-slate-900">{{ stats.pro_tenants }}</p>
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 text-center shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Pro</p>
+          <div class="mt-2 flex justify-center">{{ founder.plan_badge("pro_199") }}</div>
+          <p class="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100">{{ stats.pro_tenants }}</p>
         </article>
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 text-center shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Business</p>
-          <div class="mt-1.5 flex justify-center">{{ founder.plan_badge("business_399") }}</div>
-          <p class="mt-1.5 tabular-nums text-lg font-semibold text-slate-900">{{ stats.business_tenants }}</p>
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 text-center shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Business</p>
+          <div class="mt-2 flex justify-center">{{ founder.plan_badge("business_399") }}</div>
+          <p class="mt-2 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100">{{ stats.business_tenants }}</p>
         </article>
       </div>
     </section>
 
-    <section aria-labelledby="dash-billing" class="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-4 shadow-sm sm:p-5">
-      <h3 id="dash-billing" class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Billing</h3>
-      <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Paying</p>
-          <p class="mt-0.5 tabular-nums text-base font-semibold text-slate-900">{{ stats.billing_paying_tenants }}</p>
+    <section aria-labelledby="dash-billing" class="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/30 sm:p-6">
+      <h3 id="dash-billing" class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Billing</h3>
+      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Paying</p>
+          <p class="mt-1 tabular-nums text-base font-semibold text-slate-900 dark:text-slate-100">{{ stats.billing_paying_tenants }}</p>
         </article>
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Trialing</p>
-          <p class="mt-0.5 tabular-nums text-base font-semibold text-slate-900">{{ stats.billing_trialing_tenants }}</p>
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Trialing</p>
+          <p class="mt-1 tabular-nums text-base font-semibold text-slate-900 dark:text-slate-100">{{ stats.billing_trialing_tenants }}</p>
         </article>
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Canceled</p>
-          <p class="mt-0.5 tabular-nums text-base font-semibold text-slate-900">{{ stats.billing_canceled_tenants }}</p>
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Canceled</p>
+          <p class="mt-1 tabular-nums text-base font-semibold text-slate-900 dark:text-slate-100">{{ stats.billing_canceled_tenants }}</p>
         </article>
-        <article class="rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Past due</p>
-          <p class="mt-0.5 tabular-nums text-base font-semibold text-slate-900">{{ stats.billing_past_due_tenants }}</p>
+        <article class="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm dark:border-slate-700/70 dark:bg-slate-950/50">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Past due</p>
+          <p class="mt-1 tabular-nums text-base font-semibold text-slate-900 dark:text-slate-100">{{ stats.billing_past_due_tenants }}</p>
         </article>
       </div>
-      <article class="mt-2 rounded-lg border border-indigo-200/40 bg-indigo-50/70 p-3">
-        <p class="text-[9px] font-semibold uppercase tracking-wide text-indigo-800/70">Est. ARR</p>
-        <p class="mt-0.5 tabular-nums text-xl font-semibold text-slate-900">{{ stats.estimated_arr_fmt }}</p>
-        <p class="mt-0.5 text-[10px] text-indigo-900/40">MRR × 12</p>
+      <article class="mt-4 rounded-xl border border-indigo-200/50 bg-indigo-50/80 p-4 dark:border-indigo-500/20 dark:bg-indigo-950/35">
+        <p class="text-[9px] font-semibold uppercase tracking-wide text-indigo-800/80 dark:text-indigo-300/90">Est. ARR</p>
+        <p class="mt-1 tabular-nums text-xl font-semibold text-slate-900 dark:text-slate-100">{{ stats.estimated_arr_fmt }}</p>
+        <p class="mt-1 text-[10px] text-indigo-900/45 dark:text-indigo-400/60">MRR × 12</p>
       </article>
     </section>
   </div>
 
-  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-    <section aria-labelledby="dash-quotes" class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
-      <h3 id="dash-quotes" class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Accepted quotes</h3>
-      <p class="mt-0.5 text-[10px] text-slate-400">Accepted leads · last 30d vs all-time</p>
-      <div class="mt-3 grid grid-cols-2 gap-2">
-        <div class="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">All time</p>
-          <p class="mt-0.5 tabular-nums text-lg font-semibold text-slate-900 sm:text-xl">{{ stats.accepted_quote_value_fmt }}</p>
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <section aria-labelledby="dash-quotes" class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/40 sm:p-6">
+      <h3 id="dash-quotes" class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Accepted quotes</h3>
+      <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Accepted leads · last 30d vs all-time</p>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="rounded-xl border border-slate-100 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">All time</p>
+          <p class="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100 sm:text-xl">{{ stats.accepted_quote_value_fmt }}</p>
         </div>
-        <div class="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Last 30 days</p>
-          <p class="mt-0.5 tabular-nums text-lg font-semibold text-slate-900 sm:text-xl">{{ stats.accepted_quote_value_30d_fmt }}</p>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Last 30 days</p>
+          <p class="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100 sm:text-xl">{{ stats.accepted_quote_value_30d_fmt }}</p>
         </div>
       </div>
     </section>
 
-    <section aria-labelledby="dash-volume" class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
-      <h3 id="dash-volume" class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pipeline</h3>
-      <p class="mt-0.5 text-[10px] text-slate-400">Estimates &amp; signups</p>
-      <div class="mt-3 grid grid-cols-2 gap-2">
-        <div class="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Estimates</p>
-          <p class="mt-0.5 tabular-nums text-lg font-semibold text-slate-900 sm:text-xl">{{ stats.total_estimates }}</p>
+    <section aria-labelledby="dash-volume" class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/40 sm:p-6">
+      <h3 id="dash-volume" class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Pipeline</h3>
+      <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Estimates and signups</p>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="rounded-xl border border-slate-100 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Estimates</p>
+          <p class="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100 sm:text-xl">{{ stats.total_estimates }}</p>
         </div>
-        <div class="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
-          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400">Signups (7d)</p>
-          <p class="mt-0.5 tabular-nums text-lg font-semibold text-slate-900 sm:text-xl">{{ stats.new_signups_7d }}</p>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+          <p class="text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Signups (7d)</p>
+          <p class="mt-1 tabular-nums text-lg font-semibold text-slate-900 dark:text-slate-100 sm:text-xl">{{ stats.new_signups_7d }}</p>
         </div>
       </div>
     </section>
@@ -193,154 +204,188 @@
     var el = document.getElementById("founder-charts-data");
     if (!el || typeof Chart === "undefined") return;
     var data = JSON.parse(el.textContent || "{}");
-    var legendCommon = {
-      position: "bottom",
-      labels: {
-        boxWidth: 12,
-        padding: 18,
-        font: { size: 12, weight: "500" },
-        color: "#475569",
-        usePointStyle: true,
-        pointStyle: "circle",
-      },
-    };
-    var commonDoughnut = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: legendCommon,
-      },
-      cutout: "62%",
-    };
-    new Chart(document.getElementById("founderChartPlan"), {
-      type: "doughnut",
-      data: {
-        labels: data.plan.labels,
-        datasets: [{
-          data: data.plan.values,
-          backgroundColor: ["#94a3b8", "#8b5cf6", "#f59e0b"],
-          hoverBackgroundColor: ["#64748b", "#7c3aed", "#d97706"],
-          borderWidth: 2,
-          borderColor: "#ffffff",
-        }],
-      },
-      options: commonDoughnut,
-    });
-    new Chart(document.getElementById("founderChartStatus"), {
-      type: "doughnut",
-      data: {
-        labels: data.status.labels,
-        datasets: [{
-          data: data.status.values,
-          backgroundColor: ["#059669", "#d97706", "#ea580c", "#94a3b8"],
-          hoverBackgroundColor: ["#047857", "#b45309", "#c2410c", "#64748b"],
-          borderWidth: 2,
-          borderColor: "#ffffff",
-        }],
-      },
-      options: commonDoughnut,
-    });
-    var leadsWrap = document.getElementById("founderChartTopLeadsWrap");
-    if (data.topLeads.empty) {
-      leadsWrap.innerHTML = '<p class="flex min-h-64 items-center justify-center px-4 text-center text-sm text-slate-400">No lead data yet.</p>';
-    } else {
-      new Chart(document.getElementById("founderChartTopLeads"), {
-        type: "bar",
-        data: {
-          labels: data.topLeads.labels,
-          datasets: [{
-            label: "Leads",
-            data: data.topLeads.values,
-            backgroundColor: "#475569",
-            borderRadius: 6,
-            barThickness: 20,
-          }],
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              beginAtZero: true,
-              grid: { color: "#f1f5f9" },
-              ticks: { font: { size: 11 }, color: "#64748b" },
-            },
-            y: {
-              grid: { display: false },
-              ticks: { font: { size: 11 }, color: "#475569", maxRotation: 0 },
-            },
-          },
-        },
-      });
+
+    var charts = [];
+
+    function theme() {
+      var d = document.documentElement.classList.contains("dark");
+      return {
+        doughnutBorder: d ? "#0f172a" : "#ffffff",
+        tick: d ? "#94a3b8" : "#64748b",
+        tickStrong: d ? "#cbd5e1" : "#475569",
+        grid: d ? "#334155" : "#f1f5f9",
+      };
     }
-    var barTitle = document.getElementById("founderChartTopBarTitle");
-    var barSub = document.getElementById("founderChartTopBarSubtitle");
-    var barWrap = document.getElementById("founderChartTopBarWrap");
-    if (data.topBar && barTitle && barSub) {
-      barTitle.textContent = data.topBar.title || "Top tenants";
-      barSub.textContent = data.topBar.kind === "revenue"
-        ? "Accepted value · all-time top 10"
-        : "Estimates · all-time top 10";
+
+    function legendOpts(t) {
+      return {
+        position: "bottom",
+        labels: {
+          boxWidth: 12,
+          padding: 18,
+          font: { size: 12, weight: "500" },
+          color: t.tickStrong,
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      };
     }
-    if (data.topBar && data.topBar.empty) {
-      barWrap.innerHTML = '<p class="flex min-h-64 items-center justify-center px-4 text-center text-sm text-slate-400">No data yet.</p>';
-    } else if (data.topBar) {
-      var barOpts = {
-        indexAxis: "y",
+
+    function buildAll() {
+      charts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
+      charts = [];
+      var t = theme();
+
+      var commonDoughnut = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function (ctx) {
-                var v = ctx.raw;
-                if (data.topBar.kind === "revenue") {
-                  return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(v);
-                }
-                return v + (v === 1 ? " estimate" : " estimates");
+        plugins: { legend: legendOpts(t) },
+        cutout: "62%",
+      };
+
+      var planEl = document.getElementById("founderChartPlan");
+      if (planEl) {
+        charts.push(new Chart(planEl, {
+          type: "doughnut",
+          data: {
+            labels: data.plan.labels,
+            datasets: [{
+              data: data.plan.values,
+              backgroundColor: ["#94a3b8", "#8b5cf6", "#f59e0b"],
+              hoverBackgroundColor: ["#64748b", "#7c3aed", "#d97706"],
+              borderWidth: 2,
+              borderColor: t.doughnutBorder,
+            }],
+          },
+          options: commonDoughnut,
+        }));
+      }
+
+      var statusEl = document.getElementById("founderChartStatus");
+      if (statusEl) {
+        charts.push(new Chart(statusEl, {
+          type: "doughnut",
+          data: {
+            labels: data.status.labels,
+            datasets: [{
+              data: data.status.values,
+              backgroundColor: ["#059669", "#d97706", "#ea580c", "#94a3b8"],
+              hoverBackgroundColor: ["#047857", "#b45309", "#c2410c", "#64748b"],
+              borderWidth: 2,
+              borderColor: t.doughnutBorder,
+            }],
+          },
+          options: commonDoughnut,
+        }));
+      }
+
+      var leadsWrap = document.getElementById("founderChartTopLeadsWrap");
+      if (leadsWrap && data.topLeads.empty) {
+        leadsWrap.innerHTML = '<p class="flex min-h-64 items-center justify-center px-4 text-center text-sm text-slate-400 dark:text-slate-500">No lead data yet.</p>';
+      } else if (document.getElementById("founderChartTopLeads")) {
+        charts.push(new Chart(document.getElementById("founderChartTopLeads"), {
+          type: "bar",
+          data: {
+            labels: data.topLeads.labels,
+            datasets: [{
+              label: "Leads",
+              data: data.topLeads.values,
+              backgroundColor: document.documentElement.classList.contains("dark") ? "#64748b" : "#475569",
+              borderRadius: 6,
+              barThickness: 20,
+            }],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: { color: t.grid },
+                ticks: { font: { size: 11 }, color: t.tick },
+              },
+              y: {
+                grid: { display: false },
+                ticks: { font: { size: 11 }, color: t.tickStrong, maxRotation: 0 },
               },
             },
           },
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            grid: { color: "#f1f5f9" },
-            ticks:
-              data.topBar.kind === "revenue"
-                ? {
-                    font: { size: 11 },
-                    color: "#64748b",
-                    callback: function (val) {
-                      return "€" + val;
-                    },
+        }));
+      }
+
+      var barTitle = document.getElementById("founderChartTopBarTitle");
+      var barSub = document.getElementById("founderChartTopBarSubtitle");
+      var barWrap = document.getElementById("founderChartTopBarWrap");
+      if (data.topBar && barTitle && barSub) {
+        barTitle.textContent = data.topBar.title || "Top tenants";
+        barSub.textContent = data.topBar.kind === "revenue"
+          ? "Accepted value · all-time top 10"
+          : "Estimates · all-time top 10";
+      }
+      if (data.topBar && data.topBar.empty && barWrap) {
+        barWrap.innerHTML = '<p class="flex min-h-64 items-center justify-center px-4 text-center text-sm text-slate-400 dark:text-slate-500">No data yet.</p>';
+      } else if (data.topBar && document.getElementById("founderChartTopBar")) {
+        var barOpts = {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  var v = ctx.raw;
+                  if (data.topBar.kind === "revenue") {
+                    return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(v);
                   }
-                : { font: { size: 11 }, color: "#64748b" },
+                  return v + (v === 1 ? " estimate" : " estimates");
+                },
+              },
+            },
           },
-          y: {
-            grid: { display: false },
-            ticks: { font: { size: 11 }, color: "#475569", maxRotation: 0 },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: t.grid },
+              ticks:
+                data.topBar.kind === "revenue"
+                  ? {
+                      font: { size: 11 },
+                      color: t.tick,
+                      callback: function (val) {
+                        return "€" + val;
+                      },
+                    }
+                  : { font: { size: 11 }, color: t.tick },
+            },
+            y: {
+              grid: { display: false },
+              ticks: { font: { size: 11 }, color: t.tickStrong, maxRotation: 0 },
+            },
           },
-        },
-      };
-      new Chart(document.getElementById("founderChartTopBar"), {
-        type: "bar",
-        data: {
-          labels: data.topBar.labels,
-          datasets: [{
-            label: data.topBar.kind === "revenue" ? "Accepted value" : "Estimates",
-            data: data.topBar.values,
-            backgroundColor: data.topBar.kind === "revenue" ? "#4f46e5" : "#64748b",
-            borderRadius: 6,
-            barThickness: 20,
-          }],
-        },
-        options: barOpts,
-      });
+        };
+        var dark = document.documentElement.classList.contains("dark");
+        charts.push(new Chart(document.getElementById("founderChartTopBar"), {
+          type: "bar",
+          data: {
+            labels: data.topBar.labels,
+            datasets: [{
+              label: data.topBar.kind === "revenue" ? "Accepted value" : "Estimates",
+              data: data.topBar.values,
+              backgroundColor: data.topBar.kind === "revenue" ? (dark ? "#818cf8" : "#4f46e5") : (dark ? "#94a3b8" : "#64748b"),
+              borderRadius: 6,
+              barThickness: 20,
+            }],
+          },
+          options: barOpts,
+        }));
+      }
     }
+
+    buildAll();
+    window.addEventListener("inversiq-theme", function () { buildAll(); });
   })();
   </script>
 </div>

@@ -1,0 +1,158 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Reasoning{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Reasoning</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Likely root causes, supporting evidence, and recommended operator actions.</p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Showing {{ shown_count }} of {{ total }}{% if filters.scope_id %} (scope ID filter){% endif %} for {{ scope_label }}</p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_reasoning') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope</span>
+        <select name="scope" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="pipelines" {% if filters.scope == "pipelines" %}selected{% endif %}>Pipelines</option>
+          <option value="verticals" {% if filters.scope == "verticals" %}selected{% endif %}>Verticals</option>
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Scope ID</span>
+        <input type="text" name="scope_id" value="{{ filters.scope_id or '' }}" placeholder="optional" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Category</span>
+        <select name="category" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="">all</option>
+          {% for option in category_options %}
+          <option value="{{ option }}" {% if filters.category == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Limit</span>
+        <input type="number" min="1" max="200" name="limit" value="{{ filters.limit }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <div class="md:col-span-2 flex items-end gap-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_reasoning') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+    <div class="mt-3 flex items-center gap-2 text-xs">
+      <a
+        href="{{ url_for('ops_reasoning') }}?scope=pipelines&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&category={{ filters.category }}&limit={{ filters.limit }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'pipelines' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Pipelines</a>
+      <a
+        href="{{ url_for('ops_reasoning') }}?scope=verticals&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&category={{ filters.category }}&limit={{ filters.limit }}"
+        class="inline-flex items-center rounded-md border px-2.5 py-1 font-semibold {% if filters.scope == 'verticals' %}border-slate-300 bg-slate-100 text-slate-900{% else %}border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+      >Verticals</a>
+      <span class="text-slate-300 dark:text-slate-600">|</span>
+      <a
+        href="{{ url_for('ops_focus') }}?scope={{ filters.scope }}&tenant_id={{ filters.tenant_id }}&scope_id={{ filters.scope_id or '' }}&limit={{ filters.limit }}"
+        class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800"
+      >View Focus (same filters)</a>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total scopes</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.total_scopes }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700/70 dark:bg-slate-900/45">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">With reasoning</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.with_reasoning }}</p>
+    </article>
+    <article class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800">High confidence</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-emerald-900">{{ summary_counts.high_confidence }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-700">Mixed/unclear only</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ summary_counts.mixed_only }}</p>
+    </article>
+  </section>
+
+  <section class="space-y-3">
+    {% for row in items %}
+    <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45 ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+      <div class="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ row.scope or scope_kind_singular }}</p>
+          <h3 class="text-base font-semibold text-slate-900">{{ row.scope_id or "—" }}</h3>
+          <p class="mt-1 text-sm text-slate-700">{% if row.summary %}{{ row.summary }}{% else %}—{% endif %}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <a href="{{ url_for('ops_focus') }}?scope={{ filters.scope }}&scope_id={{ row.scope_id or '' }}&tenant_id={{ filters.tenant_id }}&limit={{ filters.limit }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-50">View Focus</a>
+          <a href="{{ url_for('ops_review') }}?scope={{ row.scope or scope_kind_singular }}&scope_id={{ row.scope_id or '' }}&tenant_id={{ filters.tenant_id }}&limit=50" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">View Reviews</a>
+          <a href="{{ url_for('ops_runs') }}?tenant_id={{ filters.tenant_id }}&{{ 'vertical_id' if filters.scope == 'verticals' else 'pipeline_name' }}={{ row.scope_id or '' }}&limit=50" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-medium text-slate-700 hover:bg-slate-100">View Runs</a>
+        </div>
+      </div>
+
+      <div class="mt-3 space-y-3">
+        {% for item in (row.reasoning or []) %}
+        {% set category = item.category or "mixed_or_unclear" %}
+        <article class="rounded-lg border {% if category == 'upstream_input_quality' %}border-rose-200 bg-rose-50/60{% elif category == 'confidence_threshold_mismatch' %}border-amber-200 bg-amber-50/60{% elif category == 'pricing_calibration_issue' %}border-rose-300 bg-rose-50{% elif category == 'rule_coverage_gap' %}border-orange-200 bg-orange-50/60{% elif category == 'operator_backlog' %}border-sky-200 bg-sky-50/60{% elif category == 'anomaly_sensitivity_shift' %}border-violet-200 bg-violet-50/60{% elif category == 'workflow_structure_inefficiency' %}border-indigo-200 bg-indigo-50/60{% else %}border-slate-200 bg-slate-50{% endif %} p-3">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="inline-flex items-center rounded-md px-2 py-0.5 font-semibold {% if category == 'mixed_or_unclear' %}bg-slate-200 text-slate-700{% else %}bg-white/70 text-slate-800{% endif %}">{{ category }}</span>
+            {% set conf = item.confidence or "low" %}
+            {% if conf == "high" %}
+            <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">high confidence</span>
+            {% elif conf == "medium" %}
+            <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">medium confidence</span>
+            {% else %}
+            <span class="inline-flex items-center rounded-md bg-slate-200 px-2 py-0.5 font-semibold text-slate-700">low confidence</span>
+            {% endif %}
+          </div>
+          <p class="mt-2 text-sm {% if category == 'mixed_or_unclear' %}text-slate-600{% else %}text-slate-800{% endif %}">{{ item.root_cause or "—" }}</p>
+          <div class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Evidence</p>
+              {% if item.evidence %}
+              <ul class="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">
+                {% for evidence in (item.evidence or []) %}
+                <li>{{ evidence }}</li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">No evidence.</p>
+              {% endif %}
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recommendations</p>
+              {% if item.recommendations %}
+              <ul class="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-700">
+                {% for recommendation in (item.recommendations or []) %}
+                <li>{{ recommendation }}</li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">No recommendations.</p>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% else %}
+        <p class="text-sm text-slate-500 dark:text-slate-400">No reasoning items for this scope.</p>
+        {% endfor %}
+      </div>
+    </article>
+    {% else %}
+    <section class="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-400 shadow-sm">
+      <p class="font-medium text-slate-600 dark:text-slate-300">No scopes match the current filters.</p>
+      <p class="mt-2">Try another scope, clear the scope ID, or reset category — the API returned no rows for this combination.</p>
+    </section>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

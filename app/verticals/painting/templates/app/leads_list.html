@@ -120,10 +120,20 @@
           class="h-8 rounded-md border border-slate-300 bg-white px-3 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
 
-        <select x-model="status" class="h-8 rounded-md border border-slate-300 bg-white px-2 text-[12px] text-slate-700">
+        <select x-model="status" class="h-8 min-w-[10.5rem] rounded-md border border-slate-300 bg-white px-2 text-[12px] text-slate-700">
           <option value="alles">Alle standen</option>
+          <option value="new">Nieuw</option>
+          <option value="draft">Concept</option>
+          <option value="running">Wordt voorbereid</option>
+          <option value="succeeded">Klaar om te versturen</option>
+          <option value="needs_review">Review nodig</option>
+          <option value="quote_ready">Offerte gereed</option>
           <option value="sent">Verstuurd</option>
+          <option value="viewed">Bekeken</option>
           <option value="accepted">Geaccepteerd</option>
+          <option value="rejected">Afgewezen</option>
+          <option value="cancelled">Geannuleerd</option>
+          <option value="failed">Mislukt</option>
         </select>
 
         <select x-model="urgentie" class="h-8 rounded-md border border-slate-300 bg-white px-2 text-[12px] text-slate-700">

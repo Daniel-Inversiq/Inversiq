@@ -1,0 +1,190 @@
+{% extends "founder/_base.html" %}
+
+{% block title %}Ops Review Queue{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <section class="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-xl font-semibold tracking-[-0.02em] text-slate-900 dark:text-slate-50">Review Queue</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Internal read-only queue for runs that need operator review.</p>
+    </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Showing {{ shown_count }}</p>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/45">
+    <form method="get" action="{{ url_for('ops_review') }}" class="grid grid-cols-1 gap-3 md:grid-cols-6">
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tenant ID</span>
+        <input type="text" name="tenant_id" value="{{ filters.tenant_id }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-500" />
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Review priority</span>
+        <select name="review_priority" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="">All</option>
+          {% for option in priority_options %}
+          <option value="{{ option }}" {% if filters.review_priority == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</span>
+        <select name="status" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="">All</option>
+          {% for option in status_options %}
+          <option value="{{ option }}" {% if filters.status == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Review state</span>
+        <select name="review_state" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none">
+          <option value="">all</option>
+          {% for option in review_state_options %}
+          <option value="{{ option }}" {% if filters.review_state == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="text-sm">
+        <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Limit</span>
+        <input type="number" min="1" max="200" name="limit" value="{{ filters.limit }}" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-600 dark:bg-slate-950/50 dark:text-slate-100 dark:focus:border-slate-500" />
+      </label>
+      <div class="flex items-end gap-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:bg-slate-800">Apply</button>
+        <a href="{{ url_for('ops_review') }}" class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800">Reset</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <article class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-amber-800">pending</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-amber-900">{{ review_state_counts.pending }}</p>
+    </article>
+    <article class="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-sky-800">acknowledged</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-sky-900">{{ review_state_counts.acknowledged }}</p>
+    </article>
+    <article class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800">resolved</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-emerald-900">{{ review_state_counts.resolved }}</p>
+    </article>
+    <article class="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-700">ignored</p>
+      <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">{{ review_state_counts.ignored }}</p>
+    </article>
+  </section>
+
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] dark:border-slate-700/70 dark:bg-slate-900/45 dark:ring-slate-700/40">
+    <div class="overflow-x-auto">
+      <table class="min-w-[108rem] w-full text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/90 text-left text-xs uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold">Run</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Priority</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Review state</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Tenant</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Lead</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Confidence</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Anomaly count</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Review reason</th>
+            <th scope="col" class="px-4 py-3 font-semibold">State update</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Created</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for row in items %}
+          <tr class="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+            <td class="px-4 py-3 align-top tabular-nums">
+              <a href="{{ url_for('ops_run_detail', run_id=row.pipeline_run_id) }}" class="font-medium text-slate-900 hover:text-slate-700">#{{ row.pipeline_run_id }}</a>
+            </td>
+            <td class="px-4 py-3 align-top">
+              {% set priority = row.review_priority %}
+              {% if priority == "high" %}
+              <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">high</span>
+              {% elif priority == "medium" %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">medium</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ priority or "low" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top">
+              {% set st = row.status %}
+              {% if st == "FAILED" %}
+              <span class="inline-flex items-center rounded-md bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-800">FAILED</span>
+              {% elif st == "NEEDS_REVIEW" %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">NEEDS_REVIEW</span>
+              {% elif st == "RUNNING" %}
+              <span class="inline-flex items-center rounded-md bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">RUNNING</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ st or "—" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top">
+              {% set rs = row.review_state %}
+              {% if rs == "resolved" %}
+              <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">resolved</span>
+              {% elif rs == "acknowledged" %}
+              <span class="inline-flex items-center rounded-md bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">acknowledged</span>
+              {% elif rs == "ignored" %}
+              <span class="inline-flex items-center rounded-md bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">ignored</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">{{ rs or "pending" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top font-mono text-xs text-slate-700">{{ row.tenant_id or "—" }}</td>
+            <td class="px-4 py-3 align-top font-mono text-xs text-slate-700">{{ row.lead_id or "—" }}</td>
+            <td class="px-4 py-3 align-top text-slate-700 tabular-nums">
+              {% if row.confidence is not none %}
+              {{ "%.3f"|format(row.confidence) }}
+              {% else %}
+              <span class="text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-top tabular-nums text-slate-700">{{ row.anomaly_count }}</td>
+            <td class="px-4 py-3 align-top text-slate-700">
+              <div class="max-w-md truncate" title="{{ row.review_reason or '' }}">{{ row.review_reason or "—" }}</div>
+            </td>
+            <td class="px-4 py-3 align-top text-slate-700">
+              <form method="post" action="{{ url_for('ops_review_update_state') }}" class="space-y-2 min-w-[18rem]">
+                <input type="hidden" name="pipeline_run_id" value="{{ row.pipeline_run_id }}" />
+                <input type="hidden" name="tenant_id" value="{{ row.tenant_id or '' }}" />
+                <input type="hidden" name="tenant_id_filter" value="{{ filters.tenant_id }}" />
+                <input type="hidden" name="review_priority_filter" value="{{ filters.review_priority }}" />
+                <input type="hidden" name="status_filter" value="{{ filters.status }}" />
+                <input type="hidden" name="review_state_filter" value="{{ filters.review_state }}" />
+                <input type="hidden" name="scope_filter" value="{{ filters.scope or '' }}" />
+                <input type="hidden" name="scope_id_filter" value="{{ filters.scope_id or '' }}" />
+                <input type="hidden" name="limit_filter" value="{{ filters.limit }}" />
+                <div class="flex items-center gap-2">
+                  <select name="review_state_status" class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 focus:border-slate-500 focus:outline-none">
+                    <option value="pending" {% if (row.review_state or "pending") == "pending" %}selected{% endif %}>pending</option>
+                    <option value="acknowledged" {% if row.review_state == "acknowledged" %}selected{% endif %}>acknowledged</option>
+                    <option value="resolved" {% if row.review_state == "resolved" %}selected{% endif %}>resolved</option>
+                    <option value="ignored" {% if row.review_state == "ignored" %}selected{% endif %}>ignored</option>
+                  </select>
+                  <button type="submit" class="inline-flex shrink-0 items-center rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50">Save</button>
+                </div>
+                <input
+                  type="text"
+                  name="review_state_note"
+                  value="{{ row.review_state_note or '' }}"
+                  placeholder="note"
+                  class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+                />
+              </form>
+            </td>
+            <td class="px-4 py-3 align-top whitespace-nowrap tabular-nums text-slate-700">{{ row.created_at or "—" }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="11" class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">No review queue items found for current filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

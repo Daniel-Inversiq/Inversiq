@@ -46,6 +46,7 @@
     {% endif %}
 
     {% set total = lead.get("total") if lead is mapping else None %}
+    {% set v = lead.vertical if lead is mapping else lead.get("vertical", "painting") %}
 
     {% set searchable = ((lead.customer_name or '') ~ ' ' ~ (status_labels.get(st, st or '')) ~ ' ' ~ (followup.next_action or ''))|lower %}
     <tr
@@ -57,7 +58,6 @@
           <a href="/app/leads/{{ lead.id }}" class="text-[13px] font-semibold text-slate-900 transition hover:text-brand-600">
             {{ lead.customer_name or t('leads_list.table.empty_customer') }}
           </a>
-          {% set v = lead.vertical if lead is mapping else lead.get("vertical", "painting") %}
           <span class="inline-flex w-fit items-center rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
             {{ v or "painting" }}
           </span>
@@ -122,7 +122,7 @@
                 class="ui-btn-primary disabled:opacity-60"
                 type="submit"
               >
-                {{ t('lead_detail.actions.view_quote') }}
+                {{ a.label or t('lead_detail.actions.view_quote') }}
               </button>
             </form>
           {% else %}
@@ -130,7 +130,7 @@
               class="ui-btn-primary"
               href="{{ a.href }}"
             >
-              {{ t('lead_detail.actions.view_quote') }}
+              {{ a.label or t('lead_detail.actions.view_quote') }}
             </a>
           {% endif %}
 

@@ -1,56 +1,82 @@
 {% extends "app/layout.html" %}
+{% block header_title %}Overzicht{% endblock %}
 {% block content %}
-<div class="dashboard-typography space-y-6">
+<div class="dashboard-typography mx-auto w-full max-w-[1600px] space-y-3">
 
-  {# ── Intake link ────────────────────────────────────────────── #}
-  {% include "app/partials/intake_link_card.html" %}
+  {# ── Section 1 — context (title lives in shell top bar) ─────── #}
+  <p class="page-subtitle max-w-2xl">
+    Omzet, offertes en openstaande acties op één plek — blijf dicht bij je planning.
+  </p>
 
-  {# ── "Vandaag te regelen" banner ────────────────────────────── #}
-  <div class="flex items-center justify-between gap-4
-              rounded-xl border border-neutral-200/90 bg-white shadow-none px-5 py-3.5">
-    <div class="flex items-center gap-3">
-      <span class="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0"></span>
-      <div>
-        <p class="text-[14px] section-title leading-none tracking-[-0.02em]">Vandaag te regelen</p>
-        <p class="body-muted mt-1 text-[12px] leading-relaxed">
-          <span class="text-neutral-900 font-normal">{{ open_quotes|length }} open offertes</span>
-          &nbsp;·&nbsp;
-          <span class="text-neutral-900 font-normal">{{ followups|length }} aanvragen</span> om op te volgen
-        </p>
+  {# ── Section 2 — KPI strip (hairline dividers via gap-px) ──── #}
+  <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-neutral-200/90 bg-neutral-200/80 lg:grid-cols-4">
+    <div class="flex flex-col justify-center gap-0.5 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Omzet maand</p>
+        <svg class="h-3 w-3 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <p id="kpi-month-revenue" class="kpi-value text-[22px] font-semibold leading-none tracking-tight tabular-nums sm:text-[26px]">€ 0</p>
+      <div class="mt-0.5 flex flex-wrap items-center gap-1.5">
+        <span id="kpi-revenue-delta" class="hidden text-[10px] font-medium text-[#2563eb]"></span>
+        <span class="body-muted text-[10px] leading-snug">vs vorige maand</span>
       </div>
     </div>
-    <div class="flex items-center gap-1.5 shrink-0">
-      <a href="/app/leads" class="ui-btn-primary">
-        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+    <div class="flex flex-col justify-center gap-0.5 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Offertes verzonden</p>
+        <svg class="h-3 w-3 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
         </svg>
-        Bekijk offertes
-      </a>
-      <a href="/app/leads" class="ui-btn-secondary">
-        Opvolging
-        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
+      </div>
+      <p class="kpi-value text-[22px] font-semibold leading-none tracking-tight tabular-nums sm:text-[26px]">{{ quotes_sent_this_month }}</p>
+      <p class="body-muted mt-0.5 text-[10px] leading-snug">deze maand</p>
+    </div>
+
+    <div class="flex flex-col justify-center gap-0.5 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Akkoord %</p>
+        <svg class="h-3 w-3 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-      </a>
+      </div>
+      <p id="kpi-sign-rate" class="kpi-value text-[22px] font-semibold leading-none tracking-tight tabular-nums sm:text-[26px]">0%</p>
+      <p class="body-muted mt-0.5 text-[10px] leading-snug">conversieratio</p>
+    </div>
+
+    <div class="flex flex-col justify-center gap-0.5 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Open offertes</p>
+        <svg class="h-3 w-3 shrink-0 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <p id="kpi-open-offers" class="kpi-value text-[22px] font-semibold leading-none tracking-tight tabular-nums sm:text-[26px]">{{ open_quotes|length }}</p>
+      <p class="body-muted mt-0.5 text-[10px] leading-snug">wachten op reactie</p>
     </div>
   </div>
 
-  {# ── Billing usage warning (near limit) ─────────────────────── #}
+  {# ── Billing usage warning ─────────────────────────────────── #}
   {% if billing_usage_summary %}
     {% set ouv = billing_usage_summary.offer_usage_view %}
     {% if ouv and not ouv.unlimited and ouv.limit_for_plan and ouv.limit_for_plan > 0 %}
       {% set usage_pct = ((ouv.used_this_month / ouv.limit_for_plan) * 100) | int %}
       {% if usage_pct >= 70 %}
-        <div class="flex items-center justify-between gap-4 rounded-xl border px-4 py-3
+        <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 sm:px-4
                     {% if usage_pct >= 90 %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %}">
-          <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex min-w-0 items-center gap-2">
             <svg class="h-3.5 w-3.5 shrink-0 {% if usage_pct >= 90 %}text-red-500{% else %}text-amber-500{% endif %}"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
             </svg>
-            <span class="text-[12px] {% if usage_pct >= 90 %}text-red-800{% else %}text-amber-800{% endif %}">
+            <span class="text-[12px] leading-snug {% if usage_pct >= 90 %}text-red-800{% else %}text-amber-800{% endif %}">
               {% if usage_pct >= 100 %}
                 Maandlimiet bereikt — {{ ouv.used_this_month }}/{{ ouv.limit_for_plan }} offertes gebruikt.
               {% elif usage_pct >= 90 %}
@@ -66,167 +92,125 @@
     {% endif %}
   {% endif %}
 
-  {# ── KPI cards ──────────────────────────────────────────────── #}
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  {# ── Section 3 — intake + utility row ─────────────────────── #}
+  {% include "app/partials/intake_link_card.html" %}
 
-    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
-      <div class="flex items-center justify-between">
-        <p class="text-[10px] font-normal uppercase tracking-[0.12em] text-neutral-400">Omzet maand</p>
-        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-        </svg>
-      </div>
+  <div class="flex flex-col gap-2.5 rounded-lg border border-neutral-200/90 bg-white px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5">
+    <div class="flex min-w-0 items-start gap-2.5 sm:items-center">
+      <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 sm:mt-0"></span>
       <div>
-        <p id="kpi-month-revenue" class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">€ 0</p>
-        <div class="mt-2 flex items-center gap-2">
-          <span id="kpi-revenue-delta" class="hidden text-[11px] font-medium text-emerald-600"></span>
-          <span class="body-muted text-[11px]">vs vorige maand</span>
-        </div>
+        <p class="text-[13px] font-semibold leading-tight text-neutral-900">Vandaag te regelen</p>
+        <p class="body-muted mt-0.5 text-[12px] leading-snug">
+          <span class="font-normal text-neutral-800">{{ open_quotes|length }} open offertes</span>
+          &nbsp;·&nbsp;
+          <span class="font-normal text-neutral-800">{{ followups|length }} aanvragen</span> om op te volgen
+        </p>
       </div>
     </div>
-
-    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
-      <div class="flex items-center justify-between">
-        <p class="text-[10px] font-normal uppercase tracking-[0.12em] text-neutral-400">Offertes verzonden</p>
-        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex shrink-0 flex-wrap items-center gap-1.5 pl-4 sm:pl-0">
+      <a href="/app/leads" class="ui-btn-primary">
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-      </div>
-      <div>
-        <p class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">{{ quotes_sent_this_month }}</p>
-        <p class="body-muted mt-2 text-[11px]">deze maand</p>
-      </div>
-    </div>
-
-    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
-      <div class="flex items-center justify-between">
-        <p class="text-[10px] font-normal uppercase tracking-[0.12em] text-neutral-400">Akkoord %</p>
-        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        Bekijk offertes
+      </a>
+      <a href="/app/leads" class="ui-btn-secondary">
+        Opvolging
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
         </svg>
-      </div>
-      <div>
-        <p id="kpi-sign-rate" class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">0%</p>
-        <p class="body-muted mt-2 text-[11px]">conversieratio</p>
-      </div>
+      </a>
     </div>
+  </div>
 
-    <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none p-5 flex flex-col gap-3 min-h-[128px]">
-      <div class="flex items-center justify-between">
-        <p class="text-[10px] font-normal uppercase tracking-[0.12em] text-neutral-400">Open offertes</p>
-        <svg class="h-3.5 w-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-      </div>
-      <div>
-        <p id="kpi-open-offers" class="kpi-value text-[30px] tracking-tight leading-none tabular-nums">{{ open_quotes|length }}</p>
-        <p class="body-muted mt-2 text-[11px]">wachten op reactie</p>
-      </div>
-    </div>
+  {# ── Section 4 — analytics + lists ─────────────────────────── #}
+  <div class="grid grid-cols-1 gap-3 xl:grid-cols-12 xl:items-start xl:gap-3">
 
-  </div>{# /KPI grid #}
+    <div class="space-y-3 xl:col-span-8">
 
-  {# ── Main content grid ──────────────────────────────────────── #}
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
-
-    {# Left column (≈ 2/3) #}
-    <div class="space-y-4 xl:col-span-8">
-
-      {# Omzet & resultaten card #}
-      <div id="secondary-section" class="overflow-hidden rounded-xl border border-neutral-200/90 bg-white shadow-none">
-
-        <div class="flex items-baseline justify-between gap-4 border-b border-neutral-100 px-5 py-[18px] bg-neutral-50/70">
+      <div id="secondary-section" class="overflow-hidden rounded-lg border border-neutral-200/90 bg-white">
+        <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-neutral-200/80 bg-white px-4 py-3 sm:px-4">
           <div>
-            <span class="text-[15px] section-title">Omzet &amp; resultaten</span>
+            <span class="text-[14px] font-semibold leading-tight text-neutral-900">Omzet &amp; resultaten</span>
             <span class="body-muted ml-2 text-[11px]">Afgelopen 6 maanden</span>
           </div>
-          <p id="current-month-revenue" class="text-[14px] font-medium tabular-nums text-neutral-900 tracking-tight"></p>
+          <p id="current-month-revenue" class="text-[13px] font-medium tabular-nums leading-none text-neutral-900"></p>
         </div>
 
-        {# Empty state #}
-        <div id="secondary-empty" class="hidden py-12 text-center">
-          <svg class="mx-auto mb-3 h-8 w-8 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="secondary-empty" class="hidden py-8 text-center">
+          <svg class="mx-auto mb-2 h-7 w-7 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
           <p class="text-[12px] font-normal text-neutral-500">Nog geen data beschikbaar</p>
-          <p class="mt-1 text-[11px] text-neutral-400">Zodra je offertes verstuurt zie je hier je resultaten</p>
+          <p class="mt-0.5 text-[11px] text-neutral-400">Zodra je offertes verstuurt zie je hier je resultaten</p>
         </div>
 
-        {# Charts grid #}
         <div id="secondary-charts" class="grid grid-cols-1 xl:grid-cols-5">
-
-          {# Revenue line chart #}
-          <div class="xl:col-span-3 xl:border-r xl:border-neutral-100 bg-white">
-            <div class="flex items-baseline justify-between gap-3 border-b border-neutral-100 px-5 pt-4 pb-2.5">
-              <p class="body-muted text-[10px] font-medium uppercase tracking-[0.12em]">Omzet over tijd</p>
-              <span id="revenue-total-label" class="text-[11px] font-medium tabular-nums text-neutral-800"></span>
+          <div class="xl:col-span-3 xl:border-r xl:border-neutral-200/80">
+            <div class="flex items-baseline justify-between gap-3 border-b border-neutral-200/80 px-4 py-2.5">
+              <p class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.1em] text-neutral-500">Omzet over tijd</p>
+              <span id="revenue-total-label" class="text-[11px] font-medium tabular-nums text-neutral-700"></span>
             </div>
-            <div class="px-5 pt-4 pb-5">
-              <div id="revenue-chart-wrap" class="h-[228px] rounded-lg border border-neutral-200/90 bg-white px-3 py-2.5 shadow-none">
+            <div class="px-4 pb-4 pt-3">
+              <div id="revenue-chart-wrap" class="h-[200px] rounded-md border border-neutral-200/90 bg-white px-2 py-2 sm:h-[220px] sm:px-3">
                 <canvas id="revenue-by-month-chart"></canvas>
               </div>
-              <div id="revenue-empty" class="hidden flex h-[228px] items-center justify-center">
+              <div id="revenue-empty" class="hidden flex h-[200px] items-center justify-center sm:h-[220px]">
                 <p class="text-[11px] text-neutral-400">Nog geen omzetdata</p>
               </div>
             </div>
           </div>
 
-          {# Status doughnut #}
-          <div class="xl:col-span-2">
-            <div class="flex items-baseline justify-between gap-3 border-b border-neutral-100 px-5 pt-4 pb-2.5">
-              <p class="body-muted text-[10px] font-medium uppercase tracking-[0.12em]">Statusverdeling</p>
-              <span id="status-total-label" class="text-[11px] font-medium tabular-nums text-neutral-800"></span>
+          <div class="border-t border-neutral-200/80 xl:col-span-2 xl:border-t-0">
+            <div class="flex items-baseline justify-between gap-3 border-b border-neutral-200/80 px-4 py-2.5">
+              <p class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.1em] text-neutral-500">Statusverdeling</p>
+              <span id="status-total-label" class="text-[11px] font-medium tabular-nums text-neutral-700"></span>
             </div>
-            <div class="px-5 pt-4 pb-5">
-              <div id="status-chart-wrap" class="flex h-[228px] items-center justify-center rounded-lg border border-neutral-200/90 bg-white shadow-none">
+            <div class="px-4 pb-4 pt-3">
+              <div id="status-chart-wrap" class="flex h-[200px] items-center justify-center rounded-md border border-neutral-200/90 bg-white sm:h-[220px]">
                 <canvas id="status-breakdown-chart"></canvas>
               </div>
-              <div id="status-empty" class="hidden flex h-[228px] items-center justify-center">
+              <div id="status-empty" class="hidden flex h-[200px] items-center justify-center sm:h-[220px]">
                 <p class="text-[11px] text-neutral-400">Nog geen statusdata</p>
               </div>
 
-              <div id="status-stats" class="hidden mt-4 border-t border-neutral-100 pt-4 space-y-2.5">
+              <div id="status-stats" class="mt-3 hidden space-y-2 border-t border-neutral-200/80 pt-3">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-sm bg-emerald-600 shrink-0"></span>
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-sm bg-[#15803d]"></span>
                     <span class="text-[11px] text-neutral-500">Akkoord</span>
                   </div>
-                  <span id="stat-accepted" class="text-[14px] font-medium text-neutral-900 tabular-nums">—</span>
+                  <span id="stat-accepted" class="text-[13px] font-medium tabular-nums text-neutral-900">—</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-sm bg-brand-600 shrink-0"></span>
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-sm bg-[#2563eb]"></span>
                     <span class="text-[11px] text-neutral-500">Open</span>
                   </div>
-                  <span id="stat-open" class="text-[14px] font-medium text-neutral-900 tabular-nums">—</span>
+                  <span id="stat-open" class="text-[13px] font-medium tabular-nums text-neutral-900">—</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-sm bg-red-600 shrink-0"></span>
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-sm bg-[#dc2626]"></span>
                     <span class="text-[11px] text-neutral-500">Verloren</span>
                   </div>
-                  <span id="stat-lost" class="text-[14px] font-medium text-neutral-900 tabular-nums">—</span>
+                  <span id="stat-lost" class="text-[13px] font-medium tabular-nums text-neutral-900">—</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-        </div>{# /charts grid #}
-      </div>{# /omzet card #}
-
-      {# Open quotes table #}
-      <div class="overflow-hidden rounded-xl border border-neutral-200/90 bg-white shadow-none">
-        <div class="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-[18px] bg-neutral-50/70">
-          <span class="text-[15px] section-title tracking-[-0.02em]">Offertes die nog lopen</span>
+      <div class="overflow-hidden rounded-lg border border-neutral-200/90 bg-white">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/80 bg-white px-4 py-3">
+          <span class="text-[14px] font-semibold leading-tight tracking-tight text-neutral-900">Offertes die nog lopen</span>
           <a href="/app/leads"
-             class="flex items-center gap-1 text-[11px] font-normal text-neutral-400 hover:text-neutral-900 transition-colors">
+             class="flex items-center gap-1 text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-900">
             Alle offertes
-            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
             </svg>
           </a>
@@ -235,62 +219,61 @@
         <div class="overflow-x-auto">
           <table class="min-w-full border-collapse">
             <thead>
-              <tr class="border-b border-neutral-200 bg-neutral-50/90">
-                <th class="px-5 py-3.5 text-left text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500">Klant</th>
-                <th class="px-5 py-3.5 text-left text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500">Omschrijving</th>
-                <th class="px-5 py-3.5 text-right text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500">Bedrag</th>
-                <th class="px-5 py-3.5 text-left text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500">Status</th>
-                <th class="px-5 py-3.5 text-right text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-500">Actie</th>
+              <tr class="border-b border-neutral-200/90 bg-[#fafafa]">
+                <th class="px-4 py-2.5 text-left text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Klant</th>
+                <th class="px-4 py-2.5 text-left text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Omschrijving</th>
+                <th class="px-4 py-2.5 text-right text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Bedrag</th>
+                <th class="px-4 py-2.5 text-left text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Status</th>
+                <th class="px-4 py-2.5 text-right text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-500">Actie</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
               {% for q in open_quotes %}
-                <tr class="group hover:bg-neutral-50/90 transition-colors">
-                  <td class="px-5 py-5 align-middle">
-                    <div class="flex items-center gap-2.5">
-                      <div class="flex items-center justify-center w-7 h-7 rounded-md bg-neutral-100 text-neutral-600 text-[10px] font-semibold shrink-0">
+                <tr class="group transition-colors hover:bg-neutral-50/90">
+                  <td class="align-middle px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-neutral-200/80 bg-neutral-50 text-[10px] font-semibold text-neutral-600">
                         {{ (q.customer_name or "?")[:2] | upper }}
                       </div>
-                      <span class="text-[12px] font-medium text-neutral-900 tracking-tight">{{ q.customer_name }}</span>
+                      <span class="text-[12px] font-medium leading-tight tracking-tight text-neutral-900">{{ q.customer_name }}</span>
                     </div>
                   </td>
-                  <td class="px-5 py-5 align-middle">
-                    <span class="text-[11px] text-neutral-500 max-w-[220px] truncate block leading-relaxed">
+                  <td class="align-middle px-4 py-3">
+                    <span class="block max-w-[220px] truncate text-[11px] leading-relaxed text-neutral-500">
                       {{ q.description or "—" }}
                     </span>
                   </td>
-                  <td class="px-5 py-5 text-right align-middle">
-                    <span class="text-[14px] font-medium text-neutral-900 tabular-nums">{{ q.total_display }}</span>
+                  <td class="px-4 py-3 text-right align-middle">
+                    <span class="text-[13px] font-medium tabular-nums text-neutral-900">{{ q.total_display }}</span>
                   </td>
-                  <td class="px-5 py-5 align-middle">
-                    {# Map server status codes to ui-badge classes #}
+                  <td class="align-middle px-4 py-3">
                     {% if q.status_code in ['signed', 'accepted'] %}
                       <span class="ui-badge ui-badge-akkoord">
-                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        <span class="h-1 w-1 rounded-full bg-current opacity-80"></span>
                         {{ q.status_label }}
                       </span>
                     {% elif q.status_code == 'rejected' %}
                       <span class="ui-badge ui-badge-verloren">
-                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        <span class="h-1 w-1 rounded-full bg-current opacity-80"></span>
                         {{ q.status_label }}
                       </span>
                     {% elif q.status_code == 'pending' %}
                       <span class="ui-badge ui-badge-open">
-                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        <span class="h-1 w-1 rounded-full bg-current opacity-80"></span>
                         {{ q.status_label }}
                       </span>
                     {% else %}
                       <span class="ui-badge ui-badge-pending">
-                        <span class="w-1 h-1 rounded-full bg-current opacity-80"></span>
+                        <span class="h-1 w-1 rounded-full bg-current opacity-80"></span>
                         {{ q.status_label }}
                       </span>
                     {% endif %}
                   </td>
-                  <td class="px-5 py-5 text-right align-middle">
+                  <td class="px-4 py-3 text-right align-middle">
                     <a href="/app/leads/{{ q.id }}"
-                       class="inline-flex items-center gap-1 text-[11px] font-normal text-neutral-400 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-all">
+                       class="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-400 opacity-0 transition-all hover:text-neutral-900 group-hover:opacity-100">
                       Bekijk
-                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                               d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                       </svg>
@@ -299,8 +282,8 @@
                 </tr>
               {% else %}
                 <tr>
-                  <td colspan="5" class="px-6 py-12 text-center">
-                    <svg class="mx-auto mb-2.5 h-6 w-6 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <td colspan="5" class="px-4 py-8 text-center">
+                    <svg class="mx-auto mb-2 h-6 w-6 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
@@ -308,7 +291,7 @@
                       Geen open offertes.
                       {% if tenant is defined and tenant and tenant.slug %}
                         <a href="/intake/{{ tenant.slug }}"
-                           class="ml-1 font-medium text-neutral-800 hover:text-neutral-950">
+                           class="ml-1 font-medium text-neutral-700 hover:text-neutral-950">
                           Maak nieuwe offerte →
                         </a>
                       {% endif %}
@@ -319,21 +302,17 @@
             </tbody>
           </table>
         </div>
-      </div>{# /open quotes #}
+      </div>
+    </div>
 
-    </div>{# /left column #}
-
-    {# Right column (≈ 1/3) #}
-    <aside class="space-y-4 xl:col-span-4">
-
-      {# Opvolging #}
-      <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none">
-        <div class="flex items-center justify-between gap-2 border-b border-neutral-100 px-5 py-4 bg-neutral-50/70">
-          <span class="text-[11px] section-title uppercase tracking-[0.12em]">Opvolging</span>
+    <aside class="space-y-3 xl:col-span-4">
+      <div class="rounded-lg border border-neutral-200/90 bg-white">
+        <div class="flex items-center justify-between gap-2 border-b border-neutral-200/80 px-4 py-2.5">
+          <span class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.1em] text-neutral-500">Opvolging</span>
           <a href="/app/leads"
-             class="flex items-center gap-1 text-[11px] font-normal text-neutral-400 hover:text-neutral-900 transition-colors">
+             class="flex items-center gap-1 text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-900">
             Alles
-            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
             </svg>
           </a>
@@ -342,24 +321,23 @@
         <div class="divide-y divide-neutral-100">
           {% for item in followups %}
             <a href="{{ item.href }}"
-               class="flex gap-2.5 px-5 py-4 hover:bg-neutral-50/90 transition-colors">
-              {# Priority dot: red for overdue, amber for today, slate for upcoming #}
+               class="flex gap-2.5 px-4 py-3 transition-colors hover:bg-neutral-50/90">
               {% if item.status_label == "Te laat" %}
-                <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"></span>
               {% elif item.status_label == "Vandaag" %}
-                <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"></span>
               {% else %}
-                <span class="mt-[5px] w-1.5 h-1.5 rounded-full bg-neutral-300 shrink-0"></span>
+                <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-300"></span>
               {% endif %}
-              <div class="flex-1 min-w-0">
-                <p class="text-[12px] font-medium text-neutral-900 leading-snug truncate">{{ item.customer_name }}</p>
-                <p class="mt-0.5 text-[11px] text-neutral-500 leading-snug truncate">{{ item.next_action }}</p>
-                <p class="mt-1 text-[10px] text-neutral-400 tabular-nums">{{ item.next_action_at_human or "Geen datum" }}</p>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[12px] font-medium leading-snug text-neutral-900">{{ item.customer_name }}</p>
+                <p class="mt-0.5 truncate text-[11px] leading-snug text-neutral-500">{{ item.next_action }}</p>
+                <p class="mt-1 text-[10px] tabular-nums text-neutral-400">{{ item.next_action_at_human or "Geen datum" }}</p>
               </div>
             </a>
           {% else %}
-            <div class="px-6 py-10 text-center">
-              <svg class="mx-auto mb-2.5 h-5 w-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="px-4 py-8 text-center">
+              <svg class="mx-auto mb-2 h-5 w-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                       d="M8 7h8M8 12h8M8 17h5"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -367,31 +345,30 @@
               </svg>
               <p class="text-[12px] text-neutral-400">
                 Geen opvolging gepland.
-                <a href="/app/leads" class="ml-1 font-medium text-neutral-800 hover:text-neutral-950">
+                <a href="/app/leads" class="ml-1 font-medium text-neutral-700 hover:text-neutral-950">
                   Plan opvolging →
                 </a>
               </p>
             </div>
           {% endfor %}
         </div>
-      </div>{# /opvolging #}
+      </div>
 
-      {# Abonnement #}
       {% set _plan_names = {'core': 'Core', 'growth': 'Growth', 'pro': 'Pro', 'scale': 'Scale'} %}
       {% set _plan_name = _plan_names.get(current_plan_code, current_plan_code | capitalize) if current_plan_code else 'Core' %}
-      <div class="rounded-xl border border-neutral-200/90 bg-white shadow-none">
-        <div class="border-b border-neutral-100 bg-neutral-50/70 px-5 py-4 rounded-t-xl">
-          <span class="text-[13px] section-title">Abonnement</span>
+      <div class="rounded-lg border border-neutral-200/90 bg-white">
+        <div class="border-b border-neutral-200/80 px-4 py-2.5">
+          <span class="text-[14px] font-semibold leading-tight text-neutral-900">Abonnement</span>
         </div>
-        <div class="px-5 py-4 space-y-3">
+        <div class="space-y-3 px-4 py-3">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <div class="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Plan</div>
-              <div class="mt-1 text-[14px] font-medium text-neutral-900">{{ _plan_name }}</div>
+              <div class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-400">Plan</div>
+              <div class="mt-0.5 text-[14px] font-semibold text-neutral-900">{{ _plan_name }}</div>
             </div>
             <div class="text-right">
-              <div class="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Status</div>
-              <div class="mt-1">
+              <div class="text-[10px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-400">Status</div>
+              <div class="mt-0.5">
                 {% if subscription_status == "trialing" %}
                   <span class="ui-badge ui-badge-pending">Proefperiode</span>
                 {% elif subscription_status == "active" %}
@@ -406,7 +383,7 @@
           </div>
 
           {% if subscription_status == "trialing" and trial_days_left is not none %}
-            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
               <p class="text-[11px] text-amber-800">
                 Nog <strong>{{ trial_days_left }} dag{% if trial_days_left != 1 %}en{% endif %}</strong> gratis proberen.
               </p>
@@ -417,12 +394,10 @@
             Beheer abonnement
           </a>
         </div>
-      </div>{# /abonnement #}
-
-    </aside>{# /right column #}
-  </div>{# /main grid #}
-
-</div>{# /page wrapper #}
+      </div>
+    </aside>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -437,9 +412,9 @@
   let revenueChart = null;
   let statusChart  = null;
 
-  /* Chart.js defaults — neutral, minimal */
-  Chart.defaults.font.family = "'Inter Display', 'Inter', system-ui, sans-serif";
-  Chart.defaults.color = '#a3a3a3';
+  const chartFont = "'Segoe UI', ui-sans-serif, system-ui, sans-serif";
+  Chart.defaults.font.family = chartFont;
+  Chart.defaults.color = '#9ca3af';
 
   function buildCharts(summary) {
     const revenue           = Array.isArray(summary.revenue_series)    ? summary.revenue_series    : [];
@@ -461,7 +436,6 @@
     hideEl('secondary-empty');
     showEl('secondary-charts');
 
-    /* ── Revenue line chart ── */
     if (hasRevenue) {
       hideEl('revenue-empty');
       showEl('revenue-chart-wrap');
@@ -486,15 +460,15 @@
           datasets: [{
             label: 'Omzet',
             data: revenueValues,
-            borderColor:           '#0a0a0a',
-            backgroundColor:       'rgba(10, 10, 10, 0.06)',
+            borderColor:           '#2563eb',
+            backgroundColor:       'rgba(37, 99, 235, 0.08)',
             fill:                  true,
-            tension:               0.42,
-            pointRadius:           2.5,
-            pointHoverRadius:      4.5,
-            pointBackgroundColor:  '#0a0a0a',
+            tension:               0.4,
+            pointRadius:           2,
+            pointHoverRadius:      4,
+            pointBackgroundColor:  '#2563eb',
             pointBorderColor:      '#ffffff',
-            pointBorderWidth:      1.8,
+            pointBorderWidth:      1.5,
             borderWidth:           1.75,
           }],
         },
@@ -503,13 +477,13 @@
           maintainAspectRatio: false,
           scales: {
             x: {
-              ticks:  { color: '#a3a3a3', font: { size: 10, weight: '500' } },
+              ticks:  { color: '#9ca3af', font: { size: 10, weight: '500' }, maxRotation: 0 },
               grid:   { display: false },
               border: { display: false },
             },
             y: {
-              ticks:  { color: '#a3a3a3', font: { size: 10, weight: '500' }, maxTicksLimit: 4, callback: v => eur.format(v) },
-              grid:   { color: 'rgba(163, 163, 163, 0.2)' },
+              ticks:  { color: '#9ca3af', font: { size: 10, weight: '500' }, maxTicksLimit: 4, callback: v => eur.format(v) },
+              grid:   { color: 'rgba(229, 231, 235, 0.9)' },
               border: { display: false },
             },
           },
@@ -517,12 +491,12 @@
             legend: { display: false },
             tooltip: {
               backgroundColor: '#ffffff',
-              titleColor:      '#0a0a0a',
-              bodyColor:       '#737373',
-              borderColor:     '#e5e5e5',
+              titleColor:      '#111827',
+              bodyColor:       '#6b7280',
+              borderColor:     '#e5e7eb',
               borderWidth:     1,
               padding:         10,
-              cornerRadius:    8,
+              cornerRadius:    6,
               callbacks: {
                 title: items => (items[0] ? items[0].label : ''),
                 label: ctx   => `Omzet: ${eur.format(ctx.parsed.y || 0)}`,
@@ -539,7 +513,6 @@
       setText('current-month-revenue', '€ 0 deze maand');
     }
 
-    /* ── Status doughnut ── */
     if (hasStatus) {
       hideEl('status-empty');
       showEl('status-chart-wrap');
@@ -556,26 +529,26 @@
           labels: ['Akkoord', 'Open', 'Verloren'],
           datasets: [{
             data:            [statusAccepted, statusOpen, statusLost],
-            backgroundColor: ['#15803d', '#1d4ed8', '#b91c1c'],
+            backgroundColor: ['#15803d', '#2563eb', '#dc2626'],
             borderColor:     '#ffffff',
-            borderWidth:     2.5,
-            hoverOffset:     4,
+            borderWidth:     2,
+            hoverOffset:     3,
           }],
         },
         options: {
           responsive:          true,
           maintainAspectRatio: false,
-          cutout:              '72%',
+          cutout:              '70%',
           plugins: {
             legend: { display: false },
             tooltip: {
               backgroundColor: '#ffffff',
-              titleColor:      '#0a0a0a',
-              bodyColor:       '#737373',
-              borderColor:     '#e5e5e5',
+              titleColor:      '#111827',
+              bodyColor:       '#6b7280',
+              borderColor:     '#e5e7eb',
               borderWidth:     1,
               padding:         10,
-              cornerRadius:    8,
+              cornerRadius:    6,
               callbacks: {
                 label: ctx => {
                   const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
