@@ -281,47 +281,51 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db),
   <title>Offerte in review — Inversiq</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-gray-50 text-slate-900 antialiased">
-  <div class="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
-    <div class="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
-      <div class="flex items-center gap-4">
-        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200">
-          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+  <div class="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
+    <div class="w-full max-w-3xl">
+      <div class="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+        <div class="h-1 w-full bg-[#1F7A3E]/85"></div>
+        <div class="px-6 py-8 sm:px-10 sm:py-10">
+          <div class="flex items-start gap-4">
+            <div class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#1F7A3E]/20 bg-[#1F7A3E]/10 text-[#1F7A3E]">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Inversiq bevestiging</p>
+            <h1 class="mt-1.5 text-2xl font-semibold leading-tight tracking-[-0.01em] text-slate-900 sm:text-[1.8rem]">
+              We hebben uw aanvraag ontvangen
+            </h1>
+          </div>
+          </div>
+
+          <p class="mt-5 max-w-2xl text-[15px] leading-7 text-slate-600">
+            Dank u wel. Uw foto's zijn goed binnengekomen. Omdat dit project extra handmatige controle vraagt,
+            kijkt een specialist mee. U ontvangt daarna zo snel mogelijk een betrouwbare prijsinschatting per e-mail.
+          </p>
+
+          <div class="mt-5 flex flex-wrap gap-2.5">
+            <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Foto's ontvangen</span>
+            <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Handmatige controle</span>
+            <span class="inline-flex items-center rounded-full border border-[#1F7A3E]/25 bg-[#1F7A3E]/5 px-3 py-1 text-xs font-medium text-[#1F7A3E]">Reactie zo snel mogelijk</span>
+          </div>
+
+          <div class="my-7 h-px w-full bg-slate-200"></div>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-center sm:px-5">
+            <p class="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">Aanvraagnummer</p>
+            <p class="mt-1.5 text-base font-semibold tracking-[0.08em] text-slate-900">
+              #{str(getattr(lead, "id", ""))[-8:].upper()}
+            </p>
+          </div>
+
+          <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-6 text-slate-600">
+            In de meeste gevallen ontvangt u binnen korte tijd een bijgewerkte offerte per e-mail.
+          </div>
         </div>
-        <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Inversiq bevestiging</p>
-          <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-            Bedankt, we gaan uw aanvraag controleren
-          </h1>
-        </div>
-      </div>
-
-      <p class="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
-        We hebben uw foto's goed ontvangen. Omdat dit project extra controle vraagt,
-        bekijkt een specialist de situatie handmatig. U ontvangt daarna zo snel mogelijk
-        een nauwkeurige prijsinschatting.
-      </p>
-
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Foto's ontvangen</span>
-        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Handmatige controle</span>
-        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">Reactie zo snel mogelijk</span>
-      </div>
-
-      <div class="my-6 h-px w-full bg-slate-200"></div>
-
-      <div class="text-center">
-        <p class="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Aanvraagnummer</p>
-        <span class="mt-2 inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-4 py-1.5 text-sm font-semibold tracking-wide text-slate-800">
-          #{str(getattr(lead, "id", ""))[-8:].upper()}
-        </span>
-      </div>
-
-      <div class="mt-6 rounded-2xl bg-amber-50 px-5 py-4 text-center text-sm text-amber-900 ring-1 ring-amber-200">
-        In de meeste gevallen ontvangt u binnen korte tijd een bijgewerkte offerte per e-mail.
       </div>
     </div>
   </div>

@@ -21,7 +21,7 @@
         <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-[14px] font-semibold text-[#111318]">Review offerte #{{ (lead.id|string)[-6:]|upper }}</h1>
           <span class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-            Controle nodig
+            Review vereist
           </span>
         </div>
         <p class="mt-0.5 text-[12px] text-[#9ca3af]">
@@ -90,11 +90,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
               </svg>
               <div>
-                <div class="text-[12px] font-semibold text-amber-800">Geen m² prijs ingesteld</div>
+                <div class="text-[12px] font-semibold text-amber-800">Prijsinstellingen ontbreken</div>
                 <p class="mt-0.5 text-[11px] text-amber-700">
-                  Er is geen wandtarief ingesteld.
-                  <a href="/app/settings" class="font-semibold underline underline-offset-2">Stel je tarief in</a>
-                  voordat je de offerte genereert.
+                  Je hebt nog geen prijs per m² ingesteld. Stel dit eerst in om offertes te genereren.
+                  <a href="/app/settings" class="font-semibold underline underline-offset-2">Ga naar instellingen</a>.
                 </p>
               </div>
             </div>
@@ -272,9 +271,13 @@
           <div>
             <div class="text-[11px] font-medium text-[#374151]">Klaar? Genereer de offerte.</div>
             <p class="mt-0.5 text-[11px] text-[#9ca3af]">De AI herberekent op basis van de ingevulde gegevens.</p>
+            {% if quote_readiness and not quote_readiness.isReady %}
+              <p class="mt-2 text-[11px] font-semibold text-amber-700">Prijsinstellingen ontbreken: geen m² prijs ingesteld.</p>
+            {% endif %}
             <form method="post" action="/app/reviews/{{ lead.id }}/generate-estimate" class="mt-2.5">
               <button type="submit"
-                      class="inline-flex h-8 w-full items-center justify-center rounded bg-[#111318] px-4 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]">
+                      {% if quote_readiness and not quote_readiness.isReady %}disabled aria-disabled="true"{% endif %}
+                      class="inline-flex h-8 w-full items-center justify-center rounded px-4 text-[11px] font-semibold text-white transition {% if quote_readiness and not quote_readiness.isReady %}cursor-not-allowed bg-[#9ca3af]{% else %}bg-[#111318] hover:bg-[#1e2129]{% endif %}">
                 Offerte genereren
               </button>
             </form>
@@ -315,7 +318,7 @@
             </a>
           {% endif %}
           <a class="flex items-center justify-between py-2.5 text-[12px] font-medium text-[#374151] transition hover:text-[#111318]"
-             href="/app/leads/{{ lead.id }}">
+             href="/offertes/{{ lead.id }}">
             <span>Ga naar lead detail</span>
             <svg class="h-3.5 w-3.5 text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

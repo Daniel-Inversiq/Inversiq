@@ -12,6 +12,27 @@ from app.domain.vision_models import (
 
 logger = logging.getLogger(__name__)
 
+HARD_REVIEW_FLAGS = {
+    "photo_unreadable",
+    "too_dark",
+    "too_blurry",
+    "no_clear_surface_detected",
+    "not_paintable_surface",
+}
+
+# Flags that should never hard-route to manual review on their own for
+# painter quote intake; they can still appear as warnings.
+NON_BLOCKING_REVIEW_REASONS = {
+    "surface_preparation_required",
+    "contains_furniture",
+    "contains_door_or_window",
+    "contains_mirror",
+    "partial_room_view",
+    "imperfect_framing",
+    "angle_not_ideal",
+    "composition_not_clean",
+}
+
 
 def _safe_div(numerator: float, denominator: float) -> float:
     if denominator <= 0:
@@ -60,6 +81,16 @@ def aggregate_predictions(preds: list[VisionPhotoPrediction]) -> LeadVisionAggre
             uncertainty_score=1.0,
             needs_review=True,
             review_reasons=["no_predictions"],
+            decision="NEEDS_REVIEW",
+            decision_reasons=["no_predictions"],
+            warning_reasons=[],
+            decision_confidence=1.0,
+            quality_metrics={
+                "usable_ratio": 0.0,
+                "coverage_score": 0.0,
+                "uncertainty_score": 1.0,
+                "avg_quote_relevance": 0.0,
+            },
         )
 
     lead_id = preds[0].lead_id
@@ -176,20 +207,112 @@ def aggregate_predictions(preds: list[VisionPhotoPrediction]) -> LeadVisionAggre
     if uncertainty_score > 0.7:
         review_reasons.add("high_uncertainty")
 
-    # Signals that may be informative for pricing context, but should not by
-    # themselves force manual review routing.
-    NON_BLOCKING_REVIEW_REASONS = {
-        "surface_preparation_required",
-    }
     surface_prep_present = "surface_preparation_required" in review_reasons
     blocking_review_reasons = {
         r for r in review_reasons if r not in NON_BLOCKING_REVIEW_REASONS
     }
-    needs_review = (
-        usable_count == 0
-        or coverage_score < 0.2
-        or uncertainty_score > 0.7
-        or bool(blocking_review_reasons)
+    hard_flags_present = sorted(
+        {
+            flag
+            for p in preds
+            for flag in p.review_flags
+            if flag in HARD_REVIEW_FLAGS
+        }
+    )
+    wall_visibility_score = _clamp_01(
+        _safe_div(
+            sum(
+                max(
+                    (
+                        _clamp_01(s.confidence) * _clamp_01(s.approximate_coverage)
+                        for s in p.surfaces
+                        if s.type in {"wall", "ceiling", "trim", "door", "window_frame", "facade", "wood"}
+                    ),
+                    default=0.0,
+                )
+                for p in preds
+            ),
+            float(total_count),
+        )
+    )
+    blurry_ratio = _safe_div(
+        float(sum(1 for p in preds if "too_blurry" in p.review_flags)),
+        float(total_count),
+    )
+    dark_ratio = _safe_div(
+        float(sum(1 for p in preds if "too_dark" in p.review_flags)),
+        float(total_count),
+    )
+    bright_ratio = _safe_div(
+        float(sum(1 for p in preds if "too_bright" in p.review_flags)),
+        float(total_count),
+    )
+    obstructed_ratio = _safe_div(
+        float(sum(1 for p in preds if "obstructed" in p.review_flags)),
+        float(total_count),
+    )
+    blur_score = _clamp_01(1.0 - blurry_ratio)
+    brightness_score = _clamp_01(1.0 - max(dark_ratio, bright_ratio))
+    obstruction_score = _clamp_01(obstructed_ratio)
+
+    hard_reason_set = set(hard_flags_present)
+    if "no_clear_surface_detected" in hard_reason_set and (
+        wall_visibility_score >= 0.16 or avg_quote_relevance >= 0.45
+    ):
+        hard_reason_set.discard("no_clear_surface_detected")
+        warning_reason_set_note = "no_clear_surface_detected_softened"
+    else:
+        warning_reason_set_note = ""
+
+    if usable_count == 0:
+        hard_reason_set.add("no_usable_photos")
+    if coverage_score < 0.08 and wall_visibility_score < 0.14:
+        hard_reason_set.add("very_low_coverage_score")
+    if uncertainty_score > 0.95:
+        hard_reason_set.add("very_high_uncertainty")
+    if blur_score < 0.3:
+        hard_reason_set.add("extreme_blur")
+    if brightness_score < 0.25:
+        hard_reason_set.add("extreme_lighting")
+    if wall_visibility_score < 0.1 and avg_quote_relevance < 0.25:
+        hard_reason_set.add("no_paintable_surface_visible")
+
+    warning_reason_set = set()
+    if 0 < usable_count < total_count:
+        warning_reason_set.add("some_photos_not_usable")
+    if coverage_score < 0.25:
+        warning_reason_set.add("limited_surface_coverage")
+    if uncertainty_score > 0.7:
+        warning_reason_set.add("elevated_uncertainty")
+    if blur_score < 0.6:
+        warning_reason_set.add("reduced_sharpness")
+    if brightness_score < 0.55:
+        warning_reason_set.add("challenging_lighting")
+    if wall_visibility_score < 0.25:
+        warning_reason_set.add("limited_wall_visibility")
+    if obstruction_score > 0.6:
+        warning_reason_set.add("high_obstruction")
+    for r in blocking_review_reasons:
+        if r not in hard_reason_set:
+            warning_reason_set.add(r)
+    if warning_reason_set_note:
+        warning_reason_set.add(warning_reason_set_note)
+    if surface_prep_present:
+        warning_reason_set.add("surface_preparation_required")
+
+    if hard_reason_set:
+        decision = "NEEDS_REVIEW"
+        decision_reasons = sorted(hard_reason_set)
+    elif warning_reason_set:
+        decision = "ACCEPTED_WITH_WARNING"
+        decision_reasons = sorted(warning_reason_set)
+    else:
+        decision = "ACCEPTED"
+        decision_reasons = []
+
+    needs_review = decision == "NEEDS_REVIEW"
+    decision_confidence = _clamp_01(
+        (0.45 * usable_ratio) + (0.30 * (1.0 - uncertainty_score)) + (0.25 * avg_quote_relevance)
     )
 
     logger.debug(
@@ -212,4 +335,18 @@ def aggregate_predictions(preds: list[VisionPhotoPrediction]) -> LeadVisionAggre
         uncertainty_score=uncertainty_score,
         needs_review=needs_review,
         review_reasons=sorted(review_reasons),
+        decision=decision,
+        decision_reasons=decision_reasons,
+        warning_reasons=sorted(warning_reason_set),
+        decision_confidence=decision_confidence,
+        quality_metrics={
+            "usable_ratio": _clamp_01(usable_ratio),
+            "coverage_score": coverage_score,
+            "uncertainty_score": uncertainty_score,
+            "avg_quote_relevance": _clamp_01(avg_quote_relevance),
+            "blur_score": blur_score,
+            "brightness_score": brightness_score,
+            "wall_visibility_score": wall_visibility_score,
+            "obstruction_score": obstruction_score,
+        },
     )

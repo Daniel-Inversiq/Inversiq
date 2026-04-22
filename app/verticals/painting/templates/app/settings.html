@@ -1,12 +1,12 @@
 {% extends "app/layout.html" %}
 {% block content %}
 
-<div class="mx-auto max-w-2xl">
+<div class="mx-auto max-w-3xl">
 
   <!-- Page header -->
   <div class="border-b border-[#e8eaee] pb-5">
-    <h1 class="text-[14px] font-semibold text-[#111318]">Instellingen</h1>
-    <p class="mt-0.5 text-[12px] text-[#9ca3af]">Beheer je account en integraties</p>
+    <h1 class="text-[20px] font-semibold text-[#111318]">Instellingen</h1>
+    <p class="mt-1 text-[13px] text-[#6b7280]">Beheer je bedrijfsgegevens en uitstraling</p>
   </div>
 
   {% if saved in ["1", "account", "pricing", "integrations"] %}
@@ -23,103 +23,143 @@
     </div>
   {% endif %}
 
+  {% if not price_per_m2 %}
+    <div class="mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-[12px] text-amber-900">
+      <div class="font-semibold">Prijsinstellingen ontbreken</div>
+      <div class="mt-1">Geen m² prijs ingesteld. Dit is vereist om offertes te genereren.</div>
+    </div>
+  {% endif %}
+
   <div class="divide-y divide-[#e8eaee]">
 
     <!-- Account -->
-    <form method="post" action="/app/settings" enctype="multipart/form-data" class="py-6">
+    <form method="post" action="/app/settings" enctype="multipart/form-data" class="py-7">
       <input type="hidden" name="section" value="account" />
 
       <div class="mb-4">
-        <h2 class="text-[13px] font-semibold text-[#111318]">Account</h2>
+        <h2 class="text-[13px] font-semibold text-[#111318]">Bedrijfsinstellingen</h2>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-5">
+        <section class="rounded-xl border border-[#e2e6ee] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+          <h3 class="text-[14px] font-semibold text-[#111318]">Bedrijfsgegevens</h3>
+          <div class="mt-4 space-y-3.5">
+            <div>
+              <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7280]" for="company_name_input">Bedrijfsnaam</label>
+              <input
+                id="company_name_input"
+                class="h-10 w-full rounded-md border border-[#d0d4dd] bg-white px-3 text-[13px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-2 focus:ring-[#4a90d9]/20"
+                name="company_name"
+                type="text"
+                value="{{ company_name or account_name }}"
+              />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7280]">Prijs per m²</label>
+              <div class="relative">
+                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#9ca3af]">€</span>
+                <input
+                  class="h-10 w-full rounded-md border border-[#d0d4dd] bg-white pl-7 pr-3 text-[13px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-2 focus:ring-[#4a90d9]/20"
+                  name="price_per_m2"
+                  type="text"
+                  value="{{ price_per_m2 }}"
+                  placeholder="Bijv. 35"
+                  required
+                />
+              </div>
+              <p class="mt-1.5 text-[12px] text-[#6b7280]">Vereist om offertes te kunnen genereren.</p>
+            </div>
+          </div>
+        </section>
 
-        <div>
-          <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]" for="company_name_input">Bedrijfsnaam</label>
-          <input
-            id="company_name_input"
-            class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
-            name="company_name"
-            type="text"
-            value="{{ company_name or account_name }}"
-          />
-        </div>
+        <section class="rounded-xl border border-[#e2e6ee] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+          <h3 class="text-[14px] font-semibold text-[#111318]">Contact &amp; support</h3>
+          <div class="mt-4">
+            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6b7280]" for="account_email_input">Support e-mail</label>
+            <input
+              id="account_email_input"
+              class="h-10 w-full rounded-md border border-[#d0d4dd] bg-white px-3 text-[13px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-2 focus:ring-[#4a90d9]/20"
+              name="account_email"
+              type="email"
+              value="{{ account_email }}"
+            />
+            <p class="mt-1.5 text-[12px] leading-[1.45] text-[#6b7280]">
+              Dit e-mailadres gebruiken we voor communicatie en support.
+            </p>
+          </div>
+        </section>
 
-        <div>
-          <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Logo</label>
+        <section class="rounded-xl border border-[#e2e6ee] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+          <h3 class="text-[14px] font-semibold text-[#111318]">Huisstijl / logo</h3>
+          <p class="mt-1 text-[12px] leading-[1.45] text-[#6b7280]">
+            Gebruik bij voorkeur een vierkant logo met heldere achtergrond.
+          </p>
+
           {% set existing_logo_url = (user.logo_url if user and user.logo_url else "") %}
-          <div class="mb-2 {% if not existing_logo_url %}hidden{% endif %}" id="logo-preview-wrap">
-            <img
-              id="logo-preview"
-              src="{{ existing_logo_url }}"
-              alt="Logo preview"
-              class="max-h-14 w-auto rounded border border-[#d0d4dd] bg-[#f6f7f9] p-1.5"
-            />
+          <div class="mt-4 rounded-lg border border-dashed border-[#d0d4dd] bg-[#f9fafb] p-4">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <p class="text-[12px] font-semibold text-[#111318]">Huidig logo</p>
+                <div class="mt-2 {% if not existing_logo_url %}hidden{% endif %}" id="logo-preview-wrap">
+                  <img
+                    id="logo-preview"
+                    src="{{ existing_logo_url }}"
+                    alt="Logo preview"
+                    class="max-h-16 w-auto rounded border border-[#d0d4dd] bg-white p-1.5"
+                  />
+                </div>
+                <p id="logo-empty-state" class="mt-2 text-[12px] text-[#6b7280] {% if existing_logo_url %}hidden{% endif %}">
+                  Nog geen logo toegevoegd
+                </p>
+              </div>
+              <div class="w-full max-w-xs space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <label
+                    for="logo-file-input"
+                    class="inline-flex h-9 cursor-pointer items-center rounded-md border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#f3f4f6]"
+                  >
+                    Logo kiezen
+                  </label>
+                  <button
+                    type="submit"
+                    name="upload_logo"
+                    value="1"
+                    class="inline-flex h-9 items-center rounded-md border border-[#d0d4dd] bg-[#f8fafc] px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#eef2f7]"
+                  >
+                    Uploaden
+                  </button>
+                </div>
+                <input
+                  class="sr-only"
+                  id="logo-file-input"
+                  name="logo_file"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                />
+                <p id="logo-file-name" class="text-[12px] text-[#6b7280]">Geen bestand gekozen</p>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <label
-              for="logo-file-input"
-              class="inline-flex h-7 cursor-pointer items-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
-            >
-              Upload logo
-            </label>
-            <span class="text-[11px] text-[#9ca3af]">PNG of JPEG</span>
-            <input
-              class="sr-only"
-              id="logo-file-input"
-              name="logo_file"
-              type="file"
-              accept="image/png,image/jpeg"
-            />
-          </div>
+        </section>
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <a
+            href="/auth/login"
+            class="inline-flex h-9 items-center justify-center rounded-md border border-[#d0d4dd] bg-white px-3 text-[12px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
+          >
+            Wachtwoord wijzigen
+          </a>
+          <button
+            type="submit"
+            class="inline-flex h-9 items-center justify-center rounded-md bg-[#111318] px-4 text-[12px] font-semibold text-white transition hover:bg-[#1e2129]"
+          >
+            Instellingen opslaan
+          </button>
         </div>
-
-        <div>
-          <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]" for="account_email_input">Email</label>
-          <input
-            id="account_email_input"
-            class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[12px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
-            name="account_email"
-            type="email"
-            value="{{ account_email }}"
-          />
-        </div>
-
-        <div>
-          <label class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">Prijs per m²</label>
-          <div class="relative">
-            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[#9ca3af]">€</span>
-            <input
-              class="h-8 w-full rounded border border-[#d0d4dd] bg-white pl-7 pr-3 text-[12px] text-[#374151] placeholder:text-[#9ca3af] outline-none transition focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/20"
-              name="price_per_m2"
-              type="text"
-              value="{{ price_per_m2 }}"
-              placeholder="Bijv. 35"
-            />
-          </div>
-        </div>
-
-      </div>
-
-      <div class="mt-5 flex items-center justify-end gap-2">
-        <a
-          href="/auth/login"
-          class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
-        >
-          Wachtwoord wijzigen
-        </a>
-        <button
-          type="submit"
-          class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
-        >
-          Opslaan
-        </button>
-      </div>
     </form>
 
     <!-- Integrations -->
-    <div class="py-6">
+    <div class="py-7">
       <div class="mb-4">
         <h2 class="text-[13px] font-semibold text-[#111318]">Integraties</h2>
       </div>
@@ -157,7 +197,7 @@
     </div>
 
     <!-- Active workflows -->
-    <div class="py-6">
+    <div class="py-7">
       <div class="mb-3">
         <h2 class="text-[13px] font-semibold text-[#111318]">Actieve workflows</h2>
       </div>
@@ -190,7 +230,9 @@
     const fileInput = document.getElementById("logo-file-input");
     const preview = document.getElementById("logo-preview");
     const previewWrap = document.getElementById("logo-preview-wrap");
-    if (!fileInput || !preview || !previewWrap) return;
+    const fileName = document.getElementById("logo-file-name");
+    const emptyState = document.getElementById("logo-empty-state");
+    if (!fileInput || !preview || !previewWrap || !fileName || !emptyState) return;
 
     const existingLogoUrl = preview.getAttribute("src") || "";
 
@@ -199,15 +241,19 @@
       const file = target && target.files ? target.files[0] : null;
 
       if (!file) {
+        fileName.textContent = "Geen bestand gekozen";
         if (existingLogoUrl) {
           preview.src = existingLogoUrl;
           previewWrap.classList.remove("hidden");
+          emptyState.classList.add("hidden");
         } else {
           preview.removeAttribute("src");
           previewWrap.classList.add("hidden");
+          emptyState.classList.remove("hidden");
         }
         return;
       }
+      fileName.textContent = file.name;
 
       const reader = new FileReader();
       reader.onload = function handleLoad(e) {
@@ -215,6 +261,7 @@
         if (!result) return;
         preview.src = result;
         previewWrap.classList.remove("hidden");
+        emptyState.classList.add("hidden");
       };
       reader.readAsDataURL(file);
     });

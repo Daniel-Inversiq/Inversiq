@@ -1,202 +1,246 @@
-{% extends "app/layout.html" %}
+{% extends "app/quote_edit_layout.html" %}
 {% block content %}
+{% set quote_id = lead.id %}
 
-<div class="space-y-4">
+<div class="mx-auto max-w-[1280px] space-y-6">
+  <header class="ui-card overflow-hidden border-slate-200/90 bg-white">
+    <div class="border-b border-slate-200/90 bg-gradient-to-b from-slate-50 to-white px-5 py-4 sm:px-6">
+      <span class="iq-pill inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]">
+        Inversiq Quote Studio
+      </span>
+      <a href="/offertes/{{ quote_id }}"
+         class="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 transition hover:text-[#65a30d]">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Terug naar lead
+      </a>
+      <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 class="text-[24px] font-semibold tracking-[-0.02em] text-slate-950">Offerte bewerken</h1>
+          <p class="mt-1 text-[13px] leading-relaxed text-slate-600">
+            Werk alle offerteonderdelen bij in een duidelijke bewerk-omgeving voor je team.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <a href="/offertes/{{ quote_id }}"
+             class="quote-secondary-btn inline-flex h-9 items-center justify-center rounded-lg border bg-white px-3.5 text-[12px] font-semibold">
+            Offerte bekijken
+          </a>
+          <a href="/offertes/{{ quote_id }}"
+             class="quote-secondary-btn inline-flex h-9 items-center justify-center rounded-lg border bg-white px-3.5 text-[12px] font-semibold">
+            PDF openen
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <!-- Page header -->
-  <div class="border-b border-[#e8eaee] pb-4">
-    <a href="/app/leads/{{ lead.id }}"
-       class="inline-flex items-center gap-1 text-xs text-gray-500 transition hover:text-gray-900">
-      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-      </svg>
-      Terug naar lead
-    </a>
-    <h1 class="mt-2 text-[15px] font-medium text-gray-900">Offerte bewerken</h1>
-    <p class="mt-0.5 text-xs text-gray-500">Pas hier de volledige offerte aan zoals de klant die ziet.</p>
-  </div>
+  <form id="estimate-editor-form" method="post" action="/app/quotes/{{ lead.id }}/edit" class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <input type="hidden" id="line_items_json" name="line_items_json" />
 
-  <!-- Form container -->
-  <div class="rounded-md border border-[#e8eaee] bg-white">
-    <form id="estimate-editor-form" method="post" action="/app/leads/{{ lead.id }}/edit-estimate">
-      <input type="hidden" id="line_items_json" name="line_items_json" />
-
-      <!-- 1. Klantgegevens -->
-      <section class="border-b border-[#e8eaee] px-5 py-4">
-        <h2 class="mb-3 text-[13px] font-medium text-gray-900">Klantgegevens</h2>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input name="customer_name" value="{{ editor.customer_name or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="Naam klant" />
-          <input name="customer_email" value="{{ editor.customer_email or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="E-mailadres" />
-          <input name="customer_phone" value="{{ editor.customer_phone or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="Telefoonnummer" />
-          <input name="project_location" value="{{ editor.project_location or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="Locatie / adres" />
+    <div class="space-y-6">
+      <section class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="border-b border-slate-100 border-t-2 border-t-[var(--iq-brand-green-soft)] bg-slate-50/70 px-5 py-4">
+          <h2 class="text-[15px] font-semibold text-slate-900">Klantgegevens <span class="iq-accent-dot ml-1 text-[13px]">•</span></h2>
+          <p class="mt-0.5 text-[12px] text-slate-500">Gegevens van de klant voor communicatie en adressering.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-2">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Naam klant</label>
+            <input name="customer_name" value="{{ editor.customer_name or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Naam klant" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">E-mailadres</label>
+            <input name="customer_email" value="{{ editor.customer_email or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="E-mailadres" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Telefoonnummer</label>
+            <input name="customer_phone" value="{{ editor.customer_phone or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Telefoonnummer" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Locatie / adres</label>
+            <input name="project_location" value="{{ editor.project_location or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Locatie / adres" />
+          </div>
         </div>
       </section>
 
-      <!-- 2. Bedrijf -->
-      <section class="border-b border-[#e8eaee] px-5 py-4">
-        <h2 class="mb-3 text-[13px] font-medium text-gray-900">Bedrijf</h2>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <input name="company_name" value="{{ editor.company_name or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="Bedrijfsnaam" />
-          <input name="company_email" value="{{ editor.company_email or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="Bedrijfs-e-mail" />
-          <input name="company_phone" value="{{ editor.company_phone or '' }}"
-                 class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                 placeholder="Bedrijfstelefoon" />
+      <section class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="border-b border-slate-100 border-t-2 border-t-[var(--iq-brand-green-soft)] bg-slate-50/70 px-5 py-4">
+          <h2 class="text-[15px] font-semibold text-slate-900">Bedrijfsgegevens <span class="iq-accent-dot ml-1 text-[13px]">•</span></h2>
+          <p class="mt-0.5 text-[12px] text-slate-500">Bedrijfsinformatie zoals zichtbaar op de offerte.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-3">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Bedrijfsnaam</label>
+            <input name="company_name" value="{{ editor.company_name or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bedrijfsnaam" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Bedrijfs-e-mail</label>
+            <input name="company_email" value="{{ editor.company_email or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bedrijfs-e-mail" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Bedrijfstelefoon</label>
+            <input name="company_phone" value="{{ editor.company_phone or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bedrijfstelefoon" />
+          </div>
         </div>
       </section>
 
-      <!-- 3. Offerte -->
-      <section class="border-b border-[#e8eaee] px-5 py-4">
-        <h2 class="mb-3 text-[13px] font-medium text-gray-900">Offerte</h2>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Referentienummer</label>
-            <input name="reference" value="{{ editor.reference or '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                   placeholder="Bijv. OFF-2026-014" />
-          </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Offertedatum</label>
-            <input name="quote_date" type="date" value="{{ editor.quote_date or '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400" />
-          </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Geldig tot</label>
-            <input name="valid_until" type="date" value="{{ editor.valid_until or '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400" />
-          </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Titel</label>
-            <input name="title" value="{{ editor.title or '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                   placeholder="Bijv. Offerte binnenschilderwerk" />
-          </div>
+      <section class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="border-b border-slate-100 border-t-2 border-t-[var(--iq-brand-green-soft)] bg-slate-50/70 px-5 py-4">
+          <h2 class="text-[15px] font-semibold text-slate-900">Offertegegevens <span class="iq-accent-dot ml-1 text-[13px]">•</span></h2>
+          <p class="mt-0.5 text-[12px] text-slate-500">Referentie, datums en titel van deze offerte.</p>
         </div>
-        <div class="mt-3">
-          <label class="mb-1 block text-[11px] text-gray-500">Subtitel / korte omschrijving</label>
-          <textarea name="subtitle" rows="2"
-                    class="w-full rounded border border-[#d0d4dd] bg-white px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                    placeholder="Bijv. Binnenschilderwerk woonkamer, hal en trapopgang">{{ editor.subtitle or '' }}</textarea>
+        <div class="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-2">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Referentienummer</label>
+            <input name="reference" value="{{ editor.reference or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bijv. OFF-2026-014" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Offertedatum</label>
+            <input name="quote_date" type="date" value="{{ editor.quote_date or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Geldig tot</label>
+            <input name="valid_until" type="date" value="{{ editor.valid_until or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Titel</label>
+            <input name="title" value="{{ editor.title or '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bijv. Offerte binnenschilderwerk" />
+          </div>
+          <div class="space-y-1.5 md:col-span-2">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Subtitel / korte omschrijving</label>
+            <textarea name="subtitle" rows="3" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bijv. Binnenschilderwerk woonkamer, hal en trapopgang">{{ editor.subtitle or '' }}</textarea>
+          </div>
         </div>
       </section>
 
-      <!-- 4. Regels / specificatie -->
-      <section class="border-b border-[#e8eaee] px-5 py-4">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-[13px] font-medium text-gray-900">Regels / specificatie</h2>
-          <button type="button" id="add-line-item"
-                  class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-gray-700 transition hover:bg-[#f6f7f9]">
+      <section class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+          <div>
+            <h2 class="text-[15px] font-semibold text-slate-900">Regels / specificatie</h2>
+            <p class="mt-0.5 text-[12px] text-slate-500">Stel de offerte samen met heldere werkzaamheden en prijzen.</p>
+          </div>
+          <button type="button" id="add-line-item" class="quote-secondary-btn inline-flex h-10 items-center justify-center rounded-xl border bg-white px-4 text-[12px] font-semibold">
             + Regel toevoegen
           </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead>
-              <tr class="border-b border-[#e8eaee] text-left text-[11px] font-medium uppercase tracking-wide text-gray-500">
-                <th class="pb-2 pr-3">Omschrijving</th>
-                <th class="pb-2 pr-3">Aantal</th>
-                <th class="pb-2 pr-3">Eenheid</th>
-                <th class="pb-2 pr-3">Prijs</th>
-                <th class="pb-2 pr-3">Soort werk</th>
-                <th class="pb-2 pr-3 text-right">Totaal</th>
-                <th class="pb-2"></th>
-              </tr>
-            </thead>
-            <tbody id="line-items-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- 5. Prijs & aanpassingen -->
-      <section class="border-b border-[#e8eaee] px-5 py-4">
-        <h2 class="mb-3 text-[13px] font-medium text-gray-900">Prijs & aanpassingen</h2>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Korting (%)</label>
-            <input name="discount_percent" type="number" min="0" max="100" step="0.1"
-                   value="{{ editor.discount_percent if editor.discount_percent is not none else '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                   placeholder="Bijv. 5" />
-          </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Vaste totaalprijs (€)</label>
-            <input name="manual_total" type="number" min="0" step="0.01"
-                   value="{{ editor.manual_total if editor.manual_total is not none else '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                   placeholder="Bijv. 2450.00" />
-          </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Subtotaal excl. btw (€)</label>
-            <input name="subtotal_excl" id="subtotal_excl" type="number" min="0" step="0.01"
-                   value="{{ editor.subtotal_excl if editor.subtotal_excl is not none else '' }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                   placeholder="Bijv. 2025.00" />
-          </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Btw-tarief (%)</label>
-            <input name="vat_rate_percent" id="vat_rate_percent" type="number" min="0" max="100" step="0.01"
-                   value="{{ editor.vat_rate_percent if editor.vat_rate_percent is not none else 21 }}"
-                   class="h-8 w-full rounded border border-[#d0d4dd] bg-white px-3 text-[13px] text-gray-900 outline-none focus:border-gray-400"
-                   placeholder="21" />
+        <div class="px-5 py-5">
+          <div class="overflow-x-auto rounded-2xl border border-slate-200/90 bg-white">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  <th class="px-4 py-3.5">Omschrijving</th>
+                  <th class="px-2 py-3.5">Aantal</th>
+                  <th class="px-2 py-3.5">Eenheid</th>
+                  <th class="px-2 py-3.5">Prijs</th>
+                  <th class="px-2 py-3.5">Soort werk</th>
+                  <th class="px-2 py-3.5 text-right">Totaal</th>
+                  <th class="px-4 py-3.5"></th>
+                </tr>
+              </thead>
+              <tbody id="line-items-body" class="divide-y divide-slate-100"></tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <!-- 6. Tekstblokken / notities -->
-      <section class="border-b border-[#e8eaee] px-5 py-4">
-        <h2 class="mb-3 text-[13px] font-medium text-gray-900">Tekstblokken / notities</h2>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Inbegrepen werkzaamheden</label>
-            <textarea name="included_work" rows="7"
-                      class="w-full rounded border border-[#d0d4dd] bg-white px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-gray-400">{{ editor.included_work or '' }}</textarea>
+      <section class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+          <h2 class="text-[15px] font-semibold text-slate-900">Prijs & aanpassingen</h2>
+          <p class="mt-0.5 text-[12px] text-slate-500">Gebruik korting, vaste prijs of handmatige correcties indien nodig.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-2">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Korting (%)</label>
+            <input name="discount_percent" type="number" min="0" max="100" step="0.1" value="{{ editor.discount_percent if editor.discount_percent is not none else '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bijv. 5" />
           </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Niet inbegrepen / opmerkingen</label>
-            <textarea name="excluded_notes" rows="7"
-                      class="w-full rounded border border-[#d0d4dd] bg-white px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-gray-400">{{ editor.excluded_notes or '' }}</textarea>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Vaste totaalprijs (€)</label>
+            <input name="manual_total" id="manual_total" type="number" min="0" step="0.01" value="{{ editor.manual_total if editor.manual_total is not none else '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bijv. 2450.00" />
           </div>
-          <div>
-            <label class="mb-1 block text-[11px] text-gray-500">Opmerking voor klant</label>
-            <textarea name="public_notes" rows="7"
-                      class="w-full rounded border border-[#d0d4dd] bg-white px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-gray-400">{{ editor.public_notes or '' }}</textarea>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Subtotaal excl. btw (€)</label>
+            <input name="subtotal_excl" id="subtotal_excl" type="number" min="0" step="0.01" value="{{ editor.subtotal_excl if editor.subtotal_excl is not none else '' }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="Bijv. 2025.00" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Btw-tarief (%)</label>
+            <input name="vat_rate_percent" id="vat_rate_percent" type="number" min="0" max="100" step="0.01" value="{{ editor.vat_rate_percent if editor.vat_rate_percent is not none else 21 }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50" placeholder="21" />
           </div>
         </div>
       </section>
 
-      <!-- Actions -->
-      <div class="flex flex-wrap items-center gap-2 px-5 py-4">
-        <button type="submit"
-                class="inline-flex h-8 items-center justify-center rounded bg-[#111318] px-4 text-[13px] font-medium text-white transition hover:bg-[#1d2330]">
-          Wijzigingen opslaan
-        </button>
-        <a href="/app/leads/{{ lead.id }}"
-           class="inline-flex h-8 items-center justify-center rounded border border-[#d0d4dd] bg-white px-4 text-[13px] font-medium text-gray-700 transition hover:bg-[#f6f7f9]">
-          Annuleren
-        </a>
-        <a href="/app/leads/{{ lead.id }}/estimate"
-           class="inline-flex h-8 items-center justify-center rounded border border-[#d0d4dd] bg-white px-4 text-[13px] font-medium text-gray-700 transition hover:bg-[#f6f7f9]">
-          Offerte bekijken
-        </a>
-        <a href="/app/leads/{{ lead.id }}/export-pdf"
-           class="inline-flex h-8 items-center justify-center rounded border border-[#d0d4dd] bg-white px-4 text-[13px] font-medium text-gray-700 transition hover:bg-[#f6f7f9]">
-          PDF openen
-        </a>
+      <section class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+          <h2 class="text-[15px] font-semibold text-slate-900">Tekstblokken / notities</h2>
+          <p class="mt-0.5 text-[12px] text-slate-500">Extra toelichtingen en communicatietekst voor de klant.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-3">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Inbegrepen werkzaamheden</label>
+            <textarea name="included_work" rows="7" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50">{{ editor.included_work or '' }}</textarea>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Niet inbegrepen / opmerkingen</label>
+            <textarea name="excluded_notes" rows="7" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50">{{ editor.excluded_notes or '' }}</textarea>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-500">Opmerking voor klant</label>
+            <textarea name="public_notes" rows="7" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/50">{{ editor.public_notes or '' }}</textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="space-y-4 xl:sticky xl:top-20 xl:self-start">
+      <div class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="border-b border-slate-100 bg-slate-50/70 px-4 py-3.5">
+          <h3 class="text-[13px] font-semibold text-slate-900">Acties</h3>
+        </div>
+        <div class="space-y-2.5 px-4 py-4">
+          <button type="submit" class="iq-primary-btn inline-flex h-11 w-full items-center justify-center rounded-xl border px-4 text-[13px] font-semibold text-white transition">
+            Wijzigingen opslaan
+          </button>
+          <a href="/offertes/{{ quote_id }}" class="quote-secondary-btn inline-flex h-10 w-full items-center justify-center rounded-xl border bg-white px-4 text-[12px] font-semibold">
+            Annuleren
+          </a>
+          <a href="/offertes/{{ quote_id }}" class="quote-secondary-btn inline-flex h-10 w-full items-center justify-center rounded-xl border bg-white px-4 text-[12px] font-semibold">
+            Offerte bekijken
+          </a>
+          <a href="/offertes/{{ quote_id }}" class="quote-secondary-btn inline-flex h-10 w-full items-center justify-center rounded-xl border bg-white px-4 text-[12px] font-semibold">
+            PDF openen
+          </a>
+        </div>
       </div>
 
-    </form>
-  </div>
+      <div class="ui-card overflow-hidden border-slate-200/90 bg-white shadow-card">
+        <div class="iq-summary-head border-b px-4 py-3.5">
+          <h3 class="text-[13px] font-semibold text-slate-900">Prijsoverzicht</h3>
+          <p class="mt-0.5 text-[11px] text-slate-500">Realtime indicatie op basis van regels en btw.</p>
+        </div>
+        <div class="space-y-3 px-4 py-4 text-[12px]">
+          <div class="flex items-center justify-between text-slate-600">
+            <span>Subtotaal excl. btw</span>
+            <span id="summary-subtotal" class="font-semibold tabular-nums text-slate-900">€ 0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-600">
+            <span>Btw bedrag</span>
+            <span id="summary-vat" class="font-semibold tabular-nums text-slate-900">€ 0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-600">
+            <span>Handmatig totaal</span>
+            <span id="summary-manual" class="font-semibold tabular-nums text-slate-900">Niet ingesteld</span>
+          </div>
+          <div class="iq-total-wrap rounded-xl border px-3 py-3">
+            <div class="flex items-end justify-between gap-3">
+              <span class="iq-total-text text-[12px] font-semibold">Totaal incl. btw</span>
+              <span id="summary-total" class="iq-total-text text-[22px] font-semibold tracking-[-0.02em] tabular-nums">€ 0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </form>
 </div>
 
 <script>
@@ -206,6 +250,13 @@
     const hidden = document.getElementById("line_items_json");
     const addBtn = document.getElementById("add-line-item");
     const subtotalInput = document.getElementById("subtotal_excl");
+    const vatRateInput = document.getElementById("vat_rate_percent");
+    const manualTotalInput = document.getElementById("manual_total");
+    const discountPercentInput = form.querySelector('input[name="discount_percent"]');
+    const summarySubtotal = document.getElementById("summary-subtotal");
+    const summaryVat = document.getElementById("summary-vat");
+    const summaryManual = document.getElementById("summary-manual");
+    const summaryTotal = document.getElementById("summary-total");
     const initialItems = {{ editor.line_items | tojson }};
 
     function money(v) {
@@ -213,38 +264,47 @@
       return Number.isFinite(n) ? n.toFixed(2) : "0.00";
     }
 
-    const inputCls = "h-7 w-full rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-gray-900 outline-none focus:border-gray-400";
+    function moneyEuro(v) {
+      return `€ ${money(v)}`;
+    }
+
+    function parseNumber(value, fallback = 0) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    const inputCls = "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-slate-900 outline-none transition focus:border-[#65a30d] focus:ring-2 focus:ring-[#65a30d]/20";
 
     function rowTemplate(item) {
       const tr = document.createElement("tr");
-      tr.className = "border-t border-[#f3f4f6]";
+      tr.className = "align-top";
       tr.innerHTML = `
-        <td class="py-2 pr-3">
+        <td class="px-4 py-3.5">
           <input data-field="label" class="${inputCls}" value="${item.label || ""}" placeholder="Omschrijving" />
-          <input data-field="description" class="mt-1 h-7 w-full rounded border border-[#d0d4dd] bg-white px-2 text-[11px] text-gray-500 outline-none focus:border-gray-400" placeholder="Toelichting" value="${item.description || ""}" />
+          <input data-field="description" class="mt-2 h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-[11px] text-slate-600 outline-none transition focus:border-[#65a30d] focus:ring-2 focus:ring-[#65a30d]/20" placeholder="Toelichting" value="${item.description || ""}" />
         </td>
-        <td class="py-2 pr-3">
-          <input data-field="quantity" type="number" min="0" step="0.01" class="h-7 w-20 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-gray-900 outline-none focus:border-gray-400" value="${item.quantity ?? 1}" />
+        <td class="px-2 py-3.5">
+          <input data-field="quantity" type="number" min="0" step="0.01" class="h-10 w-24 rounded-xl border border-slate-200 bg-white px-3 text-[12px] tabular-nums text-slate-900 outline-none transition focus:border-[#65a30d] focus:ring-2 focus:ring-[#65a30d]/20" value="${item.quantity ?? 1}" />
         </td>
-        <td class="py-2 pr-3">
-          <input data-field="unit" class="h-7 w-16 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-gray-900 outline-none focus:border-gray-400" value="${item.unit || "job"}" />
+        <td class="px-2 py-3.5">
+          <input data-field="unit" class="h-10 w-20 rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-slate-900 outline-none transition focus:border-[#65a30d] focus:ring-2 focus:ring-[#65a30d]/20" value="${item.unit || "job"}" />
         </td>
-        <td class="py-2 pr-3">
-          <input data-field="unit_price" type="number" min="0" step="0.01" class="h-7 w-24 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-gray-900 outline-none focus:border-gray-400" value="${item.unit_price ?? 0}" />
+        <td class="px-2 py-3.5">
+          <input data-field="unit_price" type="number" min="0" step="0.01" class="h-10 w-28 rounded-xl border border-slate-200 bg-white px-3 text-[12px] tabular-nums text-slate-900 outline-none transition focus:border-[#65a30d] focus:ring-2 focus:ring-[#65a30d]/20" value="${item.unit_price ?? 0}" />
         </td>
-        <td class="py-2 pr-3">
-          <select data-field="category" class="h-7 rounded border border-[#d0d4dd] bg-white px-2 text-[12px] text-gray-900 outline-none focus:border-gray-400">
+        <td class="px-2 py-3.5">
+          <select data-field="category" class="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-slate-900 outline-none transition focus:border-[#65a30d] focus:ring-2 focus:ring-[#65a30d]/20">
             <option value="labor">Arbeid</option>
             <option value="materials">Materialen</option>
             <option value="other">Overig</option>
           </select>
         </td>
-        <td class="py-2 pr-3 text-right">
-          <span data-total class="text-[12px] font-medium text-gray-900">${money(item.total)}</span>
+        <td class="px-2 py-3.5 text-right">
+          <span data-total class="text-[14px] font-semibold tabular-nums text-slate-900">${money(item.total)}</span>
         </td>
-        <td class="py-2 text-right">
+        <td class="px-4 py-3.5 text-right">
           <button type="button" data-remove
-                  class="inline-flex h-6 items-center justify-center rounded border border-[#d0d4dd] bg-white px-2 text-[11px] text-gray-500 transition hover:bg-[#f6f7f9]">✕</button>
+                  class="quote-secondary-btn inline-flex h-9 items-center justify-center rounded-xl border bg-white px-3 text-[11px] font-semibold text-slate-500">Verwijder</button>
         </td>
       `;
       tr.querySelector('[data-field="category"]').value = item.category || "labor";
@@ -252,17 +312,45 @@
     }
 
     function recalc() {
-      let subtotal = 0;
-      [...body.querySelectorAll("tr")].forEach((row) => {
+      let rowSubtotal = 0;
+      const rows = [...body.querySelectorAll("tr")];
+      rows.forEach((row) => {
         const q = Number(row.querySelector('[data-field="quantity"]').value || 0);
         const p = Number(row.querySelector('[data-field="unit_price"]').value || 0);
         const total = (Number.isFinite(q) ? q : 0) * (Number.isFinite(p) ? p : 0);
         row.querySelector("[data-total]").textContent = money(total);
-        subtotal += total;
+        rowSubtotal += total;
       });
-      if (!subtotalInput.value) {
-        subtotalInput.value = money(subtotal);
+
+      if (subtotalInput) {
+        subtotalInput.value = money(rowSubtotal);
       }
+
+      const discountPercent = Math.min(100, Math.max(0, parseNumber(discountPercentInput ? discountPercentInput.value : 0, 0)));
+      const discountedSubtotal = rowSubtotal * (1 - (discountPercent / 100));
+      const vatRate = Math.min(100, Math.max(0, parseNumber(vatRateInput ? vatRateInput.value : 0, 0)));
+      const vatAmount = discountedSubtotal * (vatRate / 100);
+      const computedTotalIncl = discountedSubtotal + vatAmount;
+      const manualValueRaw = manualTotalInput ? (manualTotalInput.value || "").trim() : "";
+      const manualValue = parseNumber(manualValueRaw, 0);
+      const finalTotalIncl = manualValueRaw ? manualValue : computedTotalIncl;
+
+      if (summarySubtotal) summarySubtotal.textContent = moneyEuro(discountedSubtotal);
+      if (summaryVat) summaryVat.textContent = moneyEuro(vatAmount);
+      if (summaryManual) {
+        summaryManual.textContent = manualValueRaw ? moneyEuro(manualValue) : "Niet ingesteld";
+        summaryManual.className = `font-semibold tabular-nums ${manualValueRaw ? "text-slate-900" : "text-slate-500"}`;
+      }
+      if (summaryTotal) summaryTotal.textContent = moneyEuro(finalTotalIncl);
+
+      return {
+        rowSubtotal,
+        discountedSubtotal,
+        vatAmount,
+        computedTotalIncl,
+        finalTotalIncl,
+        manualValueRaw,
+      };
     }
 
     function bindRow(row) {
@@ -283,8 +371,27 @@
     seed.forEach(addRow);
 
     addBtn.addEventListener("click", () => addRow({ label: "", description: "", quantity: 1, unit: "job", unit_price: 0, category: "labor" }));
+    if (discountPercentInput) discountPercentInput.addEventListener("input", recalc);
+    if (vatRateInput) vatRateInput.addEventListener("input", recalc);
+    if (manualTotalInput) manualTotalInput.addEventListener("input", recalc);
 
     form.addEventListener("submit", () => {
+      recalc();
+      const optionalNumericFields = [
+        'input[name="discount_percent"]',
+        'input[name="manual_total"]',
+        'input[name="subtotal_excl"]',
+        'input[name="vat_rate_percent"]',
+      ];
+      optionalNumericFields.forEach((selector) => {
+        const input = form.querySelector(selector);
+        if (!input) return;
+        const raw = (input.value || "").trim();
+        if (!raw) {
+          input.value = "";
+        }
+      });
+
       const items = [...body.querySelectorAll("tr")].map((row, idx) => ({
         code: `item_${idx + 1}`,
         label: row.querySelector('[data-field="label"]').value,

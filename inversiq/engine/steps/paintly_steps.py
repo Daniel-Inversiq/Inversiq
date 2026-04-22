@@ -1245,7 +1245,14 @@ def _decide_paintly_needs_review(
         needs_review,
     )
 
-    return needs_review, merged_reasons, pricing_blocked, triggered_rules
+    if needs_review:
+        decision = "NEEDS_REVIEW"
+    elif merged_reasons:
+        decision = "ACCEPTED_WITH_WARNING"
+    else:
+        decision = "ACCEPTED"
+
+    return needs_review, merged_reasons, pricing_blocked, triggered_rules, decision
 
 
 # -------------------------
@@ -1369,6 +1376,7 @@ def step_needs_review_v1(
         merged_reasons,
         pricing_blocked,
         triggered_rules,
+        decision,
     ) = _decide_paintly_needs_review(
         pq_bad=pq_bad,
         prior_reasons=prior_reasons,
@@ -1386,6 +1394,17 @@ def step_needs_review_v1(
         meta["needs_review_hard"] = {
             "pq_bad": pq_bad,
             "pricing_blocked": pricing_blocked,
+        }
+        meta["review_decision"] = {
+            "decision": decision,
+            "reasons": merged_reasons,
+            "triggered_rules": triggered_rules,
+            "inputs": {
+                "photo_quality_bad": bool(pq_bad),
+                "aggregate_needs_review": bool(aggregate_needs_review),
+                "aggregate_reasons": aggregate_reasons,
+                "photo_confidence": photo_confidence,
+            },
         }
         # Canonical top-level aliases used by estimate renderers/templates.
         estimate["needs_review"] = needs_review
@@ -1430,7 +1449,17 @@ def step_needs_review_v1(
         status="NEEDS_REVIEW" if needs_review else "OK",
         data={
             "needs_review": needs_review,
+            "review_decision": decision,
             "needs_review_reasons": merged_reasons,
+            "review_debug": {
+                "decision": decision,
+                "reasons": merged_reasons,
+                "triggered_rules": triggered_rules,
+                "aggregate_needs_review": bool(aggregate_needs_review),
+                "aggregate_reasons": aggregate_reasons,
+                "photo_quality_bad": bool(pq_bad),
+                "photo_confidence": photo_confidence,
+            },
             "needs_review_hard": {
                 "pq_bad": pq_bad,
                 "pricing_blocked": pricing_blocked,

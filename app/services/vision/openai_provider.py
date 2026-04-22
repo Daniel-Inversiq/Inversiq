@@ -20,7 +20,7 @@ from app.services.vision.fallback_provider import run_existing_fallback_predicto
 
 logger = logging.getLogger(__name__)
 
-VISION_PROMPT_VERSION = "vision_v1"
+VISION_PROMPT_VERSION = "vision_v1_1_practical_intake"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 
 VISION_DEVELOPER_PROMPT = """
@@ -32,6 +32,13 @@ Rules:
 - Do NOT estimate pricing, m2, labor, or costs.
 - Do NOT invent details that are not visible.
 - Use uncertainty conservatively; increase uncertainty when unclear.
+- Evaluate photos for practical quote intake usability, not perfect composition.
+- Accept imperfect framing, partial room visibility, and normal household objects
+  when a paintable wall/surface is still clearly visible enough for first-pass quoting.
+- Reserve hard review signals for truly unusable cases (very blurry, too dark,
+  no paintable surface visible, or corrupted/unreadable image).
+- Do NOT mark a photo unusable only because doors, mirrors, chairs, furniture,
+  partial room framing, or imperfect composition are present.
 - Use concise Dutch or English notes where useful.
 """.strip()
 
@@ -609,6 +616,12 @@ def normalize_vision_output(
     complexity_before = complexity_level
     complexity_confidence = _as_float_01(raw_output.get("complexity_confidence"), 0.0)
     has_clear_surface = any(s.type != "unknown" and s.confidence >= 0.4 for s in surfaces)
+    has_paintable_surface_hint = any(
+        s.type in {"wall", "ceiling", "trim", "door", "window_frame", "facade", "wood"}
+        and s.confidence >= 0.25
+        and s.approximate_coverage >= 0.12
+        for s in surfaces
+    )
 
     # Paintly (schilderwerk) review trigger: surface preparation likely required.
     # We base detection on raw_output labels/notes + summary, since the model
@@ -768,76 +781,18 @@ def normalize_vision_output(
                 preparation_trigger_source.add("summary_keyword_match")
                 break
 
-    # Temporary aggressive fallback (debugging): summary or notes contain
-    # explicit prep-language but not necessarily the same exact keywords as labels.
-    aggressive_prep_signals = [
-        "removed",
-        "stripped",
-        "exposed",
-        "bare",
-        "patchy",
-        "unfinished",
-        "torn",
-        "loose",
-        "hanging",
-        "repair",
-        "filler",
-        "skim",
-    ]
-    combined_notes_lc = ""
-    if isinstance(surfaces_raw, list):
-        combined_notes_lc = " ".join(
-            [str((i or {}).get("notes", "") or "") for i in surfaces_raw if isinstance(i, dict)]
-        ).lower()
-    if isinstance(damages_raw, list):
-        combined_notes_lc = (combined_notes_lc + " " + " ".join(
-            [str((i or {}).get("notes", "") or "") for i in damages_raw if isinstance(i, dict)]
-        )).lower()
-
-    if not preparation_required:
-        for sig in aggressive_prep_signals:
-            if sig in summary_lc or sig in combined_notes_lc:
-                preparation_required = True
-                preparation_trigger_source.add("aggressive_summary_or_notes_fallback")
-                preparation_matched_keywords.append(sig)
-                break
-
-    # Heuristic image-state trigger (debug): wall dominant + at least 1 damage +
-    # at least 2 unknown surfaces => clutter often corresponds to prep work.
-    if not preparation_required:
-        unknown_surface_count = sum(1 for s in surfaces if s.type == "unknown")
-        has_any_damage = len(damages) > 0
-        if wall_dominant_cov >= 0.4 and has_any_damage and unknown_surface_count >= 2:
-            preparation_required = True
-            preparation_trigger_source.add("wall_cov_unknown_clutter_damage")
-            preparation_matched_keywords.append("wall_cov_unknown_clutter_damage")
-
     # Heuristic 2: dominant wall (>0.4 coverage) + unfinished/exposed hint.
     if wall_dominant_cov > 0.4 and has_unfinished_exposed_hint:
         preparation_required = True
         preparation_trigger_source.add("wall_dominant_with_unfinished_hint")
         preparation_matched_keywords.append("wall_dominant_prep_heuristic")
 
-    # Heuristic 1: peeling/removed paint patterns often correlate with big stain area.
-    if stain_count >= 2 and max_surface_cov >= 0.45:
-        preparation_required = True
-        preparation_trigger_source.add("multiple_stains_large_area")
-        preparation_matched_keywords.append("multiple_stains_large_area")
+    # Stains alone are usually still quote-usable for painter intake. Keep
+    # prep escalation for stronger structural surface evidence only.
     if uneven_found:
         preparation_required = True
         preparation_trigger_source.add("uneven_surface")
         preparation_matched_keywords.append("uneven_surface")
-
-    # Heuristic 3: marks/smudges dominate damages but summary hints exposed/unfinished.
-    if (
-        not preparation_required
-        and damage_items_processed > 0
-        and marks_or_stains_count >= max(1, int(damage_items_processed * 0.5))
-        and has_unfinished_exposed_hint
-    ):
-        preparation_required = True
-        preparation_trigger_source.add("marks_damage_with_prep_hint")
-        preparation_matched_keywords.append("marks_damage_prep_forcing")
 
     if preparation_required:
         review_flags.add("surface_preparation_required")
@@ -902,7 +857,15 @@ def normalize_vision_output(
         review_flags.add("low_photo_usability")
     if uncertainty_score >= 0.7:
         review_flags.add("high_uncertainty")
-    if not has_clear_surface:
+    if inp.photo_quality.blur_detected:
+        review_flags.add("too_blurry")
+    if inp.photo_quality.too_dark:
+        review_flags.add("too_dark")
+    if inp.photo_quality.too_bright:
+        review_flags.add("too_bright")
+    if inp.photo_quality.obstructed:
+        review_flags.add("obstructed")
+    if not has_clear_surface and not has_paintable_surface_hint:
         review_flags.add("no_clear_surface_detected")
 
     logger.debug(

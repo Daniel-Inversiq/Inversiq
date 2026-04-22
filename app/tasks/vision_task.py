@@ -857,6 +857,13 @@ def run_vision_for_lead(db: Session, lead_id: str, *, lead=None) -> Dict[str, An
             "lead_aggregate": lead_aggregate.model_dump(),
             "needs_review": bool(lead_aggregate.needs_review),
             "review_reasons": list(lead_aggregate.review_reasons),
+            "review_decision": {
+                "decision": lead_aggregate.decision,
+                "reasons": list(lead_aggregate.decision_reasons),
+                "warning_reasons": list(lead_aggregate.warning_reasons),
+                "confidence": float(lead_aggregate.decision_confidence),
+                "quality_metrics": dict(lead_aggregate.quality_metrics),
+            },
             "vision_results": vision_results,
         }
     except Exception as e:

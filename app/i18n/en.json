@@ -660,18 +660,18 @@
       "no_email": "No email",
       "header": {
         "kicker": "Offer detail",
-        "meta": "Lead {lead_id} - tenant {tenant_id}"
+        "meta": "Quote {lead_id} - tenant {tenant_id}"
       },
       "actions": {
-        "back_to_leads": "Back to leads",
+        "back_to_leads": "View original request",
         "back_to_offers": "Back to offers"
       },
       "next_action": {
         "title": "Next action",
         "offer_ready": "The offer is ready. Open the customer-facing offer page to verify and send it.",
-        "review_lead": "The offer is not ready yet. Open the lead page and complete intake review first.",
+        "review_lead": "Review quote details and update price or scope before sending.",
         "open_offer": "Open public offer",
-        "open_lead": "Open lead page"
+        "open_lead": "View original request"
       },
       "ready_panel": {
         "title": "Quote-ready handoff",
@@ -689,16 +689,16 @@
         },
         "actions": {
           "open_public_quote": "Open public quote",
-          "open_leads": "Open leads",
+          "open_leads": "View original request",
           "open_jobs": "Open jobs"
         }
       },
       "errors": {
         "session_expired": "Your session expired. Log in again to view offer details.",
         "load_failed_title": "Failed to load offer detail",
-        "load_failed_description": "Check whether the backend is running and your tenant has access to this lead.",
-        "lead_not_found_title": "Lead not found",
-        "lead_not_found_description": "This lead does not belong to your tenant or no longer exists."
+        "load_failed_description": "Check whether the backend is running and your tenant has access to this quote.",
+        "lead_not_found_title": "Quote not found",
+        "lead_not_found_description": "This quote does not belong to your tenant or no longer exists."
       },
       "cards": {
         "status": {

@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     EMAIL_ENABLED: bool = False
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
     GOOGLE_OAUTH_REDIRECT_URI: str = ""
     GOOGLE_CALENDAR_SCOPES: str = "https://www.googleapis.com/auth/calendar.events"
 

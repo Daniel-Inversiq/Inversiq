@@ -26,6 +26,7 @@ _ALLOWED_LOGO_TYPES = {"image/png", "image/jpeg"}
 
 class CompanyUpdate(BaseModel):
     company_name: str
+    price_per_m2: float | None = None
 
 
 @router.post("/settings/logo")
@@ -82,7 +83,20 @@ def update_company(
     if not company_name:
         raise HTTPException(status_code=400, detail="company_name_required")
 
+    if payload.price_per_m2 is not None and payload.price_per_m2 <= 0:
+        raise HTTPException(status_code=400, detail="price_per_m2_invalid")
+
     user.company_name = company_name
+    tenant_record = db.query(Tenant).filter(Tenant.id == str(user.tenant_id)).first()
+    if tenant_record is not None:
+        existing = dict(tenant_record.pricing_json or {})
+        if payload.price_per_m2 is None:
+            existing.pop("price_per_m2", None)
+        else:
+            existing["price_per_m2"] = float(payload.price_per_m2)
+        tenant_record.pricing_json = existing
+        db.add(tenant_record)
+
     db.add(user)
     db.commit()
 

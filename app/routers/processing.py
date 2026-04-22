@@ -13,19 +13,12 @@ from app.auth.deps import get_current_user, require_user_html
 from app.billing.features import is_subscription_accessible
 from app.db import get_db
 from app.billing.dependencies import require_active_subscription_for_write
-from app.models import Lead, Tenant
+from app.models import Lead
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["processing"])
-
-
-def _tenant_missing_wall_rate(tenant: Tenant | None) -> bool:
-    pricing = (
-        dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
-    )
-    return pricing.get("walls_rate_eur_per_sqm") in (None, "")
 
 
 def _friendly_processing_error(_: str | None = None) -> str:
@@ -67,11 +60,18 @@ def _map_lead_status_for_ui(
         return "queued", None, None
     if s == "RUNNING":
         return "running", None, None
-    if s in {"SUCCEEDED", "NEEDS_REVIEW"}:
+    if s in {"SUCCEEDED", "NEEDS_REVIEW", "CONFIG_NEEDED"}:
         # SUCCEEDED: quote HTML
         # NEEDS_REVIEW: internal review queue/detail (not an error state)
+        # CONFIG_NEEDED: intake data is fine, tenant pricing setup is missing.
         redirect_url = (
-            f"/quotes/{lead_id}/html" if s == "SUCCEEDED" else f"/app/reviews/{lead_id}"
+            f"/quotes/{lead_id}/html"
+            if s == "SUCCEEDED"
+            else (
+                f"/app/reviews/{lead_id}?missing_pricing_config=1"
+                if s == "CONFIG_NEEDED"
+                else f"/app/reviews/{lead_id}"
+            )
         )
         return "done", redirect_url, None
     if s == "FAILED":
@@ -257,7 +257,7 @@ def processing_page(
     lead_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
-    tenant=Depends(require_active_subscription_for_write),
+    _tenant=Depends(require_active_subscription_for_write),
 ) -> HTMLResponse:
     lead = (
         db.query(Lead)
@@ -266,13 +266,6 @@ def processing_page(
     )
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-
-    # Guard rail: do not show processing UI when required pricing config is missing.
-    if _tenant_missing_wall_rate(tenant):
-        return RedirectResponse(
-            url=f"/app/reviews/{lead_id}?missing_wall_rate=1",
-            status_code=303,
-        )
 
     # UX polish: if this route is hit again after completion, skip rendering
     # processing.html and redirect immediately to final route to avoid flash.

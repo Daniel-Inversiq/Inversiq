@@ -660,18 +660,18 @@
       "no_email": "Geen e-mail",
       "header": {
         "kicker": "Offerte detail",
-        "meta": "Lead {lead_id} - tenant {tenant_id}"
+        "meta": "Offerte {lead_id} - tenant {tenant_id}"
       },
       "actions": {
-        "back_to_leads": "Terug naar leads",
+        "back_to_leads": "Bekijk oorspronkelijke aanvraag",
         "back_to_offers": "Terug naar offertes"
       },
       "next_action": {
         "title": "Volgende actie",
         "offer_ready": "De offerte is klaar. Open de klantgerichte offertepagina om te controleren en te versturen.",
-        "review_lead": "De offerte is nog niet klaar. Open de leadpagina en rond eerst de intakecontrole af.",
+        "review_lead": "Controleer de offertegegevens en werk prijs of inhoud bij voordat je verstuurt.",
         "open_offer": "Open publieke offerte",
-        "open_lead": "Open leadpagina"
+        "open_lead": "Bekijk oorspronkelijke aanvraag"
       },
       "ready_panel": {
         "title": "Handoff bij offerte klaar",
@@ -689,16 +689,16 @@
         },
         "actions": {
           "open_public_quote": "Open publieke offerte",
-          "open_leads": "Open leads",
+          "open_leads": "Bekijk oorspronkelijke aanvraag",
           "open_jobs": "Open jobs"
         }
       },
       "errors": {
         "session_expired": "Je sessie is verlopen. Log opnieuw in om offertedetails te bekijken.",
         "load_failed_title": "Offerte detail laden mislukt",
-        "load_failed_description": "Controleer of de backend draait en je tenant toegang heeft tot deze lead.",
-        "lead_not_found_title": "Lead niet gevonden",
-        "lead_not_found_description": "Deze lead hoort niet bij je tenant of bestaat niet meer."
+        "load_failed_description": "Controleer of de backend draait en je tenant toegang heeft tot deze offerte.",
+        "lead_not_found_title": "Offerte niet gevonden",
+        "lead_not_found_description": "Deze offerte hoort niet bij je tenant of bestaat niet meer."
       },
       "cards": {
         "status": {

@@ -55,22 +55,35 @@ def inspect_vision_flow(lead_id: str, db: Session = Depends(get_db)):
             }
 
         photo_predictions = vision_output.get("photo_predictions")
+        photo_inputs = vision_output.get("photo_inputs")
         lead_aggregate = vision_output.get("lead_aggregate")
         review_reasons = vision_output.get("review_reasons") or []
         vision_results = vision_output.get("vision_results")
 
         per_photo_preview = []
+        photo_inputs_by_id = {}
+        if isinstance(photo_inputs, list):
+            for pi in photo_inputs:
+                if not isinstance(pi, dict):
+                    continue
+                pid = pi.get("photo_id")
+                if pid is not None:
+                    photo_inputs_by_id[str(pid)] = pi
         if isinstance(photo_predictions, list):
             for p in photo_predictions:
                 if not isinstance(p, dict):
                     continue
+                photo_id = str(p.get("photo_id"))
+                pi = photo_inputs_by_id.get(photo_id, {})
                 per_photo_preview.append(
                     {
                         "photo_id": p.get("photo_id"),
                         "photo_is_usable": p.get("photo_is_usable"),
                         "photo_usability_score": p.get("photo_usability_score"),
+                        "quote_relevance_score": p.get("quote_relevance_score"),
                         "uncertainty_score": p.get("uncertainty_score"),
                         "review_flags": p.get("review_flags", []),
+                        "photo_quality": (pi.get("photo_quality") if isinstance(pi, dict) else None) or {},
                         "top_surfaces": [
                             {
                                 "type": s.get("type"),
@@ -109,6 +122,10 @@ def inspect_vision_flow(lead_id: str, db: Session = Depends(get_db)):
                     }
                 )
 
+        quality_metrics = {}
+        if isinstance(lead_aggregate, dict):
+            quality_metrics = lead_aggregate.get("quality_metrics") or {}
+
         return {
             "lead_id": lead_id,
             "vertical": v.vertical_id,
@@ -119,6 +136,24 @@ def inspect_vision_flow(lead_id: str, db: Session = Depends(get_db)):
             else 0,
             "photo_predictions": per_photo_preview,
             "lead_aggregate": lead_aggregate,
+            "decision_diagnostics": {
+                "decision": (lead_aggregate or {}).get("decision")
+                if isinstance(lead_aggregate, dict)
+                else None,
+                "reasons": (lead_aggregate or {}).get("decision_reasons", [])
+                if isinstance(lead_aggregate, dict)
+                else [],
+                "confidence": (lead_aggregate or {}).get("decision_confidence")
+                if isinstance(lead_aggregate, dict)
+                else None,
+                "blur_score": quality_metrics.get("blur_score"),
+                "brightness_score": quality_metrics.get("brightness_score"),
+                "wall_visibility_score": quality_metrics.get("wall_visibility_score"),
+                "obstruction_score": quality_metrics.get("obstruction_score"),
+                "coverage_score": quality_metrics.get("coverage_score"),
+                "uncertainty_score": quality_metrics.get("uncertainty_score"),
+                "avg_quote_relevance": quality_metrics.get("avg_quote_relevance"),
+            },
             "needs_review": bool(vision_output.get("needs_review", False)),
             "review_reasons": review_reasons,
             "provider_runs": provider_summary,

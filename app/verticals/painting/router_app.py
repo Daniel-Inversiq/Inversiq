@@ -20,7 +20,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query, File, UploadFile
 from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import desc, func, or_
+from sqlalchemy import and_, desc, func, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr, Field
@@ -71,6 +71,7 @@ from app.verticals.painting.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
 from app.services.email_service import EmailSendError
+from app.services.quote_readiness import readiness_payload, validate_quote_readiness
 from app.verticals.painting.render_estimate import render_estimate_pdf_html
 from app.verticals.painting.review_labels import review_label_nl
 from app.utils.slugs import slugify
@@ -102,6 +103,15 @@ def _url_query_quote(value: object) -> str:
 templates.env.filters["url_query_quote"] = _url_query_quote
 
 ALLOWED_JOB_STATUSES = {"NEW", "SCHEDULED", "IN_PROGRESS", "DONE", "CANCELLED"}
+DATE_FILTER_PRESETS = {
+    "today",
+    "last_7_days",
+    "last_30_days",
+    "this_month",
+    "previous_month",
+    "custom",
+}
+DEFAULT_DATE_PRESET = "last_7_days"
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +123,120 @@ def _safe_date_slug(raw_date: str | None) -> str | None:
     if len(value) >= 10:
         value = value[:10]
     return value if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) else None
+
+
+def _parse_iso_date(raw_date: str | None) -> dt.date | None:
+    cleaned = _safe_date_slug(raw_date)
+    if not cleaned:
+        return None
+    try:
+        return dt.date.fromisoformat(cleaned)
+    except ValueError:
+        return None
+
+
+def _resolve_date_filter(
+    *,
+    date_preset: str | None,
+    start_date: str | None,
+    end_date: str | None,
+    tz_name: str,
+) -> dict[str, Any]:
+    normalized_preset = (date_preset or DEFAULT_DATE_PRESET).strip().lower()
+    if normalized_preset not in DATE_FILTER_PRESETS:
+        normalized_preset = DEFAULT_DATE_PRESET
+
+    tz = ZoneInfo(tz_name)
+    today = datetime.now(tz).date()
+
+    if normalized_preset == "today":
+        start_local = today
+        end_local = today
+    elif normalized_preset == "last_30_days":
+        start_local = today - timedelta(days=29)
+        end_local = today
+    elif normalized_preset == "this_month":
+        start_local = today.replace(day=1)
+        end_local = today
+    elif normalized_preset == "previous_month":
+        this_month_start = today.replace(day=1)
+        previous_month_end = this_month_start - timedelta(days=1)
+        start_local = previous_month_end.replace(day=1)
+        end_local = previous_month_end
+    elif normalized_preset == "custom":
+        parsed_start = _parse_iso_date(start_date)
+        parsed_end = _parse_iso_date(end_date)
+        if not parsed_start or not parsed_end or parsed_start > parsed_end:
+            normalized_preset = DEFAULT_DATE_PRESET
+            start_local = today - timedelta(days=6)
+            end_local = today
+        else:
+            start_local = parsed_start
+            end_local = parsed_end
+    else:
+        start_local = today - timedelta(days=6)
+        end_local = today
+
+    start_dt_local = datetime.combine(start_local, datetime.min.time(), tzinfo=tz)
+    end_dt_local_exclusive = datetime.combine(
+        end_local + timedelta(days=1),
+        datetime.min.time(),
+        tzinfo=tz,
+    )
+
+    resolved_start_str = start_local.isoformat()
+    resolved_end_str = end_local.isoformat()
+
+    params: dict[str, str] = {"date": normalized_preset}
+    if normalized_preset == "custom":
+        params["start"] = resolved_start_str
+        params["end"] = resolved_end_str
+
+    return {
+        "preset": normalized_preset,
+        "start_date": resolved_start_str,
+        "end_date": resolved_end_str,
+        "start_utc": start_dt_local.astimezone(timezone.utc),
+        "end_utc_exclusive": end_dt_local_exclusive.astimezone(timezone.utc),
+        "params": params,
+    }
+
+
+def _apply_date_range_filter(query: Any, column: Any, date_filter: dict[str, Any]) -> Any:
+    return query.filter(
+        column >= date_filter["start_utc"],
+        column < date_filter["end_utc_exclusive"],
+    )
+
+
+def _lead_activity_in_range_filter(date_filter: dict[str, Any]) -> Any:
+    return or_(
+        and_(
+            Lead.updated_at.isnot(None),
+            Lead.updated_at >= date_filter["start_utc"],
+            Lead.updated_at < date_filter["end_utc_exclusive"],
+        ),
+        and_(
+            Lead.updated_at.is_(None),
+            Lead.created_at >= date_filter["start_utc"],
+            Lead.created_at < date_filter["end_utc_exclusive"],
+        ),
+    )
+
+
+def _job_planned_or_created_in_range_filter(date_filter: dict[str, Any]) -> Any:
+    return or_(
+        and_(
+            Job.scheduled_at.isnot(None),
+            Job.scheduled_at >= date_filter["start_utc"],
+            Job.scheduled_at < date_filter["end_utc_exclusive"],
+        ),
+        and_(
+            Job.scheduled_at.is_(None),
+            Job.created_at >= date_filter["start_utc"],
+            Job.created_at < date_filter["end_utc_exclusive"],
+        ),
+    )
 
 
 def _build_pdf_download_filename(
@@ -262,6 +386,18 @@ def _merge_intake_url_into_context(context: dict) -> None:
             slug = raw_slug.strip()
     base = settings.effective_app_base_url
     context["intake_url"] = f"{base}/intake/{slug}" if slug else ""
+
+
+def _iso_now_utc() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _onboarding_dismissed(tenant: Tenant | None) -> bool:
+    if tenant is None:
+        return False
+    pricing = dict(getattr(tenant, "pricing_json", {}) or {})
+    raw = pricing.get("dashboard_onboarding_dismissed_at")
+    return isinstance(raw, str) and bool(raw.strip())
 
 
 # -------------------------
@@ -516,6 +652,30 @@ def _safe_float(val: object) -> float | None:
         return None
 
 
+def _parse_optional_float_form(value: object, field_name: str) -> float | None:
+    """
+    Parse optional numeric form inputs defensively.
+
+    - None / "" / whitespace -> None
+    - numeric strings -> float
+    - invalid non-empty strings -> 422 with field-specific message
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        trimmed = value.strip()
+        if not trimmed:
+            return None
+        value = trimmed
+    parsed = _safe_float(value)
+    if parsed is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid number for '{field_name}'. Use a numeric value or leave it empty.",
+        )
+    return parsed
+
+
 def _parse_lines_to_list(raw: str | None) -> list[str]:
     if not raw:
         return []
@@ -728,17 +888,34 @@ def _apply_full_estimate_edit(
     else:
         subtotal_excl_dec = Decimal(str(subtotal_excl)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
+    base_tax_amount_dec = (subtotal_excl_dec * Decimal(str(vat_rate))).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    base_grand_total_dec = (subtotal_excl_dec + base_tax_amount_dec).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
     totals = estimate.get("totals") if isinstance(estimate.get("totals"), dict) else {}
     subtotals = estimate.get("subtotals") if isinstance(estimate.get("subtotals"), dict) else {}
     totals["pre_tax"] = float(subtotal_excl_dec)
-    totals["grand_total"] = float(subtotal_excl_dec)
+    totals["tax_amount"] = float(base_tax_amount_dec)
+    totals["grand_total"] = float(base_grand_total_dec)
     subtotals["labor"] = float(labor_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
     subtotals["materials"] = float(materials_subtotal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
     estimate["totals"] = totals
     estimate["subtotals"] = subtotals
     estimate["vat_rate"] = float(vat_rate)
     estimate["tax_rate"] = float(vat_rate)
-    changed_fields.extend(["totals.pre_tax", "totals.grand_total", "subtotals.labor", "subtotals.materials", "vat_rate"])
+    changed_fields.extend(
+        [
+            "totals.pre_tax",
+            "totals.tax_amount",
+            "totals.grand_total",
+            "subtotals.labor",
+            "subtotals.materials",
+            "vat_rate",
+        ]
+    )
 
     estimate["included_work"] = included_work
     estimate["excluded_notes"] = excluded_notes
@@ -751,6 +928,32 @@ def _apply_full_estimate_edit(
     overrides["public_notes"] = public_notes
     overrides["discount_percent"] = discount_percent if discount_percent is not None else None
     overrides["manual_total"] = manual_total if manual_total is not None else None
+
+    # When the quote is explicitly edited with priced lines (or explicit total controls),
+    # treat it as manually finalized for rendering: show real pricing publicly.
+    has_priced_line_items = any(
+        Decimal(str(item.get("total") or 0)) > 0 for item in line_items
+    )
+    has_explicit_total_controls = (
+        manual_total is not None
+        or (discount_percent is not None and discount_percent >= 0)
+    )
+    if has_priced_line_items or has_explicit_total_controls:
+        estimate["needs_review"] = False
+        if isinstance(estimate.get("review_reasons"), list):
+            estimate["review_reasons"] = []
+        meta["needs_review"] = False
+        meta["needs_review_reasons"] = []
+        meta["review_reasons"] = []
+        changed_fields.extend(
+            [
+                "needs_review",
+                "review_reasons",
+                "meta.needs_review",
+                "meta.needs_review_reasons",
+                "meta.review_reasons",
+            ]
+        )
 
     estimate["meta"] = meta
 
@@ -1110,7 +1313,7 @@ def compute_next_action(lead: Lead, job: Job | None) -> dict:
         return {"label": "Controle uitvoeren", "href": f"/app/reviews/{lead.id}"}
 
     if not has_estimate:
-        return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
+        return {"label": "Bekijk offerte", "href": f"/offertes/{lead.id}"}
 
     # Alleen SUCCEEDED mag verstuurd worden; NEEDS_REVIEW blokkeert send.
     if lead_status == "SUCCEEDED":
@@ -1121,20 +1324,29 @@ def compute_next_action(lead: Lead, job: Job | None) -> dict:
         }
 
     if lead_status == "SENT":
-        return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
+        return {"label": "Bekijk offerte", "href": f"/offertes/{lead.id}"}
 
     if lead_status == "VIEWED":
-        return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
+        return {"label": "Bekijk offerte", "href": f"/offertes/{lead.id}"}
 
     if lead_status == "ACCEPTED":
         if not job:
-            return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
+            return {"label": "Bekijk offerte", "href": f"/offertes/{lead.id}"}
         js = (job.status or "").upper()
         if js in {"NEW", "SCHEDULED", "IN_PROGRESS"}:
             return {"label": "Update job", "href": f"/app/leads/{lead.id}#job"}
-        return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
+        return {"label": "Bekijk offerte", "href": f"/offertes/{lead.id}"}
 
-    return {"label": "Bekijk offerte", "href": f"/app/leads/{lead.id}"}
+    return {"label": "Bekijk offerte", "href": f"/offertes/{lead.id}"}
+
+
+def _compatible_vertical_ids_for_workflow(workflow: str) -> set[str]:
+    mapping = {
+        "painting": {"paintly", "painting", "painters_nl"},
+        "roofing": {"roofing"},
+        "solar": {"solar"},
+    }
+    return mapping.get(workflow, {workflow})
 
 
 # -------------------------
@@ -1228,6 +1440,11 @@ def app_dashboard(
 
     tenant = db.query(Tenant).filter(Tenant.id == str(current_user.tenant_id)).first()
     pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
+    is_first_run = (
+        len(leads) == 0
+        and len(jobs) == 0
+        and not _onboarding_dismissed(tenant)
+    )
     wall_rate_value = pricing.get("walls_rate_eur_per_sqm")
     missing_wall_rate = wall_rate_value in (None, "")
     billing_usage_summary = (
@@ -1281,10 +1498,26 @@ def app_dashboard(
             "open_quotes": open_quotes,
             "missing_wall_rate": missing_wall_rate,
             "current_wall_rate": wall_rate_value,
+            "is_first_run": is_first_run,
         },
     )
     _merge_intake_url_into_context(context)
     return templates.TemplateResponse("app/dashboard.html", context)
+
+
+@router.post("/onboarding/dismiss")
+def dismiss_dashboard_onboarding(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+):
+    tenant = db.query(Tenant).filter(Tenant.id == str(current_user.tenant_id)).first()
+    if tenant is not None:
+        pricing = dict(getattr(tenant, "pricing_json", {}) or {})
+        pricing["dashboard_onboarding_dismissed_at"] = _iso_now_utc()
+        tenant.pricing_json = pricing
+        db.add(tenant)
+        db.commit()
+    return RedirectResponse(url="/app/dashboard", status_code=303)
 
 
 @router.get("/settings", response_class=HTMLResponse)
@@ -1893,16 +2126,27 @@ def app_leads(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    date: str | None = Query(default=None),
+    start: str | None = Query(default=None),
+    end: str | None = Query(default=None),
 ):
     tenant_obj = db.query(Tenant).filter(Tenant.id == str(current_user.tenant_id)).first()
     enabled = (tenant_obj.enabled_verticals if tenant_obj and tenant_obj.enabled_verticals else None) or ["painting"]
 
-    _VERTICAL_STORED_ID = {"painting": "paintly"}
+    tenant_tz = _get_tenant_timezone(current_user, None)
+    date_filter = _resolve_date_filter(
+        date_preset=date,
+        start_date=start,
+        end_date=end,
+        tz_name=tenant_tz,
+    )
 
     qs = db.query(Lead).filter(Lead.tenant_id == str(current_user.tenant_id))
     if len(enabled) == 1:
-        stored_id = _VERTICAL_STORED_ID.get(enabled[0], enabled[0])
-        qs = qs.filter(Lead.vertical == stored_id)
+        workflow = enabled[0]
+        compatible = _compatible_vertical_ids_for_workflow(workflow)
+        qs = qs.filter(or_(Lead.vertical.in_(compatible), Lead.vertical.is_(None)))
+    qs = qs.filter(_lead_activity_in_range_filter(date_filter))
     leads = qs.order_by(desc(Lead.created_at)).limit(100).all()
 
     # MVP: 1 query per lead OK. Later optimize with join.
@@ -1935,6 +2179,7 @@ def app_leads(
         db,
         {"leads": rows},
     )
+    context["date_filter"] = date_filter
     _merge_intake_url_into_context(context)
     return templates.TemplateResponse("app/leads_list.html", context)
 
@@ -2175,7 +2420,8 @@ def app_lead_detail(
     followup_summary = build_followup_summary(overrides, tz_name)
     tenant_pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
     current_wall_rate = tenant_pricing.get("walls_rate_eur_per_sqm")
-    missing_wall_rate = current_wall_rate in (None, "")
+    quote_readiness = validate_quote_readiness(lead, tenant)
+    missing_wall_rate = not quote_readiness.is_ready
     show_missing_wall_rate_prompt = (
         missing_wall_rate
         and (request.query_params.get("missing_wall_rate") or "").strip().lower()
@@ -2228,9 +2474,19 @@ def app_lead_detail(
             "current_wall_rate": current_wall_rate,
             "missing_wall_rate": missing_wall_rate,
             "show_missing_wall_rate_prompt": show_missing_wall_rate_prompt,
+            "quote_readiness": readiness_payload(quote_readiness),
         },
     )
     return templates.TemplateResponse("app/lead_detail.html", context)
+
+
+@router.get("/quotes/{quote_id}", response_class=HTMLResponse)
+def app_quote_detail(
+    quote_id: str,
+    current_user: User = Depends(require_user_html),
+):
+    # Keep legacy backend entrypoint safe, but route users to frontend quotes UI.
+    return RedirectResponse(url=f"/offertes/{quote_id}", status_code=307)
 
 
 @router.get("/leads/{lead_id}/estimate")
@@ -2946,19 +3202,31 @@ def app_jobs_list(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
     status: str | None = Query(default=None),
+    date: str | None = Query(default=None),
+    start: str | None = Query(default=None),
+    end: str | None = Query(default=None),
 ):
     tenant_id = str(current_user.tenant_id)
+    tenant_tz = _get_tenant_timezone(current_user, None)
+    date_filter = _resolve_date_filter(
+        date_preset=date,
+        start_date=start,
+        end_date=end,
+        tz_name=tenant_tz,
+    )
+    jobs_in_range_filter = _job_planned_or_created_in_range_filter(date_filter)
 
     counts_rows = (
         db.query(Job.status, func.count(Job.id))
         .filter(Job.tenant_id == tenant_id)
+        .filter(jobs_in_range_filter)
         .group_by(Job.status)
         .all()
     )
     counts_map = {str(s): int(c) for s, c in counts_rows}
     counts = {s: counts_map.get(s, 0) for s in sorted(ALLOWED_JOB_STATUSES)}
 
-    q = db.query(Job).filter(Job.tenant_id == tenant_id)
+    q = db.query(Job).filter(Job.tenant_id == tenant_id).filter(jobs_in_range_filter)
 
     status_norm = (status or "").upper().strip() if status else None
     if status_norm:
@@ -3020,6 +3288,10 @@ def app_jobs_list(
             "jobs": rows,
             "counts": counts,
             "active_status": status_norm,
+            "date_filter": date_filter,
+            "date_filter_query_suffix": (
+                ("&" + urlencode(date_filter["params"])) if date_filter["params"] else ""
+            ),
         },
     )
     return templates.TemplateResponse("app/jobs_list.html", context)
@@ -3466,8 +3738,18 @@ def app_reviews_list(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
+    date: str | None = Query(default=None),
+    start: str | None = Query(default=None),
+    end: str | None = Query(default=None),
 ):
     tenant = str(current_user.tenant_id)
+    tenant_tz = _get_tenant_timezone(current_user, None)
+    date_filter = _resolve_date_filter(
+        date_preset=date,
+        start_date=start,
+        end_date=end,
+        tz_name=tenant_tz,
+    )
 
     # Gebruik dezelfde businessregel als derive_status:
     # - expliciete status NEEDS_REVIEW
@@ -3480,6 +3762,8 @@ def app_reviews_list(
                 getattr(Lead, "needs_review_hard", None) == True,  # noqa: E712
             ),
             or_(Lead.tenant_id == tenant, Lead.tenant_id == "public"),
+            Lead.created_at >= date_filter["start_utc"],
+            Lead.created_at < date_filter["end_utc_exclusive"],
         )
         # Sorteer op aanmaakmoment (nieuwste eerst), onafhankelijk van updates
         .order_by(desc(Lead.created_at), desc(Lead.id))
@@ -3544,7 +3828,7 @@ def app_reviews_list(
         request,
         current_user,
         db,
-        {"leads": leads},
+        {"leads": leads, "date_filter": date_filter},
     )
     return templates.TemplateResponse("app/reviews_list.html", context)
 
@@ -3758,6 +4042,11 @@ def _review_detail_contract(db: Session, lead: Lead) -> dict[str, Any]:
         estimate_meta.get("review_reason"),
         normalized_reasons[0] if normalized_reasons else None,
     )
+    tenant = db.query(Tenant).filter(Tenant.id == str(getattr(lead, "tenant_id", "") or "")).first()
+    quote_readiness = validate_quote_readiness(lead, tenant)
+    if not quote_readiness.is_ready and "price_per_m2" in quote_readiness.missing_config:
+        review_reason = "Prijsinstellingen ontbreken"
+        status_reason = "Geen m² prijs ingesteld"
 
     return {
         "lead_id": str(lead.id),
@@ -3783,6 +4072,7 @@ def _review_detail_contract(db: Session, lead: Lead) -> dict[str, Any]:
         "subtotalExcl": subtotal_excl,
         "photoUrls": _review_photo_urls_for_lead(db, lead),
         "review_reasons": normalized_reasons,
+        "quote_readiness": readiness_payload(quote_readiness),
         "lead": {
             "id": str(lead.id),
             "status": getattr(lead, "status", None),
@@ -3897,9 +4187,16 @@ def app_review_detail(
     )
     tenant_pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
     current_wall_rate = tenant_pricing.get("walls_rate_eur_per_sqm")
-    missing_wall_rate = current_wall_rate in (None, "")
+    quote_readiness = validate_quote_readiness(lead, tenant)
+    missing_wall_rate = not quote_readiness.is_ready
     has_missing_wall_rate_reason = "missing_wall_rate" in reasons
-    show_missing_wall_rate_prompt = missing_wall_rate or has_missing_wall_rate_reason
+    has_missing_pricing_query_flag = (
+        (request.query_params.get("missing_pricing_config") or "").strip().lower()
+        in {"1", "true", "yes"}
+    )
+    show_missing_wall_rate_prompt = (
+        missing_wall_rate or has_missing_wall_rate_reason or has_missing_pricing_query_flag
+    )
     if (request.query_params.get("missing_wall_rate") or "").strip().lower() in {"1", "true", "yes"}:
         show_missing_wall_rate_prompt = True
 
@@ -3918,6 +4215,7 @@ def app_review_detail(
             "current_wall_rate": current_wall_rate,
             "missing_wall_rate": missing_wall_rate,
             "show_missing_wall_rate_prompt": show_missing_wall_rate_prompt,
+            "quote_readiness": readiness_payload(quote_readiness),
         },
     )
     return templates.TemplateResponse("app/review_detail.html", context)
@@ -4104,6 +4402,15 @@ def edit_estimate_get(
     return templates.TemplateResponse("app/estimate_edit.html", context)
 
 
+@router.get("/quotes/{quote_id}/edit", response_class=HTMLResponse)
+def quote_edit_get(
+    quote_id: str,
+    current_user: User = Depends(require_user_html),
+):
+    # Keep legacy backend entrypoint safe, but route users to frontend quote edit UI.
+    return RedirectResponse(url=f"/offertes/{quote_id}/bewerken", status_code=307)
+
+
 @router.post("/leads/{lead_id}/edit-estimate")
 def edit_estimate_post(
     lead_id: str,
@@ -4123,10 +4430,10 @@ def edit_estimate_post(
     included_work: str | None = Form(default=None),
     excluded_notes: str | None = Form(default=None),
     public_notes: str | None = Form(default=None),
-    discount_percent: float | None = Form(default=None),
-    manual_total: float | None = Form(default=None),
-    subtotal_excl: float | None = Form(default=None),
-    vat_rate_percent: float | None = Form(default=None),
+    discount_percent: str | None = Form(default=None),
+    manual_total: str | None = Form(default=None),
+    subtotal_excl: str | None = Form(default=None),
+    vat_rate_percent: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user_html),
     _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
@@ -4159,6 +4466,11 @@ def edit_estimate_post(
         has_json,
     )
 
+    parsed_discount_percent = _parse_optional_float_form(discount_percent, "discount_percent")
+    parsed_manual_total = _parse_optional_float_form(manual_total, "manual_total")
+    parsed_subtotal_excl = _parse_optional_float_form(subtotal_excl, "subtotal_excl")
+    parsed_vat_rate_percent = _parse_optional_float_form(vat_rate_percent, "vat_rate_percent")
+
     editor_input = {
         "customer_name": customer_name,
         "customer_email": customer_email,
@@ -4176,10 +4488,10 @@ def edit_estimate_post(
         "included_work": included_work,
         "excluded_notes": excluded_notes,
         "public_notes": public_notes,
-        "discount_percent": discount_percent,
-        "manual_total": manual_total,
-        "subtotal_excl": subtotal_excl,
-        "vat_rate_percent": vat_rate_percent,
+        "discount_percent": parsed_discount_percent,
+        "manual_total": parsed_manual_total,
+        "subtotal_excl": parsed_subtotal_excl,
+        "vat_rate_percent": parsed_vat_rate_percent,
     }
     estimate_dict, overrides, changed_fields = _apply_full_estimate_edit(
         lead=lead,
@@ -4239,4 +4551,59 @@ def edit_estimate_post(
         rendered,
     )
 
-    return RedirectResponse(url=f"/app/leads/{lead_id}/edit-estimate", status_code=303)
+    return RedirectResponse(url=f"/offertes/{lead_id}/bewerken", status_code=303)
+
+
+@router.post("/quotes/{quote_id}/edit")
+def quote_edit_post(
+    quote_id: str,
+    customer_name: str | None = Form(default=None),
+    customer_email: str | None = Form(default=None),
+    customer_phone: str | None = Form(default=None),
+    project_location: str | None = Form(default=None),
+    company_name: str | None = Form(default=None),
+    company_email: str | None = Form(default=None),
+    company_phone: str | None = Form(default=None),
+    reference: str | None = Form(default=None),
+    quote_date: str | None = Form(default=None),
+    valid_until: str | None = Form(default=None),
+    title: str | None = Form(default=None),
+    subtitle: str | None = Form(default=None),
+    line_items_json: str | None = Form(default=None),
+    included_work: str | None = Form(default=None),
+    excluded_notes: str | None = Form(default=None),
+    public_notes: str | None = Form(default=None),
+    discount_percent: str | None = Form(default=None),
+    manual_total: str | None = Form(default=None),
+    subtotal_excl: str | None = Form(default=None),
+    vat_rate_percent: str | None = Form(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user_html),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
+):
+    return edit_estimate_post(
+        lead_id=quote_id,
+        customer_name=customer_name,
+        customer_email=customer_email,
+        customer_phone=customer_phone,
+        project_location=project_location,
+        company_name=company_name,
+        company_email=company_email,
+        company_phone=company_phone,
+        reference=reference,
+        quote_date=quote_date,
+        valid_until=valid_until,
+        title=title,
+        subtitle=subtitle,
+        line_items_json=line_items_json,
+        included_work=included_work,
+        excluded_notes=excluded_notes,
+        public_notes=public_notes,
+        discount_percent=discount_percent,
+        manual_total=manual_total,
+        subtotal_excl=subtotal_excl,
+        vat_rate_percent=vat_rate_percent,
+        db=db,
+        current_user=current_user,
+        _subscription_guard=_subscription_guard,
+    )

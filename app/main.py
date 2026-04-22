@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from app.routers.auth import public_router as auth_public_router
 from app.routers.auth import router as auth_router
 from app.verticals.painting.router_app import router as paintly_app_router
 from app.verticals.painting.router_htmx import router as paintly_htmx_router
@@ -215,6 +216,7 @@ app.include_router(ops_router)
 app.include_router(engine_events_router)
 app.include_router(processing.router)
 app.include_router(auth_router)
+app.include_router(auth_public_router)
 app.include_router(app_me_router)
 app.include_router(app_leads_router)
 app.include_router(app_uploads_router)

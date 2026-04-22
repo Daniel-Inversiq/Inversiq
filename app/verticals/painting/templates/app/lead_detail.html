@@ -63,17 +63,19 @@
 
   {% set header_work_summary = (job_type ~ (' • ' ~ square_meters ~ ' m²' if square_meters else '')) if job_type else ((square_meters ~ ' m²') if square_meters else 'Werksamenvatting niet ingevuld') %}
 
-  {% if vertical != 'paintly' %}
-  <div class="flex items-center">
-    <a href="/app/leads"
+  <div class="flex flex-wrap items-center gap-3">
+    <a href="/app/offers"
        class="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#9ca3af] transition hover:text-[#111318]">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
       </svg>
-      Terug naar leads
+      Terug naar offertes
+    </a>
+    <a href="/offertes/{{ lead.id }}"
+       class="inline-flex items-center gap-1 text-[11px] font-medium text-[#9ca3af] underline-offset-2 transition hover:text-[#374151] hover:underline">
+      Bekijk oorspronkelijke aanvraag
     </a>
   </div>
-  {% endif %}
 
   <!-- Header -->
   <div class="border-b border-[#e8eaee] pb-4">
@@ -106,14 +108,14 @@
         {% if quote_ui and quote_ui.can_view %}
           <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
              href="/quotes/{{ lead.id }}/html" target="_blank">
-            Bekijk offerte
+            Open publieke offerte
           </a>
         {% endif %}
         {% set ent = (entitlements.export_pdf if entitlements is defined and entitlements else None) %}
         {% if quote_ui and quote_ui.can_download_pdf %}
           {% if ent and ent.allowed %}
             <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
-               href="/app/leads/{{ lead.id }}/export-pdf" target="_blank">
+               href="/offertes/{{ lead.id }}" target="_blank">
               PDF downloaden
             </a>
           {% else %}
@@ -139,8 +141,14 @@
         {% endif %}
         {% if quote_ui and quote_ui.can_edit %}
           <a class="inline-flex h-7 items-center justify-center rounded border border-[#d0d4dd] bg-white px-3 text-[11px] font-medium text-[#374151] transition hover:bg-[#f6f7f9]"
-             href="/app/leads/{{ lead.id }}/edit-estimate">
+             href="/offertes/{{ lead.id }}/bewerken">
             Offerte bewerken
+          </a>
+        {% endif %}
+        {% if job %}
+          <a class="inline-flex h-7 items-center justify-center rounded bg-[#111318] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1e2129]"
+             href="#job">
+            Naar klus
           </a>
         {% endif %}
       </div>
@@ -273,13 +281,13 @@
         </svg>
       </div>
       <div>
-        <div class="text-[12px] font-semibold text-amber-800">Geen m² prijs ingesteld</div>
+        <div class="text-[12px] font-semibold text-amber-800">Prijsinstellingen ontbreken</div>
         <p class="mt-0.5 text-[12px] text-amber-700">
-          Er is nog geen wandtarief ingesteld. Prijsindicaties kunnen daardoor onnauwkeurig zijn.
+          Je hebt nog geen prijs per m² ingesteld. Stel dit eerst in om offertes te genereren.
         </p>
         <a href="/app/settings"
            class="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 transition underline-offset-2 hover:underline">
-          Stel je m² prijs in
+          Ga naar instellingen
         </a>
       </div>
     </div>

@@ -116,3 +116,8 @@ class LeadVisionAggregate(_VisionBaseModel):
     uncertainty_score: float = Field(ge=0.0, le=1.0)
     needs_review: bool = False
     review_reasons: list[str] = Field(default_factory=list)
+    decision: Literal["ACCEPTED", "ACCEPTED_WITH_WARNING", "NEEDS_REVIEW"] = "ACCEPTED"
+    decision_reasons: list[str] = Field(default_factory=list)
+    warning_reasons: list[str] = Field(default_factory=list)
+    decision_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    quality_metrics: dict[str, float] = Field(default_factory=dict)

@@ -20,7 +20,7 @@ _jinja_env = Environment(
 
 def build_password_reset_url(*, raw_token: str) -> str:
     base = settings.effective_app_base_url
-    return f"{base}/auth/reset-password?token={raw_token}"
+    return f"{base}/reset-password?token={raw_token}"
 
 
 def _render_bodies(*, reset_url: str, expiry_minutes: int) -> tuple[str, str]:

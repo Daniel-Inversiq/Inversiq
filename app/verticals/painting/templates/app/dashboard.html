@@ -8,6 +8,44 @@
     Omzet, offertes en openstaande acties op één plek — blijf dicht bij je planning.
   </p>
 
+  {% if is_first_run %}
+    <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-[14px] font-semibold text-blue-900">Welkom! Je account staat klaar.</p>
+          <p class="mt-1 text-[12px] leading-relaxed text-blue-800">
+            Start door je aanvraagformulier met een klant te delen. Nieuwe aanvragen verschijnen hier automatisch.
+          </p>
+          <ul class="mt-2 space-y-1 text-[12px] text-blue-900">
+            <li>• Deel je aanvraagformulier</li>
+            <li>• Bekijk je eerste aanvraag</li>
+            <li>• Maak je eerste offerte</li>
+            <li>• Zet een goedgekeurde offerte om naar een klus</li>
+          </ul>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-1.5">
+          {% if intake_url %}
+            <button
+              type="button"
+              class="ui-btn-primary"
+              data-intake-url="{{ intake_url|e }}"
+              data-copy-label="Kopieer formulierlink"
+              data-intake-copy-btn
+            >
+              Kopieer formulierlink
+            </button>
+            <a href="{{ intake_url }}" target="_blank" rel="noopener noreferrer" class="ui-btn-secondary">
+              Open formulier
+            </a>
+          {% endif %}
+          <form method="post" action="/app/onboarding/dismiss">
+            <button type="submit" class="ui-btn-secondary">Verbergen</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   {# ── Section 2 — KPI strip (hairline dividers via gap-px) ──── #}
   <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-neutral-200/90 bg-neutral-200/80 lg:grid-cols-4">
     <div class="flex flex-col justify-center gap-0.5 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
@@ -99,12 +137,19 @@
     <div class="flex min-w-0 items-start gap-2.5 sm:items-center">
       <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 sm:mt-0"></span>
       <div>
-        <p class="text-[13px] font-semibold leading-tight text-neutral-900">Vandaag te regelen</p>
-        <p class="body-muted mt-0.5 text-[12px] leading-snug">
-          <span class="font-normal text-neutral-800">{{ open_quotes|length }} open offertes</span>
-          &nbsp;·&nbsp;
-          <span class="font-normal text-neutral-800">{{ followups|length }} aanvragen</span> om op te volgen
-        </p>
+        {% if is_first_run %}
+          <p class="text-[13px] font-semibold leading-tight text-neutral-900">Eerste stap</p>
+          <p class="body-muted mt-0.5 text-[12px] leading-snug">
+            Deel je aanvraagformulier. Zodra een klant iets instuurt, kun je direct verder naar een offerte.
+          </p>
+        {% else %}
+          <p class="text-[13px] font-semibold leading-tight text-neutral-900">Vandaag te regelen</p>
+          <p class="body-muted mt-0.5 text-[12px] leading-snug">
+            <span class="font-normal text-neutral-800">{{ open_quotes|length }} open offertes</span>
+            &nbsp;·&nbsp;
+            <span class="font-normal text-neutral-800">{{ followups|length }} aanvragen</span> om op te volgen
+          </p>
+        {% endif %}
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-1.5 pl-4 sm:pl-0">
@@ -113,10 +158,10 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        Bekijk offertes
+        {% if is_first_run %}Bekijk aanvragen{% else %}Bekijk offertes{% endif %}
       </a>
       <a href="/app/leads" class="ui-btn-secondary">
-        Opvolging
+        {% if is_first_run %}Hoe het werkt{% else %}Opvolging{% endif %}
         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5l7 7-7 7"/>
         </svg>
@@ -143,8 +188,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
-          <p class="text-[12px] font-normal text-neutral-500">Nog geen data beschikbaar</p>
-          <p class="mt-0.5 text-[11px] text-neutral-400">Zodra je offertes verstuurt zie je hier je resultaten</p>
+          <p class="text-[12px] font-normal text-neutral-500">
+            {% if is_first_run %}Nog geen resultaten — dat is normaal bij een nieuw account.{% else %}Nog geen data beschikbaar{% endif %}
+          </p>
+          <p class="mt-0.5 text-[11px] text-neutral-400">
+            {% if is_first_run %}Start door je formulierlink te delen. Na je eerste aanvraag verschijnt hier meteen data.{% else %}Zodra je offertes verstuurt zie je hier je resultaten{% endif %}
+          </p>
         </div>
 
         <div id="secondary-charts" class="grid grid-cols-1 xl:grid-cols-5">
@@ -270,7 +319,7 @@
                     {% endif %}
                   </td>
                   <td class="px-4 py-3 text-right align-middle">
-                    <a href="/app/leads/{{ q.id }}"
+                    <a href="/offertes/{{ q.id }}"
                        class="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-400 opacity-0 transition-all hover:text-neutral-900 group-hover:opacity-100">
                       Bekijk
                       <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -288,12 +337,27 @@
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <p class="text-[12px] font-normal text-neutral-400">
-                      Geen open offertes.
-                      {% if tenant is defined and tenant and tenant.slug %}
-                        <a href="/intake/{{ tenant.slug }}"
-                           class="ml-1 font-medium text-neutral-700 hover:text-neutral-950">
-                          Maak nieuwe offerte →
-                        </a>
+                      {% if is_first_run %}
+                        Je hebt nog geen aanvragen.
+                        {% if intake_url %}
+                          <button
+                            type="button"
+                            class="ml-1 font-medium text-neutral-700 hover:text-neutral-950"
+                            data-intake-url="{{ intake_url|e }}"
+                            data-copy-label="Kopieer formulierlink"
+                            data-intake-copy-btn
+                          >
+                            Kopieer formulierlink →
+                          </button>
+                        {% endif %}
+                      {% else %}
+                        Geen open offertes.
+                        {% if tenant is defined and tenant and tenant.slug %}
+                          <a href="/intake/{{ tenant.slug }}"
+                             class="ml-1 font-medium text-neutral-700 hover:text-neutral-950">
+                            Maak nieuwe offerte →
+                          </a>
+                        {% endif %}
                       {% endif %}
                     </p>
                   </td>
@@ -344,10 +408,14 @@
                       d="M6 3h12a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z"/>
               </svg>
               <p class="text-[12px] text-neutral-400">
-                Geen opvolging gepland.
-                <a href="/app/leads" class="ml-1 font-medium text-neutral-700 hover:text-neutral-950">
-                  Plan opvolging →
-                </a>
+                {% if is_first_run %}
+                  Nog geen aanvragen om op te volgen. Zodra je eerste aanvraag binnenkomt, zie je die hier.
+                {% else %}
+                  Geen opvolging gepland.
+                  <a href="/app/leads" class="ml-1 font-medium text-neutral-700 hover:text-neutral-950">
+                    Plan opvolging →
+                  </a>
+                {% endif %}
               </p>
             </div>
           {% endfor %}

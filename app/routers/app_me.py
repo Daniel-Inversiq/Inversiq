@@ -1,5 +1,5 @@
 # app/routers/app_me.py
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.services.billing_app_state import (
     compute_billing_page_state,
 )
 from app.services.dashboard_service import get_dashboard_summary
+from app.services.operational_dashboard_service import get_operational_dashboard
 
 router = APIRouter(prefix="/app", tags=["app"])
 
@@ -29,6 +30,27 @@ def dashboard_summary(
     user: User = Depends(get_current_user),
 ):
     return get_dashboard_summary(db=db, tenant_id=str(user.tenant_id))
+
+
+@router.get("/api/dashboard/operational")
+def dashboard_operational(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    chart_days: int = Query(30, ge=7, le=90),
+    timezone_offset_minutes: int = Query(
+        0,
+        ge=-840,
+        le=840,
+        description="Minutes east of UTC (same as -JavaScript Date.getTimezoneOffset()).",
+    ),
+):
+    """Unified operational overview: KPIs, intake series, status mix, attention queue."""
+    return get_operational_dashboard(
+        db,
+        str(user.tenant_id),
+        chart_days=chart_days,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
 
 
 @router.get("/api/billing")

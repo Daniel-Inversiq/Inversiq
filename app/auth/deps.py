@@ -47,17 +47,11 @@ def get_current_user(
 ) -> User:
     token = _extract_token(request, creds)
     if not token:
-        fallback_user = _dev_fallback_user(db)
-        if fallback_user:
-            return fallback_user
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
         payload = decode_token(token)
     except Exception:
-        fallback_user = _dev_fallback_user(db)
-        if fallback_user:
-            return fallback_user
         raise HTTPException(status_code=401, detail="Invalid token")
 
     user_id = payload.get("sub")
@@ -66,9 +60,6 @@ def get_current_user(
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
-        fallback_user = _dev_fallback_user(db)
-        if fallback_user:
-            return fallback_user
         raise HTTPException(status_code=401, detail="User not found or inactive")
 
     return user

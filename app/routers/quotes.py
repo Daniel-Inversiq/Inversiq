@@ -10,6 +10,7 @@ from typing import Any, Dict, Tuple
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user, require_user_html
@@ -37,6 +38,7 @@ from app.verticals.painting.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
 from app.i18n.service import setup_jinja_i18n
+from app.services.quote_readiness import readiness_payload, validate_quote_readiness
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 templates = Jinja2Templates(directory="app/templates")
@@ -44,6 +46,12 @@ paintly_templates = Jinja2Templates(directory="app/verticals/painting/templates"
 setup_jinja_i18n(templates)
 setup_jinja_i18n(paintly_templates)
 logger = logging.getLogger(__name__)
+
+
+class QuoteFromLeadResponse(BaseModel):
+    quote_id: str
+    lead_id: str
+    status: str
 
 
 def _log_quote_activity(
@@ -73,13 +81,9 @@ def _log_quote_activity(
         )
 
 
-def _tenant_missing_wall_rate(tenant: Tenant | None) -> bool:
-    pricing = dict(getattr(tenant, "pricing_json", {}) or {}) if tenant is not None else {}
-    return pricing.get("walls_rate_eur_per_sqm") in (None, "")
-
-
-def _mark_needs_review_missing_wall_rate(db: Session, lead: Lead) -> None:
-    reason = "missing_wall_rate"
+def _mark_config_needed_missing_pricing(
+    db: Session, lead: Lead, missing_config: list[str]
+) -> None:
     payload: dict[str, Any] = {}
     try:
         if isinstance(getattr(lead, "estimate_json", None), str) and lead.estimate_json:
@@ -90,23 +94,15 @@ def _mark_needs_review_missing_wall_rate(db: Session, lead: Lead) -> None:
         payload = {}
 
     meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
-    reasons = meta.get("needs_review_reasons")
-    if not isinstance(reasons, list):
-        reasons = []
-    if reason not in reasons:
-        reasons.append(reason)
-    meta["needs_review_reasons"] = reasons
+    meta["missing_pricing_config"] = True
+    meta["missing_config"] = list(missing_config)
+    meta["config_status"] = "CONFIG_NEEDED"
     payload["meta"] = meta
 
-    lead.status = "NEEDS_REVIEW"
+    lead.status = "CONFIG_NEEDED"
     lead.error_message = None
     lead.estimate_json = json.dumps(payload, ensure_ascii=False, default=str)
     lead.updated_at = datetime.utcnow()
-    if hasattr(lead, "needs_review_reasons"):
-        try:
-            setattr(lead, "needs_review_reasons", reasons)
-        except Exception:
-            pass
     db.add(lead)
     db.commit()
 
@@ -379,12 +375,17 @@ def _is_public_publish_flow(request: Request | None) -> bool:
 
 def _publish_redirect_target(lead_id: str, status: str, is_public_flow: bool) -> str:
     is_review = status == "NEEDS_REVIEW"
+    is_config_needed = status == "CONFIG_NEEDED"
     if is_public_flow:
+        if is_config_needed:
+            return f"/thank-you?lead_id={lead_id}&config_needed=1"
         return (
             f"/thank-you?lead_id={lead_id}&review=1"
             if is_review
             else f"/offerte/{lead_id}"
         )
+    if is_config_needed:
+        return f"/app/reviews/{lead_id}?missing_pricing_config=1"
     return f"/app/reviews/{lead_id}" if is_review else f"/app/leads/{lead_id}/estimate"
 
 
@@ -564,7 +565,7 @@ def publish_quote(
     logger.info("LEAD %s publish_requested status=%s", lead.id, lead.status)
 
     # Idempotent: al klaar -> direct naar lead detail offerteview
-    if lead.status in ("SUCCEEDED", "NEEDS_REVIEW"):
+    if lead.status in ("SUCCEEDED", "NEEDS_REVIEW", "CONFIG_NEEDED"):
         inc("publish_idempotent_total")
         redirect_target = _publish_redirect_target(
             lead_id=str(lead.id),
@@ -583,17 +584,18 @@ def publish_quote(
         )
 
     tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
-    if _tenant_missing_wall_rate(tenant):
-        _mark_needs_review_missing_wall_rate(db, lead)
+    readiness = validate_quote_readiness(lead, tenant)
+    if not readiness.is_ready:
+        _mark_config_needed_missing_pricing(db, lead, readiness.missing_config)
         redirect_target = _publish_redirect_target(
             lead_id=str(lead.id),
-            status="NEEDS_REVIEW",
+            status="CONFIG_NEEDED",
             is_public_flow=is_public_flow,
         )
         logger.info(
-            "PUBLISH_FLOW_REVIEW_BLOCKED lead_id=%s reason=%s redirect_target=%r",
+            "PUBLISH_FLOW_CONFIG_NEEDED lead_id=%s missing_config=%r redirect_target=%r",
             lead.id,
-            "missing_wall_rate",
+            readiness.missing_config,
             redirect_target,
         )
         return RedirectResponse(url=redirect_target, status_code=303)
@@ -710,6 +712,12 @@ def publish_quote(
         tenant_id = (lead.tenant_id or "").strip() or "default"
         html_key = _strip_tenant_prefix(tenant_id, html_key)
 
+        if isinstance(estimate_dict, dict):
+            est_meta = (
+                estimate_dict.get("meta") if isinstance(estimate_dict.get("meta"), dict) else {}
+            )
+            est_meta.update(readiness_payload(readiness))
+            estimate_dict["meta"] = est_meta
         lead.estimate_json = json.dumps(estimate_dict, ensure_ascii=False, default=str)
         lead.estimate_html_key = html_key
 
@@ -863,6 +871,44 @@ def publish_quote(
 # =========================
 # ARTIFACTS
 # =========================
+@router.post("/from-lead/{lead_id}", response_model=QuoteFromLeadResponse)
+def ensure_quote_from_lead(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
+):
+    tenant_id = str(current_user.tenant_id)
+    lead = _load_lead(db, lead_id, tenant_id)
+
+    # Existing quote payload can be opened directly.
+    if getattr(lead, "estimate_json", None):
+        return QuoteFromLeadResponse(
+            quote_id=str(lead.id),
+            lead_id=str(lead.id),
+            status=str(getattr(lead, "status", "") or ""),
+        )
+
+    # Generate quote artifacts when they do not exist yet.
+    publish_quote(
+        lead_id=lead_id,
+        background=BackgroundTasks(),
+        db=db,
+        request=None,
+        tenant_id=tenant_id,
+    )
+
+    refreshed = _load_lead(db, lead_id, tenant_id)
+    if not getattr(refreshed, "estimate_json", None):
+        raise HTTPException(status_code=409, detail="Quote is not ready yet")
+
+    return QuoteFromLeadResponse(
+        quote_id=str(refreshed.id),
+        lead_id=str(refreshed.id),
+        status=str(getattr(refreshed, "status", "") or ""),
+    )
+
+
 @router.get("/{lead_id}/json")
 def quote_json(
     lead_id: str,
@@ -882,6 +928,12 @@ def quote_html(
     current_user: User = Depends(get_current_user),
 ):
     lead = _load_lead(db, lead_id, str(current_user.tenant_id))
+
+    if lead.status == "CONFIG_NEEDED":
+        raise HTTPException(
+            status_code=409,
+            detail="Prijsinstellingen ontbreken: geen m² prijs ingesteld",
+        )
 
     if lead.status not in ("SUCCEEDED", "NEEDS_REVIEW"):
         raise HTTPException(

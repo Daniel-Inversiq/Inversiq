@@ -10,8 +10,22 @@ from app.models.lead import Lead
 
 
 SIGNED_STATUSES = {"ACCEPTED", "SIGNED", "COMPLETED", "DONE"}
-REJECTED_STATUSES = {"REJECTED", "DECLINED", "CANCELLED"}
-PENDING_STATUSES = {"SENT", "VIEWED", "SUCCEEDED"}
+REJECTED_STATUSES = {"REJECTED", "DECLINED", "CANCELLED", "FAILED", "PROCESSING_FAILED", "ERROR"}
+# Keep this aligned with offer/review flow so dashboard "open offers" remains truthful.
+PENDING_STATUSES = {
+    "NEW",
+    "RUNNING",
+    "PROCESSING",
+    "SUCCEEDED",
+    "QUOTE_READY",
+    "READY",
+    "SENT",
+    "VIEWED",
+    "PENDING",
+    "PENDING_RESPONSE",
+    "NEEDS_REVIEW",
+    "REVIEW_REQUIRED",
+}
 NO_RESPONSE_STATUSES = {"SENT", "VIEWED", "PENDING"}
 
 

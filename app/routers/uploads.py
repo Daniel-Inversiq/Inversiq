@@ -139,13 +139,12 @@ def _mark_needs_review_if_missing_wall_rate(db: Session, lead: Lead) -> bool:
     if tenant is None:
         return False
 
-    from app.routers.quotes import (
-        _mark_needs_review_missing_wall_rate,
-        _tenant_missing_wall_rate,
-    )
+    from app.routers.quotes import _mark_config_needed_missing_pricing
+    from app.services.quote_readiness import validate_quote_readiness
 
-    if _tenant_missing_wall_rate(tenant):
-        _mark_needs_review_missing_wall_rate(db, lead)
+    readiness = validate_quote_readiness(lead, tenant)
+    if not readiness.is_ready:
+        _mark_config_needed_missing_pricing(db, lead, readiness.missing_config)
         return True
     return False
 
