@@ -1,3 +1,21 @@
+"""add proposed_change_execution_outcomes table
+
+Revision ID: 2026_04_18_03
+Revises: 2026_04_18_02
+Create Date: 2026-04-18 00:00:00.000000
+
+"""
+
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import inspect
+
+revision = "2026_04_18_03"
+down_revision = "2026_04_18_02"
+branch_labels = None
+depends_on = None
+
+
 def upgrade() -> None:
     table_name = "proposed_change_execution_outcomes"
     bind = op.get_bind()
@@ -44,7 +62,6 @@ def upgrade() -> None:
             ),
         )
 
-    # opnieuw inspecten NA create
     inspector = inspect(bind)
     existing_tables = inspector.get_table_names(schema="public")
 
@@ -66,3 +83,29 @@ def upgrade() -> None:
         for index_name, index_columns in index_specs:
             if index_name not in existing_index_names:
                 op.create_index(index_name, table_name, index_columns, unique=False)
+
+
+def downgrade() -> None:
+    table_name = "proposed_change_execution_outcomes"
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names(schema="public")
+
+    if table_name in existing_tables:
+        existing_index_names = {
+            index["name"]
+            for index in inspector.get_indexes(table_name, schema="public")
+        }
+
+        for index_name in [
+            "ix_pceo_created_at",
+            "ix_pceo_evaluation_status",
+            "ix_pceo_outcome_status",
+            "ix_pceo_change_id",
+            "ix_pceo_execution_request_id",
+            "ix_pceo_tenant_id",
+        ]:
+            if index_name in existing_index_names:
+                op.drop_index(index_name, table_name=table_name)
+
+        op.drop_table(table_name)
