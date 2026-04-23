@@ -56,15 +56,80 @@ def _index_names(bind, table_name: str) -> set[str]:
     inspector = sa.inspect(bind)
     dialect = bind.dialect.name
     if dialect == "postgresql":
-        return {idx["name"] for idx in inspector.get_indexes(table_name, schema="public")}
+        return {
+            idx["name"] for idx in inspector.get_indexes(table_name, schema="public")
+        }
     return {idx["name"] for idx in inspector.get_indexes(table_name)}
 
 
 def upgrade() -> None:
     table_name = "proposed_change_execution_outcomes"
     bind = op.get_bind()
+    dialect = bind.dialect.name
 
-    if not _table_exists(bind, table_name):
+    if dialect == "postgresql":
+        op.execute(
+            sa.text(
+                """
+                CREATE TABLE IF NOT EXISTS proposed_change_execution_outcomes (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id VARCHAR(100) NOT NULL,
+                    execution_request_id INTEGER NOT NULL,
+                    change_id VARCHAR(500) NOT NULL,
+                    scope_type VARCHAR(50) NOT NULL,
+                    scope_id VARCHAR(200) NOT NULL,
+                    outcome_status VARCHAR(20) NOT NULL,
+                    evaluation_status VARCHAR(20) NOT NULL,
+                    observed_metrics_snapshot TEXT,
+                    expected_metrics_snapshot TEXT,
+                    deviation_snapshot TEXT,
+                    rollback_triggered BOOLEAN DEFAULT FALSE NOT NULL,
+                    rollback_reason TEXT,
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    CONSTRAINT uq_pceo_tenant_exec_request UNIQUE (tenant_id, execution_request_id)
+                );
+                """
+            )
+        )
+
+        op.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_pceo_tenant_id ON proposed_change_execution_outcomes (tenant_id);"
+            )
+        )
+        op.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_pceo_execution_request_id ON proposed_change_execution_outcomes (execution_request_id);"
+            )
+        )
+        op.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_pceo_change_id ON proposed_change_execution_outcomes (change_id);"
+            )
+        )
+        op.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_pceo_outcome_status ON proposed_change_execution_outcomes (outcome_status);"
+            )
+        )
+        op.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_pceo_evaluation_status ON proposed_change_execution_outcomes (evaluation_status);"
+            )
+        )
+        op.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_pceo_created_at ON proposed_change_execution_outcomes (created_at);"
+            )
+        )
+        return
+
+    # fallback for sqlite/local
+    inspector = sa.inspect(bind)
+    existing_tables = inspector.get_table_names()
+
+    if table_name not in existing_tables:
         op.create_table(
             table_name,
             sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -103,39 +168,18 @@ def upgrade() -> None:
             ),
         )
 
-    if _table_exists(bind, table_name):
-        existing_index_names = _index_names(bind, table_name)
+    inspector = sa.inspect(bind)
+    existing_index_names = {idx["name"] for idx in inspector.get_indexes(table_name)}
 
-        index_specs = [
-            ("ix_pceo_tenant_id", ["tenant_id"]),
-            ("ix_pceo_execution_request_id", ["execution_request_id"]),
-            ("ix_pceo_change_id", ["change_id"]),
-            ("ix_pceo_outcome_status", ["outcome_status"]),
-            ("ix_pceo_evaluation_status", ["evaluation_status"]),
-            ("ix_pceo_created_at", ["created_at"]),
-        ]
+    index_specs = [
+        ("ix_pceo_tenant_id", ["tenant_id"]),
+        ("ix_pceo_execution_request_id", ["execution_request_id"]),
+        ("ix_pceo_change_id", ["change_id"]),
+        ("ix_pceo_outcome_status", ["outcome_status"]),
+        ("ix_pceo_evaluation_status", ["evaluation_status"]),
+        ("ix_pceo_created_at", ["created_at"]),
+    ]
 
-        for index_name, index_columns in index_specs:
-            if index_name not in existing_index_names:
-                op.create_index(index_name, table_name, index_columns, unique=False)
-
-
-def downgrade() -> None:
-    table_name = "proposed_change_execution_outcomes"
-    bind = op.get_bind()
-
-    if _table_exists(bind, table_name):
-        existing_index_names = _index_names(bind, table_name)
-
-        for index_name in [
-            "ix_pceo_created_at",
-            "ix_pceo_evaluation_status",
-            "ix_pceo_outcome_status",
-            "ix_pceo_change_id",
-            "ix_pceo_execution_request_id",
-            "ix_pceo_tenant_id",
-        ]:
-            if index_name in existing_index_names:
-                op.drop_index(index_name, table_name=table_name)
-
-        op.drop_table(table_name)
+    for index_name, index_columns in index_specs:
+        if index_name not in existing_index_names:
+            op.create_index(index_name, table_name, index_columns, unique=False)
