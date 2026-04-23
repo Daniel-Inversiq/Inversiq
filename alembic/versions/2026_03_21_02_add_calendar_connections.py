@@ -5,22 +5,33 @@ Revises: 2026_03_21_01
 Create Date: 2026-03-21
 """
 
-from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
-revision: str = "2026_03_21_02"
-down_revision: Union[str, Sequence[str], None] = "2026_03_21_01"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = "2026_03_21_02"
+down_revision = "2026_03_21_01"
+branch_labels = None
+depends_on = None
+
+
+def _table_exists(table_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if bind.dialect.name == "postgresql":
+        return table_name in inspector.get_table_names(schema="public")
+    return table_name in inspector.get_table_names()
 
 
 def upgrade() -> None:
+    table_name = "calendar_connections"
+    if _table_exists(table_name):
+        return
+
     op.create_table(
-        "calendar_connections",
+        table_name,
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("tenant_id", sa.String(length=100), nullable=False),
         sa.Column("provider", sa.String(length=32), nullable=False, server_default="google"),
@@ -49,12 +60,16 @@ def upgrade() -> None:
     )
     op.create_index(
         "ix_calendar_connections_tenant_id",
-        "calendar_connections",
+        table_name,
         ["tenant_id"],
         unique=False,
     )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_calendar_connections_tenant_id", table_name="calendar_connections")
-    op.drop_table("calendar_connections")
+    table_name = "calendar_connections"
+    if not _table_exists(table_name):
+        return
+
+    op.drop_index("ix_calendar_connections_tenant_id", table_name=table_name)
+    op.drop_table(table_name)

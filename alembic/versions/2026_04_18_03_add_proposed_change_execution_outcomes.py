@@ -16,14 +16,17 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade() -> None:
-    table_name = "proposed_change_execution_outcomes"
+def _table_exists(table_name: str) -> bool:
     bind = op.get_bind()
     inspector = inspect(bind)
+    if bind.dialect.name == "postgresql":
+        return table_name in inspector.get_table_names(schema="public")
+    return table_name in inspector.get_table_names()
 
-    existing_tables = inspector.get_table_names(schema="public")
 
-    if table_name not in existing_tables:
+def upgrade() -> None:
+    table_name = "proposed_change_execution_outcomes"
+    if not _table_exists(table_name):
         op.create_table(
             table_name,
             sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -62,14 +65,15 @@ def upgrade() -> None:
             ),
         )
 
-    inspector = inspect(bind)
-    existing_tables = inspector.get_table_names(schema="public")
-
-    if table_name in existing_tables:
-        existing_index_names = {
-            index["name"]
-            for index in inspector.get_indexes(table_name, schema="public")
-        }
+    if _table_exists(table_name):
+        bind = op.get_bind()
+        inspector = inspect(bind)
+        if bind.dialect.name == "postgresql":
+            existing_index_names = {
+                index["name"] for index in inspector.get_indexes(table_name, schema="public")
+            }
+        else:
+            existing_index_names = {index["name"] for index in inspector.get_indexes(table_name)}
 
         index_specs = [
             ("ix_pceo_tenant_id", ["tenant_id"]),
@@ -87,15 +91,15 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     table_name = "proposed_change_execution_outcomes"
-    bind = op.get_bind()
-    inspector = inspect(bind)
-    existing_tables = inspector.get_table_names(schema="public")
-
-    if table_name in existing_tables:
-        existing_index_names = {
-            index["name"]
-            for index in inspector.get_indexes(table_name, schema="public")
-        }
+    if _table_exists(table_name):
+        bind = op.get_bind()
+        inspector = inspect(bind)
+        if bind.dialect.name == "postgresql":
+            existing_index_names = {
+                index["name"] for index in inspector.get_indexes(table_name, schema="public")
+            }
+        else:
+            existing_index_names = {index["name"] for index in inspector.get_indexes(table_name)}
 
         for index_name in [
             "ix_pceo_created_at",

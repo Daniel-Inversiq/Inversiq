@@ -5,21 +5,32 @@ Revises: 6d7e8f9a0b1c
 Create Date: 2026-04-15 18:00:00.000000
 """
 
-from typing import Sequence, Union
-
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import inspect
 
 
-revision: str = "7e8f9a0b1c2d"
-down_revision: Union[str, Sequence[str], None] = "6d7e8f9a0b1c"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = "7e8f9a0b1c2d"
+down_revision = "6d7e8f9a0b1c"
+branch_labels = None
+depends_on = None
+
+
+def _table_exists(table_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if bind.dialect.name == "postgresql":
+        return table_name in inspector.get_table_names(schema="public")
+    return table_name in inspector.get_table_names()
 
 
 def upgrade() -> None:
+    table_name = "engine_events"
+    if _table_exists(table_name):
+        return
+
     op.create_table(
-        "engine_events",
+        table_name,
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("event_type", sa.String(length=64), nullable=False),
         sa.Column(
@@ -50,54 +61,58 @@ def upgrade() -> None:
     )
     op.create_index(
         op.f("ix_engine_events_event_type"),
-        "engine_events",
+        table_name,
         ["event_type"],
         unique=False,
     )
     op.create_index(
         op.f("ix_engine_events_occurred_at"),
-        "engine_events",
+        table_name,
         ["occurred_at"],
         unique=False,
     )
     op.create_index(
         op.f("ix_engine_events_tenant_id"),
-        "engine_events",
+        table_name,
         ["tenant_id"],
         unique=False,
     )
     op.create_index(
         op.f("ix_engine_events_lead_id"),
-        "engine_events",
+        table_name,
         ["lead_id"],
         unique=False,
     )
     op.create_index(
         op.f("ix_engine_events_trace_id"),
-        "engine_events",
+        table_name,
         ["trace_id"],
         unique=False,
     )
     op.create_index(
         op.f("ix_engine_events_pipeline_run_id"),
-        "engine_events",
+        table_name,
         ["pipeline_run_id"],
         unique=False,
     )
     op.create_index(
         op.f("ix_engine_events_pipeline_step_run_id"),
-        "engine_events",
+        table_name,
         ["pipeline_step_run_id"],
         unique=False,
     )
 
 
 def downgrade() -> None:
-    op.drop_index(op.f("ix_engine_events_pipeline_step_run_id"), table_name="engine_events")
-    op.drop_index(op.f("ix_engine_events_pipeline_run_id"), table_name="engine_events")
-    op.drop_index(op.f("ix_engine_events_trace_id"), table_name="engine_events")
-    op.drop_index(op.f("ix_engine_events_lead_id"), table_name="engine_events")
-    op.drop_index(op.f("ix_engine_events_tenant_id"), table_name="engine_events")
-    op.drop_index(op.f("ix_engine_events_occurred_at"), table_name="engine_events")
-    op.drop_index(op.f("ix_engine_events_event_type"), table_name="engine_events")
-    op.drop_table("engine_events")
+    table_name = "engine_events"
+    if not _table_exists(table_name):
+        return
+
+    op.drop_index(op.f("ix_engine_events_pipeline_step_run_id"), table_name=table_name)
+    op.drop_index(op.f("ix_engine_events_pipeline_run_id"), table_name=table_name)
+    op.drop_index(op.f("ix_engine_events_trace_id"), table_name=table_name)
+    op.drop_index(op.f("ix_engine_events_lead_id"), table_name=table_name)
+    op.drop_index(op.f("ix_engine_events_tenant_id"), table_name=table_name)
+    op.drop_index(op.f("ix_engine_events_occurred_at"), table_name=table_name)
+    op.drop_index(op.f("ix_engine_events_event_type"), table_name=table_name)
+    op.drop_table(table_name)

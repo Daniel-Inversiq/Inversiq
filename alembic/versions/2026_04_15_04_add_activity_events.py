@@ -5,22 +5,33 @@ Revises: 5c6d7e8f9a0b
 Create Date: 2026-04-15 16:30:00.000000
 """
 
-from typing import Sequence, Union
-
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
-revision: str = "6d7e8f9a0b1c"
-down_revision: Union[str, Sequence[str], None] = "5c6d7e8f9a0b"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = "6d7e8f9a0b1c"
+down_revision = "5c6d7e8f9a0b"
+branch_labels = None
+depends_on = None
+
+
+def _table_exists(table_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if bind.dialect.name == "postgresql":
+        return table_name in inspector.get_table_names(schema="public")
+    return table_name in inspector.get_table_names()
 
 
 def upgrade() -> None:
+    table_name = "activity_events"
+    if _table_exists(table_name):
+        return
+
     op.create_table(
-        "activity_events",
+        table_name,
         sa.Column("id", sa.String(length=100), nullable=False),
         sa.Column("tenant_id", sa.String(length=100), nullable=False),
         sa.Column("event_type", sa.String(length=64), nullable=False),
@@ -37,26 +48,30 @@ def upgrade() -> None:
     )
     op.create_index(
         "ix_activity_events_tenant_id",
-        "activity_events",
+        table_name,
         ["tenant_id"],
         unique=False,
     )
     op.create_index(
         "ix_activity_events_event_type",
-        "activity_events",
+        table_name,
         ["event_type"],
         unique=False,
     )
     op.create_index(
         "ix_activity_events_created_at",
-        "activity_events",
+        table_name,
         ["created_at"],
         unique=False,
     )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_activity_events_created_at", table_name="activity_events")
-    op.drop_index("ix_activity_events_event_type", table_name="activity_events")
-    op.drop_index("ix_activity_events_tenant_id", table_name="activity_events")
-    op.drop_table("activity_events")
+    table_name = "activity_events"
+    if not _table_exists(table_name):
+        return
+
+    op.drop_index("ix_activity_events_created_at", table_name=table_name)
+    op.drop_index("ix_activity_events_event_type", table_name=table_name)
+    op.drop_index("ix_activity_events_tenant_id", table_name=table_name)
+    op.drop_table(table_name)

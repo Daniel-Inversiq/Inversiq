@@ -6,23 +6,34 @@ Create Date: 2026-04-14 10:30:00.000000
 
 """
 
-from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
-revision: str = "c1d4f2a7e9b1"
-down_revision: Union[str, Sequence[str], None] = "b8bf8f541c47"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = "c1d4f2a7e9b1"
+down_revision = "b8bf8f541c47"
+branch_labels = None
+depends_on = None
+
+
+def _table_exists(table_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if bind.dialect.name == "postgresql":
+        return table_name in inspector.get_table_names(schema="public")
+    return table_name in inspector.get_table_names()
 
 
 def upgrade() -> None:
     """Upgrade schema."""
+    table_name = "outbound_suggestions"
+    if _table_exists(table_name):
+        return
+
     op.create_table(
-        "outbound_suggestions",
+        table_name,
         sa.Column("id", sa.String(length=100), nullable=False),
         sa.Column("company_name", sa.String(length=255), nullable=False),
         sa.Column("recipient_email", sa.String(length=320), nullable=False),
@@ -38,43 +49,43 @@ def upgrade() -> None:
     )
     op.create_index(
         op.f("ix_outbound_suggestions_campaign_id"),
-        "outbound_suggestions",
+        table_name,
         ["campaign_id"],
         unique=False,
     )
     op.create_index(
         op.f("ix_outbound_suggestions_created_at"),
-        "outbound_suggestions",
+        table_name,
         ["created_at"],
         unique=False,
     )
     op.create_index(
         op.f("ix_outbound_suggestions_recipient_domain"),
-        "outbound_suggestions",
+        table_name,
         ["recipient_domain"],
         unique=False,
     )
     op.create_index(
         op.f("ix_outbound_suggestions_recipient_email"),
-        "outbound_suggestions",
+        table_name,
         ["recipient_email"],
         unique=False,
     )
     op.create_index(
         op.f("ix_outbound_suggestions_status"),
-        "outbound_suggestions",
+        table_name,
         ["status"],
         unique=False,
     )
     op.create_index(
         op.f("ix_outbound_suggestions_updated_at"),
-        "outbound_suggestions",
+        table_name,
         ["updated_at"],
         unique=False,
     )
     op.create_index(
         op.f("ix_outbound_suggestions_variant_id"),
-        "outbound_suggestions",
+        table_name,
         ["variant_id"],
         unique=False,
     )
@@ -82,26 +93,30 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
+    table_name = "outbound_suggestions"
+    if not _table_exists(table_name):
+        return
+
     op.drop_index(
-        op.f("ix_outbound_suggestions_variant_id"), table_name="outbound_suggestions"
+        op.f("ix_outbound_suggestions_variant_id"), table_name=table_name
     )
     op.drop_index(
-        op.f("ix_outbound_suggestions_updated_at"), table_name="outbound_suggestions"
+        op.f("ix_outbound_suggestions_updated_at"), table_name=table_name
     )
     op.drop_index(
-        op.f("ix_outbound_suggestions_status"), table_name="outbound_suggestions"
+        op.f("ix_outbound_suggestions_status"), table_name=table_name
     )
     op.drop_index(
-        op.f("ix_outbound_suggestions_recipient_email"), table_name="outbound_suggestions"
+        op.f("ix_outbound_suggestions_recipient_email"), table_name=table_name
     )
     op.drop_index(
         op.f("ix_outbound_suggestions_recipient_domain"),
-        table_name="outbound_suggestions",
+        table_name=table_name,
     )
     op.drop_index(
-        op.f("ix_outbound_suggestions_created_at"), table_name="outbound_suggestions"
+        op.f("ix_outbound_suggestions_created_at"), table_name=table_name
     )
     op.drop_index(
-        op.f("ix_outbound_suggestions_campaign_id"), table_name="outbound_suggestions"
+        op.f("ix_outbound_suggestions_campaign_id"), table_name=table_name
     )
-    op.drop_table("outbound_suggestions")
+    op.drop_table(table_name)

@@ -5,8 +5,6 @@ Revises: 2026_03_13_01
 Create Date: 2026-03-18
 """
 
-from typing import Sequence, Union
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
@@ -14,14 +12,25 @@ from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
-revision: str = "2026_03_18_01"
-down_revision: Union[str, Sequence[str], None] = "2026_03_13_01"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = "2026_03_18_01"
+down_revision = "2026_03_13_01"
+branch_labels = None
+depends_on = None
+
+
+def _table_exists(table_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    if bind.dialect.name == "postgresql":
+        return table_name in inspector.get_table_names(schema="public")
+    return table_name in inspector.get_table_names()
 
 
 def upgrade() -> None:
     """Create lead_training_records table."""
+    if _table_exists("lead_training_records"):
+        return
+
     bind = op.get_bind()
     dialect_name = bind.dialect.name if bind and bind.dialect else ""
     json_type = postgresql.JSONB if dialect_name == "postgresql" else sa.JSON
@@ -90,6 +99,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Drop lead_training_records table."""
+    if not _table_exists("lead_training_records"):
+        return
+
     op.drop_index(
         op.f("ix_lead_training_records_lead_id"),
         table_name="lead_training_records",
