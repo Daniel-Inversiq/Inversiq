@@ -8,7 +8,7 @@ Create Date: 2026-04-18 00:00:00.000000
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import inspect
+from sqlalchemy import text
 
 revision = "2026_04_18_03"
 down_revision = "2026_04_18_02"
@@ -16,17 +16,55 @@ branch_labels = None
 depends_on = None
 
 
-def _table_exists(table_name: str) -> bool:
-    bind = op.get_bind()
-    inspector = inspect(bind)
-    if bind.dialect.name == "postgresql":
-        return table_name in inspector.get_table_names(schema="public")
+def _table_exists(bind, table_name: str) -> bool:
+    dialect = bind.dialect.name
+
+    if dialect == "postgresql":
+        result = bind.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name = :table_name
+                )
+                """
+            ),
+            {"table_name": table_name},
+        )
+        return bool(result.scalar())
+
+    if dialect == "sqlite":
+        result = bind.execute(
+            text(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type='table' AND name=:table_name
+                """
+            ),
+            {"table_name": table_name},
+        )
+        return result.scalar() is not None
+
+    inspector = sa.inspect(bind)
     return table_name in inspector.get_table_names()
+
+
+def _index_names(bind, table_name: str) -> set[str]:
+    inspector = sa.inspect(bind)
+    dialect = bind.dialect.name
+    if dialect == "postgresql":
+        return {idx["name"] for idx in inspector.get_indexes(table_name, schema="public")}
+    return {idx["name"] for idx in inspector.get_indexes(table_name)}
 
 
 def upgrade() -> None:
     table_name = "proposed_change_execution_outcomes"
-    if not _table_exists(table_name):
+    bind = op.get_bind()
+
+    if not _table_exists(bind, table_name):
         op.create_table(
             table_name,
             sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -65,15 +103,8 @@ def upgrade() -> None:
             ),
         )
 
-    if _table_exists(table_name):
-        bind = op.get_bind()
-        inspector = inspect(bind)
-        if bind.dialect.name == "postgresql":
-            existing_index_names = {
-                index["name"] for index in inspector.get_indexes(table_name, schema="public")
-            }
-        else:
-            existing_index_names = {index["name"] for index in inspector.get_indexes(table_name)}
+    if _table_exists(bind, table_name):
+        existing_index_names = _index_names(bind, table_name)
 
         index_specs = [
             ("ix_pceo_tenant_id", ["tenant_id"]),
@@ -91,15 +122,10 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     table_name = "proposed_change_execution_outcomes"
-    if _table_exists(table_name):
-        bind = op.get_bind()
-        inspector = inspect(bind)
-        if bind.dialect.name == "postgresql":
-            existing_index_names = {
-                index["name"] for index in inspector.get_indexes(table_name, schema="public")
-            }
-        else:
-            existing_index_names = {index["name"] for index in inspector.get_indexes(table_name)}
+    bind = op.get_bind()
+
+    if _table_exists(bind, table_name):
+        existing_index_names = _index_names(bind, table_name)
 
         for index_name in [
             "ix_pceo_created_at",
