@@ -41,7 +41,32 @@ export function logout() {
   });
 }
 
-export function getGoogleAuthStartUrl(nextPath = APP_ROUTES.dashboard) {
-  const params = new URLSearchParams({ next: nextPath });
+function sanitizeNextPath(nextPath: string): string {
+  const fallback = APP_ROUTES.dashboard;
+  const trimmed = nextPath.trim();
+
+  if (!trimmed.startsWith("/")) {
+    return fallback;
+  }
+
+  // Prevent protocol-relative and absolute URLs.
+  if (trimmed.startsWith("//")) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(trimmed, "https://inversiq.local");
+    if (parsed.origin !== "https://inversiq.local") {
+      return fallback;
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
+export function getGoogleAuthStartUrl(nextPath: string = APP_ROUTES.dashboard) {
+  const safeNextPath = sanitizeNextPath(nextPath);
+  const params = new URLSearchParams({ next: safeNextPath });
   return `${getApiBaseUrl()}/auth/google/start?${params.toString()}`;
 }
