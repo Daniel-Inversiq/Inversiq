@@ -4,7 +4,7 @@ import { APP_ROUTES } from "@/lib/routes";
 import { SessionUser } from "@/types/session";
 
 export function fetchSessionUser() {
-  return apiRequest<SessionUser>("/auth/me");
+  return apiRequest<SessionUser>("/api/auth/me");
 }
 
 type LoginPayload = {
@@ -21,21 +21,21 @@ type RegisterPayload = {
 };
 
 export function login(payload: LoginPayload) {
-  return apiRequest<SessionUser & { next?: string }>("/auth/login", {
+  return apiRequest<SessionUser & { next?: string }>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function register(payload: RegisterPayload) {
-  return apiRequest<SessionUser & { next?: string }>("/auth/register", {
+  return apiRequest<SessionUser & { next?: string }>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function logout() {
-  return apiRequest<{ ok: boolean }>("/auth/logout", {
+  return apiRequest<{ ok: boolean }>("/api/auth/logout", {
     method: "POST",
     body: JSON.stringify({}),
   });

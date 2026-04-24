@@ -84,11 +84,11 @@ export function WorkspaceSwitcher({ forDarkSidebar = false }: WorkspaceSwitcherP
     : workspaceInitials(tenantName);
 
   const handleLogout = async () => {
-    await fetch("/auth/logout", {
+    await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
     });
-    window.location.href = "/auth/login";
+    window.location.href = "/login";
   };
 
   return (
