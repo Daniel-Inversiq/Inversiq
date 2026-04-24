@@ -1,0 +1,1318 @@
+{
+  "common": {
+    "subscription": "Subscription",
+    "manage_subscription": "Manage subscription",
+    "upgrade_to_pro": "Upgrade to Pro",
+    "auth": {
+      "not_logged_in": "Not logged in"
+    },
+    "actions": {
+      "retry": "Retry",
+      "open": "Open",
+      "open_lead": "Open lead",
+      "copy": "Copy",
+      "copy_link": "Copy link",
+      "copied": "Copied"
+    },
+    "states": {
+      "unknown": "Unknown"
+    },
+    "yes": "Yes",
+    "no": "No"
+  },
+  "billing": {
+    "title": "Subscription",
+    "heading": "Choose a subscription that fits your work",
+    "subheading": "Manage quotes and customer communication in one place. Scale up as your request volume grows.",
+    "errors": {
+      "inactive_subscription": "Your subscription is not active. Choose a plan to send quotes.",
+      "no_customer": "No Stripe customer is linked to this account yet."
+    },
+    "labels": {
+      "current_plan": "Current plan",
+      "status": "Status",
+      "trial": "Trial",
+      "pricing_heading": "Available plans",
+      "recommended": "Most popular",
+      "current_plan_badge": "Current plan",
+      "trial_badge": "Trial",
+      "active_badge": "Active",
+      "no_subscription_badge": "No subscription",
+      "prices_ex_vat_prefix": "Prices exclude VAT. You can manage invoices and payment methods via",
+      "prices_ex_vat_suffix": "."
+    },
+    "status": {
+      "trialing": "Trial active",
+      "active": "Subscription active",
+      "inactive": "No active subscription yet",
+      "past_due": "Payment required",
+      "canceled": "Canceled",
+      "unpaid": "Unpaid"
+    },
+    "trial": {
+      "remaining_days": "{days} day left",
+      "remaining_days_plural": "{days} days left",
+      "until_date": "until {date}"
+    },
+    "cta": {
+      "manage_subscription": "Manage subscription",
+      "upgrade_to_pro": "Upgrade to Pro",
+      "choose_starter": "Choose Starter",
+      "choose_pro": "Choose Pro",
+      "choose_business": "Choose Business",
+      "choose_core": "Start with Core",
+      "choose_growth": "Start with Growth",
+      "choose_scale": "Contact us",
+      "choose_plan": "Choose a plan"
+    },
+    "js": {
+      "upgrade_failed": "Choosing a subscription failed. Please try again later.",
+      "upgrade_failed_with_detail": "Choosing a subscription failed: {detail}",
+      "invalid_server_url": "No valid URL was returned by the server.",
+      "upgrade_unexpected": "Something went wrong while choosing your subscription.",
+      "portal_open_failed": "Could not open subscription management. Please try again later.",
+      "invalid_portal_url": "No valid portal URL was returned by the server.",
+      "portal_unexpected": "Something went wrong while opening subscription management."
+    },
+    "plan": {
+      "core": {
+        "name": "Core",
+        "subtitle": "For smaller teams that want to get started fast",
+        "limit_label": "30 requests / month",
+        "features": {
+          "f1": "30 requests per month",
+          "f2": "1 workflow",
+          "f3": "Standard rules and output"
+        }
+      },
+      "growth": {
+        "name": "Growth",
+        "subtitle": "For growing teams with more volume and automation",
+        "limit_label": "150 requests / month",
+        "features": {
+          "f1": "150 requests per month",
+          "f2": "1–2 workflows",
+          "f3": "Automation and advanced rules"
+        }
+      },
+      "scale": {
+        "name": "Scale",
+        "subtitle": "For larger teams with custom workflows and integrations",
+        "limit_label": "Unlimited volume",
+        "features": {
+          "f1": "Unlimited requests",
+          "f2": "Custom workflows",
+          "f3": "Integrations and API"
+        }
+      },
+      "starter": {
+        "name": "Starter",
+        "subtitle": "For independent painters who want to start professionally, fast.",
+        "limit_label": "Up to 25 quotes per month",
+        "features": {
+          "f1": "Core quote generation for daily requests",
+          "f2": "Clear quotes that help you follow up faster",
+          "f3": "Ideal for smaller volumes"
+        }
+      },
+      "pro": {
+        "name": "Pro",
+        "subtitle": "For growing teams that want higher conversion and less manual work.",
+        "limit_label": "Unlimited quotes",
+        "features": {
+          "f1": "Everything in Starter",
+          "f2": "Branding, professional layout, and smarter price suggestions",
+          "f3": "Notifications and calendar planning for tighter follow-up"
+        }
+      },
+      "business": {
+        "name": "Business",
+        "subtitle": "For teams that want to scale aggressively with minimal operational friction.",
+        "limit_label": "Unlimited quotes",
+        "features": {
+          "f1": "Everything in Pro, including white-label experience",
+          "f2": "Automation and priority processing",
+          "f3": "Priority support for your team"
+        }
+      }
+    },
+    "price_period_monthly": "per month",
+    "usage_unlimited": "Unlimited quotes",
+    "remaining_offers": "{remaining} of {limit} quotes remaining this month",
+    "limit_reached_warning": "You reached your limit - upgrade to Pro to continue",
+    "limit_near_warning": "You are close to your limit - upgrade to Pro for unlimited quotes",
+    "page": {
+      "kicker": "Billing",
+      "subtitle_inactive": "No active subscription · choose a plan below to get started",
+      "cta_current_plan": "Current plan",
+      "cta_start_with": "Start with {name}",
+      "choose_plan_cta": "Choose a plan",
+      "choose_plan_link": "Choose a plan",
+      "section_current": "Current subscription",
+      "price_label": "Price",
+      "per_month_suffix": "per month",
+      "billing_manage": "Billing",
+      "portal_link": "Manage →",
+      "get_started": "Get started",
+      "section_usage": "Usage this month",
+      "unlimited_badge": "Unlimited",
+      "usage_used": "{n} used",
+      "usage_max": "{n} max",
+      "usage_remaining": "{n} remaining",
+      "usage_hard_cap": "Monthly limit reached. Upgrade your plan or purchase extra requests.",
+      "usage_near_cap": "Almost there — {n} requests left.",
+      "ex_vat": "Excl. VAT",
+      "footer_vat_only": "Prices exclude VAT.",
+      "section_topup": "Extra requests",
+      "topup_badge": "Add-on",
+      "topup_description": "Purchase 10 extra requests for €30 — a flexible extension without upgrading immediately.",
+      "topup_cta": "Buy extra requests",
+      "topup_failed": "Could not purchase extra requests",
+      "topup_not_configured": "Extra requests are not enabled in this environment yet. Please contact support.",
+      "checkout_success_title": "Payment completed",
+      "checkout_success_body": "Your subscription was updated. This view refreshes automatically.",
+      "checkout_cancel_title": "Canceled",
+      "checkout_cancel_body": "You returned without finishing. You can choose a plan anytime.",
+      "topup_success_title": "Purchase started or completed",
+      "topup_success_body": "If you completed payment, your limit will update shortly.",
+      "aside_subscription_hint": "Manage invoices and payment methods via Stripe.",
+      "aside_inactive_hint": "After choosing a plan, you can manage your subscription here.",
+      "aside_usage_title": "Usage",
+      "trial_ends": "Ends on {date}",
+      "usage_pct_label": "{pct}% used this month",
+      "help_title": "Help",
+      "help_active": "Questions about your invoice or subscription? Changes apply immediately via subscription management.",
+      "help_inactive": "Choose a plan to get started. You will be redirected to a secure checkout page.",
+      "help_invoice_cta": "Open billing"
+    }
+  },
+  "errors": {
+    "offer_limit_title": "Monthly limit reached",
+    "offer_limit_message": "You reached the monthly limit of {limit} quotes. Upgrade to Pro to create unlimited quotes.",
+    "send_failed_title": "Could not send quote",
+    "send_failed_try_again": "Please try again"
+  },
+  "lead_detail": {
+    "meta_label": "Quote",
+    "title": "Quote #{id}",
+    "price_tbd": "Price: to be determined",
+    "price_review_pending": "Still being reviewed for a final price",
+    "customer_unknown": "Unknown customer",
+    "work_summary_missing": "Work summary not filled in",
+    "actions": {
+      "plan_visit": "Plan visit",
+      "view_quote": "View quote",
+      "download_pdf": "Download PDF",
+      "pdf_unavailable": "PDF export unavailable",
+      "view_customer_link": "View customer link",
+      "copy_link": "Copy link",
+      "copied": "Copied",
+      "edit_quote": "Edit quote"
+    },
+    "status": {
+      "accepted": "Accepted",
+      "done": "Done",
+      "completed": "Completed",
+      "sent": "Sent",
+      "viewed": "Viewed",
+      "rejected": "Rejected",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "new": "New",
+      "in_progress": "In progress",
+      "scheduled": "Scheduled"
+    },
+    "quote_status": {
+      "none": "Not prepared yet",
+      "generated": "Ready to send",
+      "review": "Needs review",
+      "sent": "Sent to customer",
+      "accepted": "Accepted",
+      "send_to_customer": "Send to customer",
+      "resend_to_customer": "Resend to customer"
+    },
+    "badges": {
+      "request": "Request",
+      "last_sent": "Last sent"
+    },
+    "alerts": {
+      "quote_sent_title": "Quote sent",
+      "quote_sent_message": "The customer will receive the email shortly",
+      "postmark_pending_title": "Email sending not active yet",
+      "postmark_pending_message": "Postmark is pending approval. During this period you can only send to recipients on the same domain as your From address ({domain}).",
+      "postmark_pending_tip": "Tip: for testing, use {email}",
+      "offer_limit_title": "Monthly limit reached",
+      "offer_limit_message": "You reached the monthly limit of {limit} quotes. Upgrade to Pro to create unlimited quotes.",
+      "send_failed_title": "Could not send quote",
+      "send_failed_message": "Please try again",
+      "offer_limit_upgrade": "Upgrade to Pro"
+    },
+    "sections": {
+      "project_customer_title": "Project & customer",
+      "project_customer_subtitle": "Core metrics and request details",
+      "total": "Total",
+      "area": "Area",
+      "work_type": "Work type",
+      "review": "Review",
+      "review_needed": "Needs review",
+      "review_done": "Reviewed",
+      "contact": "Contact",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "location_work": "Location & work",
+      "address": "Address",
+      "customer_request": "What does the customer want?",
+      "customer_request_empty": "No additional request details.",
+      "manual_overrides": "Manual quote adjustments",
+      "public_notes": "Public notes",
+      "no_extra_notes": "No extra notes",
+      "discount_percent": "Discount (%)",
+      "manual_total": "Manual total",
+      "effective_total": "Effective total (incl. VAT):"
+    },
+    "sales_cockpit": {
+      "what_now": "What now?",
+      "what_now_subtitle": "Status and actions for this quote.",
+      "current_status": "Current status",
+      "next_actions": "Next actions",
+      "agenda": "Agenda",
+      "to_google_calendar": "To Google Calendar",
+      "connect_google_calendar": "Connect Google Calendar",
+      "download_ics": "Download .ics",
+      "customer_link": "Customer link",
+      "customer_link_hint": "Share with the customer to view or confirm.",
+      "customer_photos": "Customer photos",
+      "no_customer_photos": "No photos were sent."
+    },
+    "timeline": {
+      "title": "History",
+      "subtitle": "Log",
+      "empty": "No entries in the log yet.",
+      "created": "Created",
+      "sent_to_customer": "Sent to customer",
+      "viewed_by_customer": "Viewed by customer",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "customer_note": "Customer note"
+    },
+    "followup": {
+      "title": "Plan follow-up",
+      "subtitle": "Only visible to your team.",
+      "overdue": "Overdue",
+      "today": "Today",
+      "upcoming": "Upcoming",
+      "next_step": "Next step",
+      "next_step_placeholder": "Call on Friday to ask for approval",
+      "scheduled_for": "Scheduled for",
+      "internal_note": "Internal note",
+      "internal_note_placeholder": "Short note about pricing, planning, or appointment",
+      "save": "Save",
+      "saved_now": "Saved immediately",
+      "toast_saved_title": "Saved",
+      "toast_saved_message": "Follow-up updated."
+    },
+    "job": {
+      "title": "Job #{id}",
+      "subtitle": "Planning & status",
+      "scheduled": "Scheduled",
+      "not_scheduled": "Not scheduled yet",
+      "started": "Started",
+      "finished": "Finished",
+      "update_status": "Update status",
+      "start_job": "Start job",
+      "finish_job": "Finish",
+      "update": "Update"
+    },
+    "schedule": {
+      "title": "Planning",
+      "currently_scheduled": "Currently scheduled",
+      "datetime": "Date & time",
+      "schedule": "Schedule",
+      "reschedule": "Update",
+      "quick_select": "Quick select",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "day_after_tomorrow": "Day after tomorrow",
+      "common_times": "Common times",
+      "instant_schedule": "Instant schedule",
+      "clear_schedule": "Clear schedule"
+    },
+    "visit_modal": {
+      "title": "Plan visit",
+      "close": "Close",
+      "title_label": "Title",
+      "start": "Start",
+      "end": "End",
+      "description": "Description (optional)",
+      "description_placeholder": "Address and notes",
+      "attendee_email": "Attendee email (optional)",
+      "attendee_placeholder": "name@example.com",
+      "cancel": "Cancel",
+      "add_to_calendar": "Add to calendar",
+      "success_title": "Visit scheduled",
+      "success_text": "Added to your agenda.",
+      "success_open_google": "Open in Google Calendar",
+      "success_text_fallback": "Added to your connected Google Calendar.",
+      "validation_title_required": "Enter a title.",
+      "validation_start_end_required": "Choose start and end time.",
+      "validation_invalid_datetime": "Invalid date/time.",
+      "validation_end_after_start": "End must be after start.",
+      "request_failed": "Creation failed.",
+      "network_error": "Network error. Try again."
+    },
+    "send": {
+      "toast_sent_title": "Quote sent",
+      "toast_sent_message": "The customer will receive the email shortly.",
+      "subscription_title": "Subscription",
+      "subscription_inactive": "Subscription inactive. Open billing to upgrade.",
+      "not_allowed_title": "Not allowed",
+      "not_allowed_message": "Sending is not available with this subscription.",
+      "no_quote_title": "No quote",
+      "no_quote_message": "Generate a quote first before sending.",
+      "no_email_title": "No email",
+      "no_email_message": "Enter a customer email address first."
+    }
+  },
+  "leads_list": {
+    "header": {
+      "kicker": "Quote workload overview",
+      "title": "Today to arrange",
+      "subtitle": "See at a glance which quotes need attention, which follow-up is planned, and which need immediate action."
+    },
+    "actions": {
+      "new_quote": "New quote"
+    },
+    "stats": {
+      "in_view": "In view",
+      "in_view_help": "Quotes in this overview",
+      "follow_up_now": "Follow up now",
+      "overdue_followup": "Overdue for follow-up",
+      "open": "Still open",
+      "sent_or_viewed": "Sent or viewed",
+      "won": "Won",
+      "accepted_quotes": "Accepted quotes"
+    },
+    "filters": {
+      "title": "Your quotes",
+      "subtitle": "Filter by status and urgency to move faster.",
+      "search_label": "Search",
+      "search_placeholder": "Search by customer, status, or next step",
+      "status_label": "Status",
+      "status_all": "All statuses",
+      "urgency_label": "Urgency",
+      "urgency_all": "All urgency",
+      "reset": "Reset filters"
+    },
+    "table": {
+      "customer": "Customer",
+      "quote_status": "Quote status",
+      "follow_up": "Follow-up",
+      "actions": "Actions",
+      "empty_customer": "—",
+      "quote_amount": "Quote amount",
+      "quote_amount_unknown": "Quote amount not available yet"
+    },
+    "status": {
+      "draft": "Draft",
+      "ready": "Ready",
+      "in_progress": "In progress",
+      "unknown": "Unknown"
+    },
+    "quote_state": {
+      "ready": "Quote ready",
+      "building": "Quote in progress"
+    },
+    "followup": {
+      "scheduled": "Scheduled",
+      "action": "Follow-up action",
+      "moment_not_planned": "Moment not planned yet",
+      "none_planned": "No follow-up planned"
+    },
+    "empty": {
+      "no_results_title": "No quotes found",
+      "no_results_subtitle": "Adjust your filters or create a new quote right away."
+    }
+  },
+  "dashboard": {
+    "header": {
+      "kicker": "Dashboard",
+      "title": "Performance center",
+      "subtitle": "Overview of performance, revenue, and recent activity in an operational cockpit."
+    },
+    "kpi": {
+      "section_title": "KPI overview",
+      "snapshot_label": "Latest backend snapshot",
+      "conversion": {
+        "label": "Conversion",
+        "description": "Signed quote ratio"
+      },
+      "open_quotes": {
+        "label": "Open quotes",
+        "description": "Action required in pipeline"
+      },
+      "accepted": {
+        "label": "Accepted",
+        "description": "Status: signed"
+      },
+      "total_status_rows": {
+        "label": "Total status rows",
+        "pending": "Pending: {pending}"
+      }
+    },
+    "analytics": {
+      "kicker": "Analytics",
+      "title": "Revenue and pipeline split",
+      "subtitle": "Use these signals to adjust capacity and follow-up.",
+      "revenue_trend": "Revenue trend",
+      "status_distribution": "Status distribution"
+    },
+    "activity": {
+      "kicker": "Recent activity",
+      "title": "Events and follow-up",
+      "subtitle": "Realtime changes in your tenant, sorted on timeline.",
+      "empty": "No activity available yet.",
+      "open_item": "Open item",
+      "actions": {
+        "open_lead": "Open lead",
+        "open_offer": "Open offer",
+        "view_send_quote": "View/send quote"
+      },
+      "timeline_title": "Full timeline",
+      "groups": {
+        "needs_attention": {
+          "title": "Needs attention",
+          "description": "Items that require immediate operator action."
+        },
+        "new_requests": {
+          "title": "New requests",
+          "description": "Fresh intake requests entering the workflow."
+        },
+        "recently_completed": {
+          "title": "Recently completed",
+          "description": "Quotes that just became ready."
+        }
+      },
+      "event_type": {
+        "created": "Created",
+        "updated": "Updated",
+        "status_changed": "Status changed",
+        "follow_up": "Follow-up",
+        "note_added": "Note added",
+        "quote_sent": "Quote sent",
+        "quote_viewed": "Quote viewed",
+        "quote_accepted": "Quote accepted",
+        "quote_rejected": "Quote rejected",
+        "upload_received": "Upload received",
+        "new_intake_request": "New intake request",
+        "upload_completed": "Upload completed",
+        "processing_started": "Processing started",
+        "quote_ready": "Quote ready",
+        "review_required": "Review required",
+        "processing_failed": "Processing failed"
+      }
+    },
+    "meta": {
+      "latest_revenue_point": "Latest revenue point",
+      "recent_events": "Recent events",
+      "recent_events_count": "{count} activity items loaded from backend."
+    },
+    "empty": {
+      "title": "No data available",
+      "description": "The API did not return dashboard data. This can happen in an empty tenant environment."
+    },
+    "errors": {
+      "load_failed_title": "Dashboard failed to load",
+      "inactive_session": "Your session is not active. Log in through the FastAPI auth flow so the access_token cookie is sent.",
+      "unauthenticated": "Not authenticated (401). Log in again so the session cookie is sent.",
+      "forbidden": "No access to tenant data (403). Verify your account is linked to the correct tenant.",
+      "network": "Backend unreachable. Check API base URL, CORS, and whether FastAPI is running.",
+      "unknown": "Unknown error while loading dashboard."
+    },
+    "charts": {
+      "status_distribution_aria": "Work progress",
+      "donut_center_label": "Total"
+    },
+    "operational": {
+      "header_kicker": "Overview",
+      "title": "Your work",
+      "subtitle": "See what needs your attention and track your work.",
+      "errors": {
+        "load_failed_title": "Overview could not be loaded",
+        "load_failed_description": "One or more data sources are not responding. Refresh to try again."
+      },
+      "shortcuts": {
+        "aria_label": "Quick actions",
+        "review_queue": "Open review queue",
+        "create_quote": "Create quote",
+        "open_jobs": "Open jobs"
+      },
+      "kpi": {
+        "go_to_aria": "Open {label}",
+        "new_requests": { "label": "Requests", "hint": "Everything customers have sent in so far" },
+        "open_quotes": { "label": "Quotes sent", "hint": "Waiting on the customer" },
+        "active_jobs": { "label": "Ongoing jobs", "hint": "Scheduled or being done now" },
+        "review_queue": { "label": "Needs attention", "hint": "Needs review" },
+        "context_period_new": "{count} new · last 7 days",
+        "context_delta_up": "+{n} vs prior week",
+        "context_delta_down": "−{n} vs prior week",
+        "context_stable": "Same pace as last week",
+        "context_quotes_touched": "{count} with activity · 7 days",
+        "context_jobs_updated": "{count} updated · 7 days",
+        "context_review_urgency": "{count} need quick attention"
+      },
+      "intake": {
+        "label": "Request form link",
+        "whatsapp_aria": "Share your request form link via WhatsApp",
+        "whatsapp_prefill": "Here is our request form: {url}"
+      },
+      "activity": {
+        "kicker": "Activity",
+        "title": "New requests (last 7 days)",
+        "subtitle": "Requests received ({count} in this period).",
+        "scheduled_label": "Scheduled",
+        "body": "The chart below shows how many requests came in. This block highlights what matters today."
+      },
+      "distribution": {
+        "kicker": "Distribution",
+        "title": "Status",
+        "subtitle": "Quotes and jobs",
+        "no_data": "No status data yet."
+      },
+      "analytics_section": {
+        "kicker": "Overview",
+        "title": "Overview of your work",
+        "subtitle": "How many requests came in, and where things stand.",
+        "line_title": "New requests",
+        "line_description": "Requests per day (last {days} days).",
+        "donut_title": "Work progress",
+        "donut_description": "Quotes and jobs by stage."
+      },
+      "outcomes": {
+        "accepted_label": "Accepted",
+        "rejected_label": "Rejected",
+        "counts_line": "{accepted} accepted • {rejected} rejected",
+        "total_line": "{total} requests in last {days} days",
+        "empty_title": "No requests in this period yet",
+        "empty_description": "Once requests come in, accepted vs rejected will appear here."
+      },
+      "chart": {
+        "runs": "{count} requests",
+        "y_axis_label": "Requests",
+        "empty_hint": "No requests in this period — they will show up here when customers get in touch.",
+        "aria_intake": "Requests received in the last {days} days",
+        "range_group_aria": "Time range",
+        "range_7": "7d",
+        "range_14": "14d",
+        "range_30": "30d",
+        "range_90": "90d",
+        "tooltip_day_requests_one": "1 request on this day",
+        "tooltip_day_requests": "{count} requests on this day",
+        "insight_range": "Last {days} days",
+        "insight_none": "No requests in this period.",
+        "insight_peak": "Busiest day: {weekday} ({count} requests)",
+        "insight_quiet_days": "{count} days with no requests",
+        "insight_quiet_days_one": "1 day with no requests",
+        "insight_avg": "Average: {avg} per day",
+        "insight_vs_prior_up": "{pct}% more than prior {days} days",
+        "insight_vs_prior_down": "{pct}% fewer than prior {days} days",
+        "insight_vs_prior_flat": "Same volume as prior {days} days",
+        "insight_vs_prior_baseline": "No requests in prior {days} days to compare"
+      },
+      "attention": {
+        "title": "Needs attention",
+        "description": "Items that need action before you can continue.",
+        "summary_line": "Showing {shown} of {total}{urgent_suffix}",
+        "summary_urgent_suffix": " · {urgent} need quick attention",
+        "footer_link": "Review now",
+        "badge_needs_review": "Needs review",
+        "badge_missing_details": "Missing details",
+        "badge_check_photos": "Check photos",
+        "empty_title": "Everything looks good",
+        "empty_description": "There is nothing waiting for review right now.",
+        "urgency_high": "Urgent",
+        "urgency_mid": "Priority"
+      },
+      "fallback_customer_label": "Customer request",
+      "new_requests_panel": {
+        "title": "Requests",
+        "description": "Latest customer requests, newest first.",
+        "footer_link": "View all requests",
+        "empty_title": "No requests yet",
+        "empty_description": "Share your request form link to start receiving work here."
+      },
+      "recent_done": {
+        "title": "Recently completed",
+        "description": "Finished jobs, most recent first.",
+        "footer_pipeline": "Combined value of open quotes:",
+        "empty_title": "No completed jobs yet",
+        "empty_description": "Completed jobs appear here with the date."
+      },
+      "job_done_secondary": "Completed {date}"
+    }
+  },
+  "review": {
+    "photo": {
+      "upload": "Upload",
+      "source": { "lead": "lead" },
+      "title": "Photo review",
+      "description": "Check whether the photos give enough detail to prepare a quote.",
+      "count": "{count} photo",
+      "count_plural": "{count} photos",
+      "empty_title": "No photos yet",
+      "empty_description": "When uploads finish processing, photos will appear here. You can still review details and continue if the job does not depend on images.",
+      "source_label": "Source: {source}",
+      "tip": "Tip: open a photo to see it full size. Confirm scope, substrate, and any damage before you price."
+    },
+    "intake_groups": {
+      "project": { "title": "Location & site", "description": "Where the work takes place." },
+      "request": { "title": "Job details", "description": "Scope and requested work." },
+      "contact": { "title": "Contact & planning", "description": "How to reach the customer." }
+    },
+    "workflow": { "received": "Request received", "review": "Review", "quote": "Quote", "job": "Job" },
+    "errors": {
+      "request_failed_with_status": "Something went wrong ({status}). Please try again.",
+      "load_failed_title": "Couldn't load this review",
+      "load_failed_description": "We couldn't load this request. Check your connection and try again.",
+      "not_found_title": "Request not found",
+      "not_found_description": "We couldn't find this request. It may have been removed, or the link may be outdated."
+    },
+    "auth": {
+      "sign_in_required_title": "Sign in required",
+      "sign_in_required_description": "Log in to review requests."
+    },
+    "feedback": {
+      "saved": "Your changes were saved.",
+      "save_failed": "Couldn't save changes.",
+      "continue_failed": "Couldn't continue to the quote."
+    },
+    "header": {
+      "kicker": "Review",
+      "title": "Review request",
+      "subtitle": "Check the details below before continuing to the quote.",
+      "requested_at": "Requested {date}"
+    },
+    "reason": {
+      "title": "Why this needs review",
+      "what_to_do": "What to do: confirm what to check, update anything that affects price, then continue to the quote.",
+      "note_label": "Note:",
+      "status_help": {
+        "manual_check": "This request was held for a manual check before a quote can be sent.",
+        "processing_failed": "Automatic processing did not finish. Review the details and photos, then continue when ready.",
+        "default": "Review the request and decide on the next step."
+      },
+      "codes": {
+        "needs_review": "Automatic processing needs a quick check before the quote can be sent safely.",
+        "review_required": "Automatic processing needs a quick check before the quote can be sent safely.",
+        "missing_wall_rate": "A wall rate is not set in your configuration. Add a rate or adjust the quote manually.",
+        "missing_photos": "Some details are missing - photos are needed for a reliable quote.",
+        "missing_photo": "Some details are missing - photos are needed for a reliable quote.",
+        "low_confidence": "The estimate was not confident enough to finish automatically.",
+        "vision_low_confidence": "The photos need a quick check before the numbers can be trusted.",
+        "insufficient_context": "Some details are missing - there was not enough information to finish automatically.",
+        "quote_generation_failed": "The quote could not be generated automatically; a quick review should fix it.",
+        "estimate_generation_failed": "The quote could not be generated automatically; a quick review should fix it.",
+        "upload_failed": "An upload did not finish, so the file set may be incomplete.",
+        "repair_work_required": "The photos suggest repair work may be involved.",
+        "substrate_visible": "The substrate is visible in the photos - confirm prep scope.",
+        "surface_damage_detected": "Surface damage appears in the photos - confirm scope.",
+        "surface_preparation_required": "Surface preparation may be needed - confirm before quoting."
+      },
+      "fallbacks": {
+        "missing_photo": "The photos need a quick check (or more photos are needed).",
+        "missing_rate": "A price setting is missing in configuration, so automatic calculation could not finish.",
+        "failed": "A step in automatic processing did not finish - review and adjust if needed.",
+        "confidence": "Confidence was too low to publish automatically."
+      },
+      "chips": {
+        "manual_check": "Manual check",
+        "missing_rate": "Missing rate",
+        "photos": "Photos",
+        "low_confidence": "Low confidence",
+        "photo_check": "Photo check",
+        "missing_details": "Missing details",
+        "generation_issue": "Generation issue",
+        "upload_issue": "Upload issue",
+        "repair_work": "Repair work",
+        "substrate": "Substrate",
+        "damage": "Damage",
+        "preparation": "Preparation"
+      }
+    },
+    "cta": {
+      "ready_title": "Ready to continue?",
+      "ready_description": "Review the details, then continue directly to the quote.",
+      "continue": "Continue to quote",
+      "continuing": "Continuing...",
+      "requirements": "Add area, job type, and project notes to continue.",
+      "next_hint": "You will go directly to the quote to finish or adjust it.",
+      "checklist": {
+        "details": "I've reviewed the request context and notes",
+        "photos": "I've checked the photos for scope and surface",
+        "fields": "I've updated the key fields that affect pricing"
+      }
+    },
+    "actions": {
+      "save": "Save changes",
+      "saving": "Saving...",
+      "back_to_queue": "Back to review queue",
+      "show": "Show",
+      "hide": "Hide"
+    },
+    "edit": {
+      "title": "Update details",
+      "description": "Adjust only what changes the quote. Fields below map directly to your estimate."
+    },
+    "form": {
+      "job_details": { "kicker": "Job details", "description": "Area, job type, and notes that drive scope and pricing." },
+      "location": { "kicker": "Location / planning", "description": "Where the work happens on the quote document." },
+      "more_fields": { "title": "More fields", "description": "Contact, quote wording, pricing overrides, intake snapshot" },
+      "contact": { "kicker": "Contact details" },
+      "quote_wording": { "kicker": "Quote wording" },
+      "pricing": { "kicker": "Pricing overrides" },
+      "fields": {
+        "area": { "label": "Area (m2)", "placeholder": "e.g. 120", "help": "Leave empty only if the area is still unknown." },
+        "job_type": {
+          "label": "Job type",
+          "help": "Pick a type when it's clear from the request or photos.",
+          "options": { "unspecified": "Not specified", "interior": "Interior", "exterior": "Exterior", "both": "Interior + exterior" }
+        },
+        "project_notes": {
+          "label": "Project notes",
+          "placeholder": "Scope, substrate, prep, access - anything that affects the quote.",
+          "help": "Use clear language your customer would recognize on the quote."
+        },
+        "project_location": {
+          "label": "Location on quote",
+          "placeholder": "Address or area",
+          "help": "Shown to the customer if your quote template includes location."
+        },
+        "customer_name": { "label": "Name", "placeholder": "Customer name" },
+        "customer_email": { "label": "Email", "placeholder": "email@example.com" },
+        "customer_phone": { "label": "Phone", "placeholder": "Phone number" },
+        "included_work": { "label": "Work included", "placeholder": "What is explicitly in scope." },
+        "public_notes": { "label": "Customer-facing description", "placeholder": "Text that can appear on the quote." },
+        "excluded_notes": { "label": "Exclusions & notes", "placeholder": "Out of scope or needs alignment." },
+        "discount_percent": { "label": "Discount (%)" },
+        "vat_rate_percent": { "label": "VAT (%)" },
+        "manual_total": { "label": "Manual total", "placeholder": "Leave empty for automatic total" },
+        "subtotal_excl": { "label": "Subtotal excl. VAT", "placeholder": "Leave empty for automatic calculation" }
+      }
+    },
+    "summary": {
+      "title": "Request summary",
+      "description": "Context while you edit - secondary to your review task.",
+      "customer": "Customer",
+      "project_location": "Project location",
+      "summary": "Summary",
+      "created": "Created",
+      "updated": "Updated",
+      "internal_note": "Internal note",
+      "no_email": "No email on file",
+      "no_phone": "No phone on file",
+      "unknown_customer": "Unknown customer",
+      "no_summary": "No summary available yet.",
+      "location_missing": "Location not provided",
+      "partial_load_warning": "Something didn't load completely. Refresh the page if numbers look off."
+    }
+  },
+  "review_queue": {
+    "header": {
+      "kicker": "Review",
+      "title": "Review & follow-up",
+      "subtitle": "Items that need your attention before you can continue."
+    },
+    "kpi": {
+      "review_required": "Check required",
+      "processing_failed": "Not reviewed yet",
+      "other_flags": "Other follow-ups"
+    },
+    "empty": {
+      "title": "Nothing needs attention",
+      "description": "You’re all caught up. New items that need review will appear here automatically.",
+      "hint": "When something can’t be processed automatically, it shows up here so you can review and finish it."
+    },
+    "table": {
+      "nr": "#",
+      "customer": "Customer",
+      "status": "Status",
+      "created": "Created",
+      "updated": "Updated",
+      "action": "Action",
+      "customer_placeholder": "Linked request"
+    },
+    "actions": {
+      "view_flow": "View process",
+      "view_quote": "View quote"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to view this overview.",
+      "load_failed_title": "Couldn’t load the list",
+      "load_failed_description": "We couldn’t load the data right now. Please try again."
+    }
+  },
+  "agenda_page": {
+    "header": {
+      "kicker": "Planning",
+      "title": "Agenda",
+      "subtitle": "See planned work by week. Review and assign jobs day by day."
+    },
+    "kpi": {
+      "upcoming": "Upcoming",
+      "past": "Past items",
+      "total": "Total scheduled"
+    },
+    "empty": {
+      "title": "No scheduled jobs yet",
+      "description": "There are no jobs with a start time yet.",
+      "hint": "When you schedule a job, it will appear in the weekly calendar."
+    },
+    "planner": {
+      "today": "Today",
+      "prev_week_aria": "Previous week",
+      "next_week_aria": "Next week"
+    },
+    "day": {
+      "empty": "Nothing scheduled"
+    },
+    "card": {
+      "ref": "#{id}"
+    },
+    "outside_week": {
+      "title": "Outside this week",
+      "subtitle": "These jobs are not in the selected week — use the arrows to jump to the right week."
+    },
+    "unscheduled": {
+      "title": "No start time yet",
+      "subtitle": "Accepted work without a planned date — schedule it to see it in the calendar."
+    }
+  },
+  "shell": {
+    "search_placeholder": "Search",
+    "apps_aria": "Apps and shortcuts",
+    "notifications_aria": "Notifications",
+    "notifications_title": "Notifications",
+    "notifications_empty": "No notifications",
+    "notifications_sample": "Sample notification — connect your feed here.",
+    "settings_aria": "Settings",
+    "guide": "Guide"
+  },
+  "context_help": {
+    "icon_aria": "Short explanation",
+    "dashboard_kpi_new_requests": "New requests from customers through your form",
+    "dashboard_kpi_review_queue": "Requests here need your review first",
+    "review_photos": "Check that the photos are clear enough for a quote",
+    "review_cta_continue": "After reviewing, you continue to the quote",
+    "quotes_overview": "All sent quotes and their status"
+  },
+  "guide_page": {
+    "title": "Guide",
+    "subtitle": "How to use Inversiq in your day-to-day work",
+    "s1": {
+      "title": "1. Receiving requests",
+      "i1": "Customers complete the request form",
+      "i2": "They appear automatically in your overview"
+    },
+    "s2": {
+      "title": "2. Review",
+      "i1": "Check photos and details",
+      "i2": "Adjust information if needed",
+      "i3": "Click “Continue to quote”"
+    },
+    "s3": {
+      "title": "3. Creating a quote",
+      "i1": "Create and send the quote to the customer",
+      "i2": "Wait for approval"
+    },
+    "s4": {
+      "title": "4. Doing the job",
+      "i1": "Once the customer approves, it becomes a job",
+      "i2": "Schedule and complete the work"
+    }
+  },
+  "offers": {
+    "errors": {
+      "not_logged_in_description": "Log in to view your quotes.",
+      "load_failed_title": "Failed to load offers",
+      "unauthenticated": "Your session has expired. Please log in again.",
+      "forbidden": "You don’t have access to this overview.",
+      "network": "We can’t load the data right now. Check your connection and try again.",
+      "unknown": "Something went wrong while loading your quotes. Please try again.",
+      "server_error": "Something went wrong while loading. Please try again."
+    },
+    "empty": {
+      "title": "No offers found",
+      "description": "There are no quotes here yet. When new requests or quotes come in, they’ll appear here."
+    },
+    "partial": {
+      "title": "Offers partially loaded",
+      "description": "{count} amounts couldn’t be loaded. The list stays visible; where needed we show \"Not calculated yet\"."
+    },
+    "list": {
+      "header": {
+        "kicker": "Offers",
+        "title": "Quote overview",
+        "subtitle": "Up-to-date view of recent quotes and follow-up.",
+        "detail_line": "Quotes here still need attention or follow-up."
+      },
+      "table": {
+        "customer_project": "Customer / Project",
+        "status": "Status",
+        "value": "Value",
+        "created": "Created",
+        "updated": "Updated",
+        "action": "Action"
+      },
+      "amount": {
+        "not_calculated": "Not calculated yet"
+      },
+      "unknown_customer": "Unknown customer",
+      "project_details_unavailable": "Project details not available yet",
+      "actions": {
+        "open_offer": "Open offer detail",
+        "open_public_quote": "Open public quote"
+      },
+      "empty_help": {
+        "what_you_see_title": "What you see here",
+        "what_you_see_body": "Requests and quotes that aren’t accepted yet, with status and next steps.",
+        "data_check_title": "Why is this empty?",
+        "data_check_no_runs": "There are no quotes or requests to show in this overview yet.",
+        "data_check_outside_statuses": "There are other active requests, but they’re outside this overview."
+      },
+      "stats": {
+        "open_quotes": "Open quotes",
+        "in_preparation": "In preparation",
+        "sent_or_followed": "Sent / followed up"
+      },
+      "empty_actions": {
+        "open_dashboard": "Open Overview",
+        "open_review": "Open Review"
+      }
+    },
+    "detail": {
+      "not_available": "Not available",
+      "unknown_customer": "Unknown customer",
+      "no_email": "No email",
+      "header": {
+        "kicker": "Offer detail",
+        "meta": "Offer • {lead_id}"
+      },
+      "cta": {
+        "view_or_send": "View/send offer",
+        "finish_review": "Complete review",
+        "view_ready": "View offer",
+        "view_sent": "View offer"
+      },
+      "status_action": {
+        "title": "Status and next action",
+        "helper": "Review the offer and send it to the customer."
+      },
+      "actions": {
+        "back_to_leads": "View original request",
+        "back_to_offers": "Back to offers"
+      },
+      "next_step": {
+        "title": "Next step"
+      },
+      "next_action": {
+        "title": "Next action",
+        "offer_ready": "The offer is ready. Open the customer-facing offer page to verify and send it.",
+        "review_lead": "Review quote details and update price or scope before sending.",
+        "open_offer": "Open public offer",
+        "open_lead": "View original request"
+      },
+      "ready_panel": {
+        "title": "Quote-ready handoff",
+        "description": "When this quote is ready, first open the customer quote page and use it as your send/verify touchpoint.",
+        "primary_action": "View/send public quote",
+        "secondary_action": "Open offer detail"
+      },
+      "handoff": {
+        "title": "After quote ready",
+        "steps": {
+          "send_quote": "Send the offer to the customer",
+          "track_acceptance": "Wait for approval",
+          "convert_to_job": "Start the job"
+        }
+      },
+      "errors": {
+        "session_expired": "Your session expired. Log in again to view offer details.",
+        "load_failed_title": "Failed to load offer detail",
+        "load_failed_description": "Check whether the backend is running and your tenant has access to this quote.",
+        "lead_not_found_title": "Quote not found",
+        "lead_not_found_description": "This quote does not belong to your tenant or no longer exists."
+      },
+      "cards": {
+        "status": {
+          "label": "Status",
+          "last_run": "Latest run: {datetime}"
+        },
+        "quote_value": {
+          "label": "Offer value",
+          "pending": "Not calculated yet"
+        },
+        "customer": {
+          "label": "Customer",
+          "open_public": "Open public offer view"
+        }
+      },
+      "project_context": {
+        "title": "Project context",
+        "description": "Description",
+        "address": "Address",
+        "empty_title": "No project details added yet",
+        "empty_subtitle": "This will be filled during intake"
+      }
+    }
+  },
+  "customers": {
+    "header": {
+      "kicker": "Customers / leads",
+      "title": "Tenant customer overview",
+      "subtitle": "Use leads to validate intake details first, then continue to offer detail."
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch customer and lead data.",
+      "load_failed_title": "Failed to load customers",
+      "load_failed_description": "Backend response for /app/leads could not be loaded."
+    },
+    "empty": {
+      "title": "No leads found",
+      "description": "There are no customers/leads in this tenant yet."
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "status": "Status",
+      "action": "Action"
+    },
+    "actions": {
+      "open_lead": "Open lead",
+      "open_offer": "Open offer"
+    }
+  },
+  "workflows": {
+    "header": {
+      "kicker": "Workflows",
+      "title": "Pipeline runs"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch workflow runs.",
+      "load_failed_title": "Failed to load workflow overview",
+      "load_failed_description": "The /api/pipeline-runs endpoint could not be loaded."
+    },
+    "empty": {
+      "title": "No runs found",
+      "description": "No workflow runs are present yet for tenant {tenant_id}."
+    },
+    "table": {
+      "run": "Run",
+      "lead": "Lead",
+      "status": "Status",
+      "created": "Created",
+      "action": "Action"
+    },
+    "actions": {
+      "open_run": "Open run",
+      "open_lead": "Open lead"
+    }
+  },
+  "uploads": {
+    "header": {
+      "kicker": "Uploads",
+      "title": "Tenant upload overview"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to fetch uploads.",
+      "load_failed_title": "Failed to load uploads",
+      "load_failed_description": "The /app/uploads endpoint could not be loaded."
+    },
+    "empty": {
+      "title": "No uploads found",
+      "description": "There are no verified uploads in this tenant yet."
+    },
+    "table": {
+      "file": "File",
+      "status": "Status",
+      "type": "Type",
+      "size": "Size",
+      "created": "Created",
+      "lead": "Lead",
+      "action": "Action"
+    }
+  },
+  "jobs": {
+    "header": {
+      "kicker": "Work",
+      "title": "Jobs",
+      "subtitle": "Planned and in-progress work at a glance."
+    },
+    "kpi": {
+      "scheduled": "Scheduled",
+      "scheduled_hint": "With a start time",
+      "in_progress": "In progress",
+      "in_progress_hint": "Underway now",
+      "done": "Done",
+      "done_hint": "Completed"
+    },
+    "errors": {
+      "not_logged_in_description": "Log in to view your jobs.",
+      "load_failed_title": "Couldn’t load jobs",
+      "load_failed_description": "We couldn’t load your jobs right now. Please try again."
+    },
+    "empty": {
+      "title": "No jobs yet",
+      "description": "There’s no scheduled or active work to show yet.",
+      "hint": "Work appears here once a quote is accepted and scheduled. New requests live under Quotes.",
+      "link_quotes": "Go to quotes",
+      "link_agenda": "Open agenda"
+    },
+    "table": {
+      "klus": "Job",
+      "status": "Status",
+      "customer": "Customer",
+      "scheduled": "Planned start",
+      "started": "Started on",
+      "finished": "Finished on",
+      "action": "Action",
+      "unknown_customer": "Unknown customer",
+      "klus_fallback": "No description"
+    },
+    "actions": {
+      "view_details": "View details"
+    }
+  },
+  "settings": {
+    "header": {
+      "title": "Business settings"
+    },
+    "loading": "Loading settings...",
+    "errors": {
+      "not_logged_in_description": "Log in to view and update settings.",
+      "load_failed_title": "Failed to load settings",
+      "load_failed_description": "The /app/settings/company endpoint could not be loaded."
+    },
+    "validation": {
+      "company_name_required": "Enter a company name.",
+      "support_email_invalid": "Enter a valid email address.",
+      "price_per_m2_invalid": "Enter a valid price per m²."
+    },
+    "feedback": {
+      "saved": "Settings saved.",
+      "save_failed": "Saving failed. Check your session and try again.",
+      "logo_select_first": "Select a logo file first.",
+      "logo_saved": "Logo saved.",
+      "logo_upload_failed": "Logo upload failed. Use PNG/JPEG and try again."
+    },
+    "form": {
+      "company_name": "Company name",
+      "support_email": "Support email",
+      "support_email_hint": "Support email currently follows the account email address.",
+      "company_logo": "Company logo",
+      "open_current_logo": "Open current logo",
+      "no_logo": "No logo configured yet.",
+      "upload_logo": "Upload logo",
+      "uploading_logo": "Uploading logo...",
+      "save": "Save settings",
+      "saving": "Saving..."
+    },
+    "pricing": {
+      "title": "Price settings",
+      "price_per_m2_label": "Price per m²",
+      "price_per_m2_placeholder": "e.g. 35.50",
+      "price_per_m2_help": "Default price for quotes based on surface area"
+    }
+  },
+  "nav": {
+    "workspace": "Workspace",
+    "tenant_workspace": "Tenant workspace",
+    "groups": {
+      "core": "Core",
+      "system": "Business"
+    },
+    "items": {
+      "dashboard": "Overview",
+      "quotes": "Quotes",
+      "jobs": "Jobs",
+      "review": "Review",
+      "agenda": "Agenda",
+      "settings": "Settings"
+    },
+    "footer": {
+      "subscription": "Subscription",
+      "support": "Support",
+      "logout": "Logout"
+    },
+    "product_updates": {
+      "title": "Product updates",
+      "body": "Inversiq is updated every week with improvements and fixes.",
+      "latest": "Latest update: Sunday",
+      "see_whats_new": "See what's new"
+    }
+  },
+  "topbar": {
+    "session_checking": "Checking session...",
+    "logged_in_as": "Logged in as {email} ({tenant_id})"
+  },
+  "workflow_detail": {
+    "header": {
+      "kicker": "Workflow run",
+      "run": "Run #{run_id}",
+      "meta": "Tenant {tenant_id} - Lead {lead_id}"
+    },
+    "errors": {
+      "invalid_run_id_title": "Invalid run id",
+      "invalid_run_id_description": "The workflow run id in the URL is invalid.",
+      "not_logged_in_description": "Log in to fetch workflow details.",
+      "load_failed_title": "Failed to load run detail",
+      "load_failed_description": "The /api/pipeline-runs/{run_id}/debug endpoint could not be loaded."
+    },
+    "cards": {
+      "status": "Status",
+      "recoverability": "Recoverability",
+      "events": "Events",
+      "review": "Review"
+    },
+    "steps": {
+      "title": "Step summary",
+      "total": "Total steps",
+      "completed": "Completed",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "failure_step": "Failure step",
+      "error_category": "Error category"
+    },
+    "actions": {
+      "open_linked_offer": "Open linked lead quote"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "review_required": "Check required",
+    "needs_review": "Needs review",
+    "processing_failed": "Not reviewed yet",
+    "uncertain": "Missing details",
+    "flagged_damage": "Check photos",
+    "failed": "Not reviewed yet",
+    "uploaded": "Uploaded",
+    "scheduled": "Scheduled",
+    "running": "Running",
+    "processing": "Processing",
+    "succeeded": "Succeeded",
+    "accepted": "Accepted",
+    "signed": "Signed",
+    "done": "Done",
+    "rejected": "Rejected",
+    "error": "Error",
+    "new": "New",
+    "viewed": "Viewed",
+    "sent": "Sent",
+    "draft": "Draft",
+    "ready": "Ready",
+    "in_progress": "In progress",
+    "unknown": "Unknown",
+    "active": "Active",
+    "skipped": "Skipped"
+  }
+}
