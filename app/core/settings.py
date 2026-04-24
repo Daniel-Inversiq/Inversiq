@@ -108,6 +108,7 @@ class Settings(BaseSettings):
 
     # --- CORS ---
     ALLOWED_ORIGINS: str = (
+        "https://app.inversiq.com,"
         "http://localhost:3000,"
         "http://127.0.0.1:3000,"
         "http://localhost:8000,"
