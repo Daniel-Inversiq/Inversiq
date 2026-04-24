@@ -2,7 +2,14 @@
 
 import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { DateFilterValue, normalizeDateFilter } from "@/lib/date-filter";
+import { DATE_PRESETS, DatePreset, DateFilterValue, normalizeDateFilter } from "@/lib/date-filter";
+
+function isDateFilterPreset(value: string | null): value is DatePreset {
+  if (!value) {
+    return false;
+  }
+  return DATE_PRESETS.includes(value as DatePreset);
+}
 
 export function useDateFilterQuery() {
   const searchParams = useSearchParams();
@@ -10,12 +17,16 @@ export function useDateFilterQuery() {
   const pathname = usePathname();
 
   const value = useMemo(
-    () =>
-      normalizeDateFilter({
-        date: searchParams.get("date") ?? undefined,
+    () => {
+      const rawDate = searchParams.get("date");
+      const date = isDateFilterPreset(rawDate) ? rawDate : undefined;
+
+      return normalizeDateFilter({
+        date,
         start: searchParams.get("start") ?? undefined,
         end: searchParams.get("end") ?? undefined,
-      }),
+      });
+    },
     [searchParams],
   );
 

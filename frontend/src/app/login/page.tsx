@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,41 @@ import { ApiError } from "@/lib/api/client";
 import { APP_ROUTES } from "@/lib/routes";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginLoading() {
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-50 px-4 py-10 dark:bg-zinc-950">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(1000px_500px_at_50%_-10%,rgba(2,6,23,0.06),transparent)] dark:bg-[radial-gradient(1000px_500px_at_50%_-10%,rgba(255,255,255,0.05),transparent)]"
+      />
+      <div className="relative w-full max-w-[460px]">
+        <p className="mb-4 text-center text-sm font-medium tracking-tight text-zinc-600 dark:text-zinc-400">
+          Inversiq
+        </p>
+        <Card className="w-full rounded-2xl border-zinc-200/80 shadow-sm dark:border-zinc-800">
+          <CardHeader className="space-y-2 px-7 pb-2 pt-7">
+            <CardTitle className="text-2xl tracking-tight">Inloggen</CardTitle>
+            <CardDescription className="text-sm text-zinc-600 dark:text-zinc-400">
+              Gebruik je account om verder te gaan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-7 pb-7 pt-2">
+            <div className="h-24 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading } = useSessionContext();

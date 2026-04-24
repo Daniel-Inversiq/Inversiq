@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { APP_ROUTES } from "@/lib/routes";
 
-const AUTH_PAGES = new Set([APP_ROUTES.login, APP_ROUTES.register]);
+const AUTH_PAGES: ReadonlySet<string> = new Set([APP_ROUTES.login, APP_ROUTES.register]);
 const PROTECTED_PREFIXES = [
   "/app",
   "/dashboard",
