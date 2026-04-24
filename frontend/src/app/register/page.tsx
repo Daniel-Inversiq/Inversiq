@@ -48,7 +48,7 @@ export default function RegisterPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          setError("Er bestaat al een account met dit e-mailadres.");
+          setError(err.message || "Er bestaat al een account met dit e-mailadres.");
         } else if (err.status === 0) {
           setError("De server is tijdelijk onbereikbaar. Probeer opnieuw.");
         } else {

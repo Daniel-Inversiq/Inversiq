@@ -89,12 +89,10 @@ function LoginContent() {
       router.replace(nextPath);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 401) {
-          setError("Ongeldige e-mail of wachtwoord.");
-        } else if (err.status === 0) {
+        if (err.status === 0) {
           setError("Inloggen lukt nu niet. Probeer het zo opnieuw.");
         } else {
-          setError("Inloggen lukt nu niet. Probeer het zo opnieuw.");
+          setError(err.message || "Inloggen lukt nu niet. Probeer het zo opnieuw.");
         }
       } else {
         setError("Inloggen lukt nu niet. Probeer het zo opnieuw.");

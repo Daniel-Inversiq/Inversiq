@@ -74,6 +74,40 @@ function toPreview(payload: unknown): string {
   }
 }
 
+function extractErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as {
+    detail?: unknown;
+    message?: unknown;
+    errors?: unknown;
+  };
+
+  const normalize = (value: unknown): string | null => {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const nested = normalize(item);
+        if (nested) {
+          return nested;
+        }
+      }
+      return null;
+    }
+    if (value && typeof value === "object") {
+      const obj = value as { msg?: unknown; message?: unknown; detail?: unknown };
+      return normalize(obj.msg) ?? normalize(obj.message) ?? normalize(obj.detail);
+    }
+    return null;
+  };
+
+  return normalize(record.detail) ?? normalize(record.message) ?? normalize(record.errors);
+}
+
 function setLastApiDebugSnapshot(snapshot: ApiDebugSnapshot) {
   lastApiDebugSnapshot = snapshot;
 }
@@ -182,10 +216,11 @@ export async function apiRequest<T>(
 
     if (rawBody) {
       try {
-        const payload = JSON.parse(rawBody) as { detail?: string };
+        const payload = JSON.parse(rawBody) as unknown;
         payloadPreview = toPreview(payload);
-        if (payload.detail) {
-          message = payload.detail;
+        const extractedMessage = extractErrorMessage(payload);
+        if (extractedMessage) {
+          message = extractedMessage;
         }
       } catch {
         payloadPreview = rawBody;
