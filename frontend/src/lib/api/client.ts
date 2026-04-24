@@ -3,6 +3,14 @@ import { logDashboardApiRequest } from "@/lib/api/request-timing";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
+export function apiUrl(path: string): string {
+  if (!path) {
+    return API_BASE_URL;
+  }
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
 /** Prevents hung backend calls from keeping React Query in `isLoading` forever. */
 const DEFAULT_REQUEST_TIMEOUT_MS = 45_000;
 
@@ -107,15 +115,15 @@ export function getPublicBackendBaseUrl(): string {
 /** Absolute public intake URL for a tenant (`GET /t/{tenant_id}/intake` on FastAPI). */
 export function buildTenantIntakeUrl(tenantId: string): string {
   const path = `/t/${tenantId}/intake`;
-  const base = getPublicBackendBaseUrl();
-  return base ? `${base}${path}` : path;
+  const absoluteUrl = apiUrl(path);
+  return absoluteUrl || path;
 }
 
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  const url = apiUrl(path);
   const method = (options.method ?? "GET").toUpperCase();
   const startedAt = Date.now();
   logDashboardApiRequest("start", { method, path, durationMs: 0 });

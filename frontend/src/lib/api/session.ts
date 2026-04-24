@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api/client";
-import { getApiBaseUrl } from "@/lib/api/client";
+import { apiUrl } from "@/lib/api/client";
 import { APP_ROUTES } from "@/lib/routes";
 import { SessionUser } from "@/types/session";
 
@@ -68,5 +68,5 @@ function sanitizeNextPath(nextPath: string): string {
 export function getGoogleAuthStartUrl(nextPath: string = APP_ROUTES.dashboard) {
   const safeNextPath = sanitizeNextPath(nextPath);
   const params = new URLSearchParams({ next: safeNextPath });
-  return `${getApiBaseUrl()}/auth/google/start?${params.toString()}`;
+  return `${apiUrl("/auth/google/start")}?${params.toString()}`;
 }
