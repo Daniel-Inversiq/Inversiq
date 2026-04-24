@@ -153,11 +153,23 @@ export function buildTenantIntakeUrl(tenantId: string): string {
   return absoluteUrl || path;
 }
 
-export async function apiRequest<T>(
+/**
+ * Same-origin Next.js route handlers (e.g. `/api/auth/*`). Do not use `apiUrl()` —
+ * these must hit the app origin so Set-Cookie from the auth proxy applies to the browser.
+ */
+export async function apiRequestSameOrigin<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const url = apiUrl(path);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return apiRequestWithResolvedUrl<T>(normalizedPath, normalizedPath, options);
+}
+
+async function apiRequestWithResolvedUrl<T>(
+  url: string,
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
   const startedAt = Date.now();
   logDashboardApiRequest("start", { method, path, durationMs: 0 });
@@ -262,4 +274,11 @@ export async function apiRequest<T>(
   });
 
   return payload;
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  return apiRequestWithResolvedUrl<T>(apiUrl(path), path, options);
 }
