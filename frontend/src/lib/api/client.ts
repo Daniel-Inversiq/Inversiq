@@ -11,6 +11,15 @@ export function apiUrl(path: string): string {
   return `${API_BASE_URL}${normalizedPath}`;
 }
 
+/**
+ * Same-origin path for dashboard FastAPI calls via `/api/backend/*`.
+ * The route handler attaches `Authorization: Bearer` from the httpOnly cookie.
+ */
+export function apiBackendProxyPath(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `/api/backend${normalizedPath}`;
+}
+
 /** Prevents hung backend calls from keeping React Query in `isLoading` forever. */
 const DEFAULT_REQUEST_TIMEOUT_MS = 45_000;
 
@@ -280,5 +289,5 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  return apiRequestWithResolvedUrl<T>(apiUrl(path), path, options);
+  return apiRequestWithResolvedUrl<T>(apiBackendProxyPath(path), path, options);
 }

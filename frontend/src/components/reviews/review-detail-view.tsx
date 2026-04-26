@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReviewDetail } from "@/hooks/use-review-detail";
-import { apiRequest, getApiBaseUrl } from "@/lib/api/client";
+import { apiBackendProxyPath, apiRequest } from "@/lib/api/client";
 import { t, tStatus } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/presentation";
 import { cn } from "@/lib/utils";
@@ -267,7 +267,7 @@ function splitIntakeRows(rows: IntakeRow[]) {
 function resolvePhotoUrl(url: string): string {
   const trimmed = url.trim();
   if (trimmed.startsWith("/files/")) {
-    return `${getApiBaseUrl()}${trimmed}`;
+    return apiBackendProxyPath(trimmed);
   }
   return trimmed;
 }
@@ -356,7 +356,7 @@ function normalizeReviewReasonEnglish(reason: string): string {
 }
 
 async function postForm(path: string, formData: URLSearchParams) {
-  const url = `${getApiBaseUrl()}${path}`;
+  const url = apiBackendProxyPath(path);
   const response = await fetch(url, {
     method: "POST",
     credentials: "include",

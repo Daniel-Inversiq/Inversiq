@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const ACCESS_TOKEN_COOKIE = "access_token";
+export const ACCESS_TOKEN_COOKIE = "access_token";
 const ONE_DAY_SECONDS = 60 * 60 * 24;
 
 function getBackendBaseUrl(): string {
