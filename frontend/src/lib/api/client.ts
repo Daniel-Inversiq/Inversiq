@@ -83,7 +83,7 @@ function toPreview(payload: unknown): string {
   }
 }
 
-function extractErrorMessage(payload: unknown): string | null {
+export function extractErrorMessage(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }

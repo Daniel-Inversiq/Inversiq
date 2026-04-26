@@ -55,6 +55,8 @@ async function proxyRequest(
     method,
     headers: upstreamHeaders,
     cache: "no-store",
+    /** Do not follow 30x to frontend-only paths on the API host (e.g. `/offertes/...`) — that can surface as 403/404 to the client. */
+    redirect: "manual",
   };
 
   if (method !== "GET" && method !== "HEAD") {
@@ -79,6 +81,10 @@ async function proxyRequest(
   const contentDisposition = backendResponse.headers.get("content-disposition");
   if (contentDisposition) {
     responseHeaders.set("content-disposition", contentDisposition);
+  }
+  const location = backendResponse.headers.get("location");
+  if (location) {
+    responseHeaders.set("location", location);
   }
 
   return new NextResponse(backendResponse.body, {

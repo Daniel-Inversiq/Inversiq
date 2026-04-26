@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReviewDetail } from "@/hooks/use-review-detail";
-import { apiBackendProxyPath, apiRequest } from "@/lib/api/client";
+import { apiBackendProxyPath, apiRequest, ApiError, extractErrorMessage } from "@/lib/api/client";
 import { t, tStatus } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/presentation";
 import { cn } from "@/lib/utils";
@@ -362,13 +362,24 @@ async function postForm(path: string, formData: URLSearchParams) {
     credentials: "include",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+      Accept: "application/json",
     },
     body: formData.toString(),
   });
-  if (!response.ok) {
-    throw new Error(t("review.errors.request_failed_with_status", { status: response.status }));
+  if (response.ok || (response.status >= 300 && response.status < 400)) {
+    return response;
   }
-  return response;
+  const rawBody = await response.text();
+  let detail: string | null = null;
+  if (rawBody) {
+    try {
+      detail = extractErrorMessage(JSON.parse(rawBody) as unknown);
+    } catch {
+      detail = rawBody.trim() ? rawBody.trim().slice(0, 400) : null;
+    }
+  }
+  const statusLine = t("review.errors.request_failed_with_status", { status: response.status });
+  throw new Error(detail ? `${statusLine} ${detail}` : statusLine);
 }
 
 type QuoteFromLeadResponse = {
@@ -973,7 +984,12 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
       await refreshWorkspace();
       router.push(`/offertes/${encodeURIComponent(quoteId)}`);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : t("review.feedback.continue_failed"));
+      if (error instanceof ApiError) {
+        const statusLine = t("review.errors.request_failed_with_status", { status: error.status });
+        setSaveError(error.message ? `${statusLine} ${error.message}` : statusLine);
+      } else {
+        setSaveError(error instanceof Error ? error.message : t("review.feedback.continue_failed"));
+      }
     } finally {
       setIsGenerating(false);
     }

@@ -18,14 +18,14 @@ from typing import Any
 from fastapi import BackgroundTasks
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query, File, UploadFile
-from fastapi.responses import RedirectResponse, HTMLResponse, Response
+from fastapi.responses import RedirectResponse, HTMLResponse, Response, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import and_, desc, func, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr, Field
 
-from app.auth.deps import require_user_html
+from app.auth.deps import get_current_user, require_user_html
 from app.db import get_db
 from app.models.lead import Lead
 from app.models.job import Job
@@ -4299,14 +4299,23 @@ def app_review_generate_estimate(
     return RedirectResponse(url=f"/processing/{lead_id}", status_code=303)
 
 
+def _spa_success_response(request: Request, redirect: RedirectResponse) -> Response:
+    """Browser forms expect 303; SPA fetch (Accept: application/json) expects 200 JSON."""
+    accept = (request.headers.get("accept") or "").lower()
+    if "application/json" in accept:
+        return JSONResponse({"ok": True})
+    return redirect
+
+
 @router.post("/reviews/{lead_id}/overrides")
 def app_review_save_overrides(
+    request: Request,
     lead_id: str,
     square_meters: float | None = Form(default=None),
     job_type: str | None = Form(default=None),
     project_description: str | None = Form(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_user_html),
+    current_user: User = Depends(get_current_user),
     _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     lead = (
@@ -4369,7 +4378,10 @@ def app_review_save_overrides(
     db.commit()
     db.refresh(lead)
 
-    return RedirectResponse(url=f"/app/reviews/{lead.id}", status_code=303)
+    return _spa_success_response(
+        request,
+        RedirectResponse(url=f"/app/reviews/{lead.id}", status_code=303),
+    )
 
 
 @router.get("/leads/{lead_id}/edit-estimate", response_class=HTMLResponse)
@@ -4413,6 +4425,7 @@ def quote_edit_get(
 
 @router.post("/leads/{lead_id}/edit-estimate")
 def edit_estimate_post(
+    request: Request,
     lead_id: str,
     customer_name: str | None = Form(default=None),
     customer_email: str | None = Form(default=None),
@@ -4435,7 +4448,7 @@ def edit_estimate_post(
     subtotal_excl: str | None = Form(default=None),
     vat_rate_percent: str | None = Form(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_user_html),
+    current_user: User = Depends(get_current_user),
     _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     lead = (
@@ -4551,11 +4564,15 @@ def edit_estimate_post(
         rendered,
     )
 
-    return RedirectResponse(url=f"/offertes/{lead_id}/bewerken", status_code=303)
+    return _spa_success_response(
+        request,
+        RedirectResponse(url=f"/offertes/{lead_id}/bewerken", status_code=303),
+    )
 
 
 @router.post("/quotes/{quote_id}/edit")
 def quote_edit_post(
+    request: Request,
     quote_id: str,
     customer_name: str | None = Form(default=None),
     customer_email: str | None = Form(default=None),
@@ -4578,10 +4595,11 @@ def quote_edit_post(
     subtotal_excl: str | None = Form(default=None),
     vat_rate_percent: str | None = Form(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_user_html),
+    current_user: User = Depends(get_current_user),
     _subscription_guard: Tenant = Depends(require_active_subscription_for_write),
 ):
     return edit_estimate_post(
+        request=request,
         lead_id=quote_id,
         customer_name=customer_name,
         customer_email=customer_email,
