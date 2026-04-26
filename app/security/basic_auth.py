@@ -58,6 +58,13 @@ class BasicAuthMiddleware:
             await resp(scope, receive, send)
             return
 
+        # Dashboard and app JWT calls use Bearer on `/api/*`. Basic Auth is for
+        # integrations (e.g. service-to-service); do not treat Bearer as Basic.
+        scheme = auth.split(" ", 1)[0].strip().lower()
+        if scheme == "bearer":
+            await self.app(scope, receive, send)
+            return
+
         parsed = _parse_basic_auth(auth)
         if not parsed:
             resp = _unauthorized()

@@ -844,8 +844,9 @@ export default function DashboardPage() {
   const operationalDelay = useDelayedLoadingIndicator(operationalBoot);
   const statusDelay = useDelayedLoadingIndicator(statusDistributionBoot);
 
+  /** Omit pipeline-runs: non-critical for the rest of the overview if it fails alone. */
   const hasPartialError = Boolean(
-    leadsQuery.error || jobsQuery.error || runsQuery.error || operationalQuery.error,
+    leadsQuery.error || jobsQuery.error || operationalQuery.error,
   );
 
   const intakeUrl = useMemo(() => buildTenantIntakeUrl(tenantId), [tenantId]);

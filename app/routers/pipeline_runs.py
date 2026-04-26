@@ -13,6 +13,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, selectinload
 
+from app.auth.deps import get_current_user
 from app.anomaly.engine import run_all as run_anomaly_detectors
 from app.anomaly.run_review import compute_run_review
 from app.db import get_db
@@ -20,8 +21,27 @@ from app.infra.errors import recoverability_hint
 from app.models.engine_event import EngineEvent
 from app.models.lead_feedback import LeadFeedback
 from app.models.pipeline_run import PipelineRun, PipelineStepRun
+from app.models.user import User
 
 router = APIRouter(prefix="/api/pipeline-runs", tags=["pipeline-runs"])
+
+
+def _scoped_tenant_id(*, user: User, tenant_id: Optional[str]) -> Optional[str]:
+    """
+    Non-admins always query their own tenant. Admins may pass tenant_id or omit it (all tenants).
+    """
+    if user.is_platform_admin:
+        return tenant_id
+    if tenant_id and tenant_id != user.tenant_id:
+        raise HTTPException(status_code=403, detail="Not allowed to query another tenant")
+    return user.tenant_id
+
+
+def _ensure_run_visible(user: User, run: PipelineRun) -> None:
+    if user.is_platform_admin:
+        return
+    if run.tenant_id != user.tenant_id:
+        raise HTTPException(status_code=404, detail=f"PipelineRun {run.id} not found")
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +264,7 @@ def list_failed_pipeline_runs(
         description="Filter by error_category (transient|permanent|validation|external_dependency)",
     ),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum number of results"),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """
@@ -257,13 +278,14 @@ def list_failed_pipeline_runs(
 
     Intended for operational triage — not a replacement for a full DLQ.
     """
+    scoped_tenant = _scoped_tenant_id(user=user, tenant_id=tenant_id)
     q = (
         db.query(PipelineRun)
         .options(selectinload(PipelineRun.steps))
         .filter(PipelineRun.status == "FAILED")
     )
-    if tenant_id:
-        q = q.filter(PipelineRun.tenant_id == tenant_id)
+    if scoped_tenant:
+        q = q.filter(PipelineRun.tenant_id == scoped_tenant)
     if error_category:
         q = q.filter(PipelineRun.error_category == error_category.lower())
     runs = q.order_by(PipelineRun.id.desc()).limit(limit).all()
@@ -276,6 +298,7 @@ def list_failed_pipeline_runs(
 @router.get("/{run_id}/debug")
 def get_pipeline_run_debug(
     run_id: int,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """
@@ -290,12 +313,17 @@ def get_pipeline_run_debug(
 
     Read-only. Does not trigger re-execution.
     """
+    run = db.query(PipelineRun).filter(PipelineRun.id == run_id).first()
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"PipelineRun {run_id} not found")
+    _ensure_run_visible(user, run)
     return build_pipeline_run_debug_payload(db, run_id)
 
 
 @router.get("/{run_id}")
 def get_pipeline_run(
     run_id: int,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Fetch a single PipelineRun by id, including all step details."""
@@ -307,6 +335,7 @@ def get_pipeline_run(
     )
     if run is None:
         raise HTTPException(status_code=404, detail=f"PipelineRun {run_id} not found")
+    _ensure_run_visible(user, run)
     return _serialize_run(run, include_steps=True)
 
 
@@ -319,6 +348,7 @@ def list_pipeline_runs(
         description="Filter by status (RUNNING, COMPLETED, FAILED, NEEDS_REVIEW)",
     ),
     limit: int = Query(default=20, ge=1, le=100, description="Maximum number of results"),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """
@@ -327,11 +357,12 @@ def list_pipeline_runs(
     At least one filter should be supplied for useful results,
     but all are optional so operators can do broad sweeps during debugging.
     """
+    scoped_tenant = _scoped_tenant_id(user=user, tenant_id=tenant_id)
     q = db.query(PipelineRun)
     if lead_id:
         q = q.filter(PipelineRun.lead_id == lead_id)
-    if tenant_id:
-        q = q.filter(PipelineRun.tenant_id == tenant_id)
+    if scoped_tenant:
+        q = q.filter(PipelineRun.tenant_id == scoped_tenant)
     if status:
         q = q.filter(PipelineRun.status == status.upper())
     runs = q.order_by(PipelineRun.id.desc()).limit(limit).all()
