@@ -35,27 +35,23 @@ const ROLES = [
     icon: Code2,
     color: "#3B82F6",
     location: "Amsterdam / Hybrid",
-    compensation: "€55,000 – €85,000",
-    compensationNote: null,
-    workOn: [
-      "Document Intelligence",
-      "Computer Vision",
-      "ML Pipelines",
-      "Evaluation Systems",
-      "Decision Intelligence",
-      "Agent Performance Optimization",
+    compensation: "€65,000 – €95,000",
+    compensationNote: "+ future equity potential",
+    level: "Senior / Strong builders preferred over years of experience",
+    build: [
+      "Document intelligence pipelines",
+      "Production computer vision systems",
+      "Agentic workflows and evaluation systems",
+      "AI model training, testing and deployment",
+      "Customer-facing AI capabilities",
     ],
-    requirements: [
-      "Python",
-      "Machine Learning",
-      "LLM experience",
-      "Production AI systems",
-    ],
-    benefits: [
-      "Flexible working",
-      "Learning budget",
-      "High ownership",
-      "Direct impact on product direction",
+    stack: ["Python", "FastAPI", "OpenAI", "Anthropic", "PostgreSQL", "Redis", "Celery", "AWS"],
+    whyRole: [
+      "Build core technology from day one",
+      "Work directly with founders",
+      "High ownership and autonomy",
+      "Shape product and technical direction",
+      "Opportunity to grow into a leadership role",
     ],
   },
   {
@@ -63,28 +59,23 @@ const ROLES = [
     icon: Briefcase,
     color: "#8B5CF6",
     location: "Amsterdam / Hybrid",
-    compensation: "€55,000 – €90,000",
-    compensationNote: null,
-    workOn: [
-      "Multi-tenant SaaS architecture",
-      "Workflow orchestration",
-      "FastAPI",
-      "Observability",
-      "Product infrastructure",
-      "Platform scalability",
+    compensation: "€65,000 – €100,000",
+    compensationNote: "+ future equity potential",
+    level: "Senior / Strong builders preferred over years of experience",
+    build: [
+      "The Inversiq platform and customer experience",
+      "Workflow orchestration tooling",
+      "Scalable APIs and infrastructure",
+      "Internal operational systems",
+      "Features from concept to production",
     ],
-    requirements: [
-      "Python",
-      "API design",
-      "Cloud infrastructure",
-      "Frontend experience",
-      "Product mindset",
-    ],
-    benefits: [
-      "Flexible working",
-      "Learning budget",
-      "Direct access to founders",
-      "High ownership",
+    stack: ["Next.js", "TypeScript", "React", "Python", "FastAPI", "PostgreSQL", "AWS", "Docker"],
+    whyRole: [
+      "Build core technology from day one",
+      "Work directly with founders",
+      "High ownership and autonomy",
+      "Shape product and technical direction",
+      "Opportunity to grow into a leadership role",
     ],
   },
   {
@@ -92,27 +83,23 @@ const ROLES = [
     icon: Users,
     color: "#10B981",
     location: "Amsterdam / Hybrid",
-    compensation: "€45,000 – €70,000 base",
-    compensationNote: "+ commission · future equity potential",
-    workOn: [
-      "Customer acquisition",
-      "Enterprise sales",
-      "Partnerships",
-      "Customer discovery",
-      "Go-to-market execution",
-      "Revenue growth",
+    compensation: "€50,000 – €75,000 base",
+    compensationNote: "+ uncapped commission · future equity potential",
+    level: "Early-stage SaaS experience preferred",
+    build: [
+      "Outbound sales motion from scratch",
+      "Customer discovery conversations",
+      "Sales processes and playbooks",
+      "Early customer relationships",
+      "Go-to-market strategy",
     ],
-    requirements: [
-      "B2B SaaS sales experience",
-      "Strong communication skills",
-      "Entrepreneurial mindset",
-      "Comfortable selling technical products",
-    ],
-    benefits: [
-      "Performance-based upside",
-      "Flexible working",
-      "Direct impact on company growth",
-      "Potential future equity participation",
+    stack: ["HubSpot", "Apollo", "LinkedIn", "CRM tooling", "Outbound sales systems"],
+    whyRole: [
+      "Build the commercial engine from the ground up",
+      "Direct influence on company growth",
+      "High ownership and autonomy",
+      "Opportunity for future leadership",
+      "Help define the go-to-market strategy",
     ],
   },
 ];
@@ -266,7 +253,6 @@ function RoleCard({
                 </div>
               </div>
             </div>
-            {/* Coming soon badge */}
             <span className="flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold"
               style={{ backgroundColor: "rgba(0,0,0,0.04)", color: "#94A3B8", border: "1px solid rgba(0,0,0,0.08)", whiteSpace: "nowrap" }}>
               Coming Soon
@@ -274,7 +260,7 @@ function RoleCard({
           </div>
 
           {/* Compensation */}
-          <div className="flex items-start gap-2 mb-5 p-3 rounded-xl"
+          <div className="flex items-start gap-2 mb-4 p-3 rounded-xl"
             style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
             <Banknote size={13} style={{ color: "#64748B", flexShrink: 0, marginTop: "1px" }} />
             <div>
@@ -285,13 +271,34 @@ function RoleCard({
             </div>
           </div>
 
-          {/* Work on */}
+          {/* Level */}
+          <div className="mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "#94A3B8" }}>Level</p>
+            <p className="text-xs text-neutral-600">{role.level}</p>
+          </div>
+
+          {/* What you'll build */}
           <div className="mb-4">
             <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "#94A3B8" }}>
-              What you&apos;ll work on
+              What you&apos;ll build
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {role.build.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-xs text-neutral-600">
+                  <span className="w-1 h-1 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: role.color }} />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Tech stack */}
+          <div className="mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "#94A3B8" }}>
+              Tech Stack
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {role.workOn.map((item) => (
+              {role.stack.map((item) => (
                 <span key={item} className="px-2 py-1 rounded-lg text-[11px] font-medium"
                   style={{ backgroundColor: `${role.color}08`, color: role.color, border: `1px solid ${role.color}20` }}>
                   {item}
@@ -300,35 +307,19 @@ function RoleCard({
             </div>
           </div>
 
-          {/* Requirements — always visible on desktop, collapsible on mobile */}
+          {/* Why this role — always visible on desktop, collapsible on mobile */}
           <div className={expanded ? "block" : "hidden lg:block"}>
-            <div className="mb-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "#94A3B8" }}>
-                We&apos;re looking for
-              </p>
-              <ul className="flex flex-col gap-1.5">
-                {role.requirements.map((req) => (
-                  <li key={req} className="flex items-center gap-2 text-xs text-neutral-600">
-                    <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: "#CBD5E1" }} />
-                    {req}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "#94A3B8" }}>
-                Benefits
-              </p>
-              <ul className="flex flex-col gap-1.5">
-                {role.benefits.map((b) => (
-                  <li key={b} className="flex items-center gap-2 text-xs text-neutral-600">
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#10B981" }} />
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "#94A3B8" }}>
+              Why this role
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {role.whyRole.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-xs text-neutral-600">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1" style={{ backgroundColor: "#10B981" }} />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Toggle on mobile */}
@@ -336,7 +327,7 @@ function RoleCard({
             className="mt-4 flex items-center gap-1.5 text-[11px] font-semibold lg:hidden transition-colors duration-150"
             style={{ color: "#94A3B8" }}
             onClick={() => setExpanded((v) => !v)}>
-            {expanded ? <><ChevronUp size={13} /> Less detail</> : <><ChevronDown size={13} /> Requirements & benefits</>}
+            {expanded ? <><ChevronUp size={13} /> Less detail</> : <><ChevronDown size={13} /> Why this role</>}
           </button>
         </div>
 
