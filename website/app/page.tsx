@@ -28,7 +28,6 @@ import Hero from "@/components/sections/Hero";
 import StatsBar from "@/components/sections/StatsBar";
 import ProblemSection from "@/components/sections/ProblemSection";
 import WhatWeDo from "@/components/sections/WhatWeDo";
-import PlatformArchitecture from "@/components/sections/PlatformArchitecture";
 import IndustryVerticals from "@/components/sections/IndustryVerticals";
 import ResultsSection from "@/components/sections/ResultsSection";
 import HowItWorks from "@/components/sections/HowItWorks";
@@ -48,7 +47,6 @@ export default function Home() {
         <StatsBar />
         <ProblemSection />
         <WhatWeDo />
-        <PlatformArchitecture />
         <IndustryVerticals />
         <ResultsSection />
         <HowItWorks />
