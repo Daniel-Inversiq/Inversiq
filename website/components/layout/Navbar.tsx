@@ -93,22 +93,31 @@ export default function Navbar() {
       {/* Announcement bar */}
       <a
         href="/platform"
-        className="group relative flex items-center justify-center gap-2.5 w-full px-6 transition-opacity duration-150 hover:opacity-90"
+        className="group relative flex items-center justify-center gap-2.5 w-full px-4 sm:px-6 transition-opacity duration-150 hover:opacity-90"
         style={{
-          height: "42px",
+          minHeight: "40px",
           backgroundColor: "#0F172A",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}
       >
-        <span className="text-[12.5px] font-medium leading-none tracking-[-0.01em]"
+        {/* Mobile text */}
+        <span className="sm:hidden text-[11.5px] font-medium leading-snug tracking-[-0.01em] text-center"
+          style={{ color: "#F1F5F9" }}>
+          Building decision infrastructure for operational industries.
+        </span>
+
+        {/* Desktop text */}
+        <span className="hidden sm:inline text-[12.5px] font-medium leading-none tracking-[-0.01em] whitespace-nowrap"
           style={{ color: "#F1F5F9" }}>
           Now building the next generation of decision infrastructure for operational industries.
         </span>
 
-        <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold flex-shrink-0"
+        {/* "Learn →" on mobile, "Learn More →" on sm+ */}
+        <span className="inline-flex items-center gap-1 font-semibold flex-shrink-0 text-[11px] sm:text-[12.5px]"
           style={{ color: "#3B82F6" }}>
-          Learn More
-          <MoveRight size={12} strokeWidth={2.2} className="transition-transform duration-150 group-hover:translate-x-0.5" />
+          <span className="sm:hidden">Learn</span>
+          <span className="hidden sm:inline">Learn More</span>
+          <MoveRight size={11} strokeWidth={2.2} className="transition-transform duration-150 group-hover:translate-x-0.5" />
         </span>
       </a>
 
@@ -118,7 +127,7 @@ export default function Navbar() {
         <a href="/" className="flex items-center gap-2.5 shrink-0">
           <LogoMark />
           <span className="font-semibold tracking-tight text-[1.0625rem] text-neutral-900">
-            Invers<span style={{ color: "#2563EB" }}>iq</span>
+            Inversiq
           </span>
         </a>
 
@@ -329,10 +338,11 @@ export default function Navbar() {
 
 function LogoMark() {
   return (
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-      <rect width="30" height="30" rx="8" fill="#0a0a0a" />
-      <path d="M9 15h4.5m3 0H21M15 9v4.5m0 3V21" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="15" cy="15" r="2.5" fill="white" />
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="7" fill="#2563EB" />
+      <rect x="7" y="9" width="18" height="4" rx="2" fill="white" />
+      <rect x="7" y="15" width="13" height="4" rx="2" fill="white" opacity="0.6" />
+      <rect x="7" y="21" width="8" height="4" rx="2" fill="white" opacity="0.3" />
     </svg>
   );
 }

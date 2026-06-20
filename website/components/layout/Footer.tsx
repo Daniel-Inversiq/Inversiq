@@ -34,7 +34,7 @@ export default function Footer() {
             <a href="/" className="inline-flex items-center gap-2.5 mb-5">
               <LogoMark />
               <span className="font-semibold text-neutral-900 tracking-tight text-[1.0625rem]">
-                Invers<span style={{ color: "#2563EB" }}>iq</span>
+                Inversiq
               </span>
             </a>
             <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#2563EB" }}>
@@ -143,10 +143,11 @@ export default function Footer() {
 
 function LogoMark() {
   return (
-    <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
-      <rect width="30" height="30" rx="8" fill="#0a0a0a" />
-      <path d="M9 15h4.5m3 0H21M15 9v4.5m0 3V21" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="15" cy="15" r="2.5" fill="white" />
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="7" fill="#2563EB" />
+      <rect x="7" y="9" width="18" height="4" rx="2" fill="white" />
+      <rect x="7" y="15" width="13" height="4" rx="2" fill="white" opacity="0.6" />
+      <rect x="7" y="21" width="8" height="4" rx="2" fill="white" opacity="0.3" />
     </svg>
   );
 }
