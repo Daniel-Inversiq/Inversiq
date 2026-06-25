@@ -3,28 +3,27 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-API-green)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue)
-![Architecture](https://img.shields.io/badge/Architecture-Decision%20Infrastructure-orange)
+![Architecture](https://img.shields.io/badge/Architecture-AI%20Operating%20System-orange)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-**Inversiq is a decision infrastructure platform that turns real-world input into structured, explainable decisions and outputs.**
+**Inversiq is the AI Operating System for Operational Industries.**
 
 ---
 
-## 🚀 What is Inversiq?
+## What is Inversiq?
 
-Inversiq automates complex workflows like:
+Inversiq automates complex operational workflows:
 
-* intake
-* pricing
-* estimation
-* decision-making
-* output generation
+* intake and document processing
+* pricing and estimation
+* decision-making and review routing
+* output generation and delivery
 
-All through a **single configurable engine**.
+All through a **single configurable engine** — one platform, any operational industry.
 
 ---
 
-## 🧠 Core Idea
+## Core Idea
 
 Instead of:
 
@@ -42,111 +41,60 @@ This ensures decisions are:
 
 ---
 
-## 🏗️ Layer Architecture
+## Layer Architecture
 
 Inversiq is built as a **3-layer system**:
 
 ---
 
-### 🔹 Layer 1 — Core Engine
+### Layer 1 — Core Engine
 
 The foundation of everything.
 
-* intake layer (forms, photos, API input)
+* intake layer (forms, documents, API input)
 * processing (validation, vision, structuring)
 * workflow orchestration
 * decision engine (rules + AI signals)
 * pricing engine
 * output generation
 
-👉 **All workflows run on the same engine**
+**All workflows run on the same engine.**
 
 ---
 
-### 🔹 Layer 2 — Workflows
+### Layer 2 — Vertical Workflows
 
-Each workflow is a **configuration of the engine**, not a new codebase.
+Each vertical is a **configuration of the engine**, not a separate codebase.
 
-A workflow defines:
+A vertical defines:
 
-* input fields
-* pricing logic
-* business rules
+* intake fields and document types
+* pricing logic and business rules
+* review and escalation thresholds
 * output templates
 
-**Examples (current focus):**
+**Current verticals:**
 
-* painting
-* roofing
-* solar
-* property renovation
+| Vertical | Status |
+|---|---|
+| Construction | Live |
+| Insurance | Preview |
+| Logistics | Preview |
+| Real Estate | Preview |
 
-👉 New workflow = ~20–30% work
-👉 Never a separate system
+New vertical = ~20–30% incremental work. Never a separate system.
 
 ---
 
-### 🔹 Layer 3 — Go-to-Market
+### Layer 3 — Go-to-Market
 
 Everything is sold under one brand:
 
 > **Inversiq**
 
-Workflows are:
-
-* landing pages
-* not separate products
-
-Examples:
-
-* Inversiq for painting
-* Inversiq for roofing
-* Inversiq for solar
-
 ---
 
-## 🧩 Example Workflows
-
-Current vertical focus:
-
-* painting
-* roofing
-* solar
-* property workflows
-
-Future expansion:
-
-* insurance claims
-* damage assessment
-* logistics workflows
-* financial decisioning
-
----
-
-## 🧭 Roadmap
-
-### Phase 1 — Construction & Installation (Now)
-
-* painting
-* roofing
-* solar
-* property
-
-### Phase 2 — Insurance & Logistics
-
-* claims workflows
-* damage assessment
-* freight pricing
-
-### Phase 3 — Finance & Enterprise
-
-* financial workflows
-* compliance
-* enterprise decisioning
-
----
-
-## ⚙️ Architecture Overview
+## Architecture Overview
 
 ```text
 Input
@@ -166,36 +114,38 @@ Output
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
-* **Backend:** FastAPI, Python
+* **Backend:** FastAPI, Python 3.11
 * **Async:** Celery, Redis
-* **AI / Data:** PyTorch, NumPy
+* **AI / Vision:** OpenAI Vision API
 * **Infra:** Docker, AWS S3
 * **Observability:** Prometheus, Grafana
+* **Frontend:** Next.js, TypeScript
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
-app/                # API & services
+app/                # API, routers, services
 inversiq/           # core decision engine
-verticals/          # workflow configurations
+app/verticals/      # vertical workflow implementations
+frontend/           # operator dashboard (Next.js)
 ```
 
 ---
 
-## 🎯 Design Principles
+## Design Principles
 
 * Explainability first
 * Rules over black-box decisions
-* Configurable workflows
-* One engine for all verticals
+* Configurable vertical workflows
+* One engine for all industries
 * Production-ready by design
 
 ---
 
-## 📌 Positioning
+## Positioning
 
-> **One engine. Every workflow. Always Inversiq.**
+> **Inversiq is the AI Operating System for Operational Industries.**

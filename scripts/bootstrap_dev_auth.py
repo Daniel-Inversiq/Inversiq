@@ -10,7 +10,7 @@ from app.auth.passwords import hash_password  # <- gebruikt jouw passlib context
 TENANT_ID = "dev-tenant"
 TENANT_NAME = "Dev Tenant"
 
-EMAIL = "dev@paintly.local"
+EMAIL = "dev@inversiq.local"
 PASSWORD = "dev12345!"  # kies iets
 TIMEZONE = "America/New_York"
 
@@ -25,7 +25,7 @@ def main():
                 id=TENANT_ID,
                 name=TENANT_NAME,
                 slug=TENANT_ID,
-                enabled_verticals=["painting"],
+                enabled_verticals=["construction"],
             )
             db.add(tenant)
             db.commit()

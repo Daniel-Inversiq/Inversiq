@@ -5,13 +5,17 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
-  CheckCircle2,
+  Briefcase,
   ChevronRight,
   ClipboardList,
   Copy,
   ExternalLink,
+  Home,
   Inbox,
   Link2,
+  PaintBucket,
+  Send,
+  Sun,
 } from "lucide-react";
 import {
   IntakeLineChart,
@@ -22,17 +26,18 @@ import { useSessionContext } from "@/components/shared/session-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
-import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useJobs } from "@/hooks/use-jobs";
 import { useOperationalDashboard } from "@/hooks/use-operational-dashboard";
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs";
 import { useTenantLeads } from "@/hooks/use-tenant-leads";
+import { useTenantMe } from "@/hooks/use-tenant-me";
 import { buildOfferRowsSummaryFromPipelineAndLeads } from "@/lib/offers/offer-rows-summary";
 import { OFFERS_PIPELINE_FETCH_LIMIT } from "@/lib/offers/query-keys";
 import { buildTenantIntakeUrl } from "@/lib/api/client";
 import { getDateLocale, t, tStatus } from "@/lib/i18n";
+import type { Sector } from "@/lib/tenant";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/presentation";
 import { isExecutionFlowStatus, isOfferFlowStatus } from "@/lib/product-flow";
@@ -47,8 +52,10 @@ function useDelayedLoadingIndicator(loading: boolean, delayMs = LOADING_INDICATO
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (!loading) {
-      setShow(false);
-      return;
+      const id = requestAnimationFrame(() => {
+        setShow(false);
+      });
+      return () => cancelAnimationFrame(id);
     }
     const t = window.setTimeout(() => setShow(true), delayMs);
     return () => window.clearTimeout(t);
@@ -64,31 +71,22 @@ function parseTime(value: string | null | undefined): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
+/** Signed % label for intake vs prior period (e.g. +18%, −5%). */
+function formatIntakeTrendPctLabel(pct: number, trend: "up" | "down"): string {
+  const rounded = Math.round(pct * 10) / 10;
+  const abs = Math.abs(rounded);
+  const body = Number.isInteger(abs) ? String(abs) : abs.toFixed(1);
+  return trend === "up" ? `+${body}%` : `−${body}%`;
+}
+
 /** Shared max width so header, KPIs, and grids align on one vertical edge. */
 const DASHBOARD_PAGE_CLASS = "mx-auto w-full max-w-[min(1480px,100%)]";
 
-const shortcutLinkClass =
-  "h-7 gap-1 rounded-md px-2 text-[12px] font-semibold text-zinc-700 motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-[120ms] hover:bg-white hover:text-zinc-950 hover:shadow-[inset_0_0_0_1px_rgba(15,23,42,0.06)] focus-visible:ring-2 focus-visible:ring-primary/28 focus-visible:ring-offset-2 active:bg-zinc-100/80";
-
-function DashboardShortcuts() {
-  return (
-    <nav
-      aria-label={t("dashboard.operational.shortcuts.aria_label")}
-      className="flex flex-wrap items-center gap-0.5 rounded-lg border border-zinc-200/65 bg-zinc-50/90 px-1 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:gap-1"
-    >
-      <Link href="/review" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), shortcutLinkClass)}>
-        {t("dashboard.operational.shortcuts.review_queue")}
-      </Link>
-      <span className="hidden h-3.5 w-px shrink-0 bg-zinc-200/55 sm:block" aria-hidden />
-      <Link href="/offertes" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), shortcutLinkClass)}>
-        {t("dashboard.operational.shortcuts.create_quote")}
-      </Link>
-      <span className="hidden h-3.5 w-px shrink-0 bg-zinc-200/55 sm:block" aria-hidden />
-      <Link href="/jobs" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), shortcutLinkClass)}>
-        {t("dashboard.operational.shortcuts.open_jobs")}
-      </Link>
-    </nav>
-  );
+function resolveDashboardSector(sector: string | null | undefined): Sector {
+  if (sector === "construction" || sector === "insurance" || sector === "logistics" || sector === "real_estate") {
+    return sector;
+  }
+  return "construction";
 }
 
 /** Softer than default `muted` — reads as structure, not a spotlight. */
@@ -140,7 +138,7 @@ function DashboardHeaderSkeleton() {
 
 function SessionLoadingPlaceholder() {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
       <DashboardHeaderSkeleton />
       <div className="overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white p-2">
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
@@ -152,43 +150,48 @@ function SessionLoadingPlaceholder() {
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-1.5 rounded-[11px] border border-zinc-300/85 bg-white px-2.5 py-1.5 sm:flex-row sm:items-center sm:gap-2.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="h-7 w-7 shrink-0 rounded-md border border-zinc-300/85 bg-zinc-50/90" />
+      <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span className="h-8 w-8 shrink-0 rounded-lg border border-blue-200/70 bg-white/80" />
           <div className="min-w-0 flex-1 space-y-1">
             <DashSkeleton className="h-2 w-24 rounded" />
-            <DashSkeleton className="h-3.5 w-full max-w-[min(100%,320px)] rounded" />
+            <DashSkeleton className="h-3.5 w-full max-w-[min(100%,360px)] rounded" />
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <DashSkeleton className="h-7 w-[4.5rem] rounded-md" />
-          <DashSkeleton className="h-7 w-[4.5rem] rounded-md" />
+          <DashSkeleton className="h-8 w-[5.25rem] rounded-md" />
+          <DashSkeleton className="h-8 w-[5.25rem] rounded-md" />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <div className="min-w-0 overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white">
-          <div className="border-b border-zinc-300/75 px-3 py-2.5">
-            <DashSkeleton className="h-2 w-20 rounded" />
-            <DashSkeleton className="mt-2 h-4 w-48 max-w-full rounded" />
-            <DashSkeleton className="mt-1.5 h-3 w-full max-w-md rounded" />
-          </div>
-          <div className="space-y-2.5 p-2.5 sm:p-3">
-            <div>
-              <DashSkeleton className="h-2.5 w-28 rounded" />
-              <DashSkeleton className="mt-1 h-3 w-full max-w-xs rounded" />
-              <DashSkeleton className="mt-1.5 h-[200px] w-full rounded-[8px]" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="min-w-0 overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white">
+            <div className="border-b border-zinc-300/75 px-3 py-2.5">
+              <DashSkeleton className="h-2 w-20 rounded" />
+              <DashSkeleton className="mt-2 h-4 w-48 max-w-full rounded" />
+              <DashSkeleton className="mt-1.5 h-3 w-full max-w-md rounded" />
             </div>
-            <div className="border-t border-zinc-300/75 pt-2.5">
-              <DashSkeleton className="h-2.5 w-32 rounded" />
-              <DashSkeleton className="mt-1 h-3 w-full max-w-sm rounded" />
-              <div className="mt-2 space-y-2">
-                <DashSkeleton className="h-4 w-44 rounded" />
-                <DashSkeleton className="h-2.5 w-full rounded-full" />
-              </div>
+            <div className="min-h-[200px] space-y-2 px-2.5 py-3 sm:px-3">
+              <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
+              <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
+            </div>
+            <div className="border-t border-zinc-300/75 px-3 py-2">
+              <DashSkeleton className="h-3.5 w-32 rounded" />
+            </div>
+          </div>
+          <div className="min-w-0 overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white">
+            <div className="border-b border-zinc-300/75 px-3 py-2">
+              <DashSkeleton className="h-3 w-40 rounded" />
+              <DashSkeleton className="mt-1 h-2.5 w-56 rounded" />
+            </div>
+            <div className="space-y-2 p-2.5 sm:p-3">
+              <DashSkeleton className="h-[192px] w-full rounded-[8px]" />
+              <DashSkeleton className="h-[100px] w-full rounded-[8px]" />
+              <DashSkeleton className="h-2.5 w-full rounded-full" />
             </div>
           </div>
         </div>
-        <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white">
             <div className="border-b border-zinc-300/75 px-3 py-2">
               <div className="flex items-start justify-between gap-2">
@@ -222,53 +225,20 @@ function SessionLoadingPlaceholder() {
                 <DashSkeleton className="h-4 w-5 rounded" />
               </div>
             </div>
-            <div className="px-3 py-2.5">
+            <div className="border-b border-zinc-200/70 px-3 py-2">
               <DashSkeleton className="h-3 w-full max-w-[280px] rounded" />
             </div>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:items-start">
-        <div className="overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white">
-          <div className="border-b border-zinc-300/75 px-3 py-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 items-start gap-2">
-                <span className="mt-0.5 h-6 w-6 shrink-0 rounded-md border border-zinc-300/85 bg-white" />
-                <div className="min-w-0 space-y-1">
-                  <DashSkeleton className="h-3.5 w-40 rounded" />
-                  <DashSkeleton className="h-3 w-full max-w-[220px] rounded" />
-                </div>
-              </div>
-              <DashSkeleton className="h-5 w-7 shrink-0 rounded-[10px]" />
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-200/70 px-3 py-2">
+              <DashSkeleton className="h-3.5 w-32 rounded" />
+              <DashSkeleton className="h-5 w-7 rounded-[10px]" />
             </div>
-          </div>
-          <div className="space-y-1.5 px-2.5 py-2">
-            <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
-            <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
-          </div>
-          <div className="border-t border-zinc-300/75 px-3 py-2">
-            <DashSkeleton className="h-3.5 w-32 rounded" />
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-[11px] border border-zinc-300/85 bg-white">
-          <div className="border-b border-zinc-300/75 px-3 py-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 items-start gap-2">
-                <span className="mt-0.5 h-6 w-6 shrink-0 rounded-md border border-zinc-300/85 bg-white" />
-                <div className="min-w-0 space-y-1">
-                  <DashSkeleton className="h-3.5 w-44 rounded" />
-                  <DashSkeleton className="h-3 w-full max-w-[220px] rounded" />
-                </div>
-              </div>
-              <DashSkeleton className="h-5 w-7 shrink-0 rounded-[10px]" />
+            <div className="space-y-1.5 px-2.5 py-2">
+              <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
+              <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
             </div>
-          </div>
-          <div className="space-y-1.5 px-2.5 py-2">
-            <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
-            <DashSkeleton className="h-[34px] w-full rounded-[8px]" />
-          </div>
-          <div className="border-t border-zinc-300/75 px-3 py-2">
-            <DashSkeleton className="h-3 w-full max-w-[200px] rounded" />
+            <div className="border-t border-zinc-300/75 px-3 py-2">
+              <DashSkeleton className="h-3 w-full max-w-[220px] rounded" />
+            </div>
           </div>
         </div>
       </div>
@@ -276,8 +246,43 @@ function SessionLoadingPlaceholder() {
   );
 }
 
-const kpiCardInteractive =
-  "motion-safe:transition-[border-color,box-shadow,background-color] motion-safe:duration-[150ms] motion-safe:ease-out hover:border-zinc-300/80 hover:bg-zinc-50/40 hover:shadow-[0_1px_0_rgba(15,23,42,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2";
+const KPI_CARD_INTERACTIVE =
+  "cursor-pointer text-inherit no-underline motion-safe:transition-[border-color,box-shadow,background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-reduce:transition-none hover:border-zinc-300 hover:bg-white hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60 focus-visible:ring-offset-1";
+
+const KPI_VARIANT_STYLES = [
+  {
+    shell: "border-t border-t-zinc-200",
+    iconWrap: "bg-blue-50 text-blue-700",
+    chevron: "text-zinc-400 group-hover:text-blue-600",
+    hint: "text-zinc-500",
+    ctx: "text-zinc-500",
+    Icon: Inbox,
+  },
+  {
+    shell: "border-t border-t-zinc-200",
+    iconWrap: "bg-blue-50 text-blue-700",
+    chevron: "text-zinc-400 group-hover:text-blue-600",
+    hint: "text-zinc-500",
+    ctx: "text-zinc-500",
+    Icon: Send,
+  },
+  {
+    shell: "border-t border-t-zinc-200",
+    iconWrap: "bg-blue-50 text-blue-700",
+    chevron: "text-zinc-400 group-hover:text-blue-600",
+    hint: "text-zinc-500",
+    ctx: "text-zinc-500",
+    Icon: Briefcase,
+  },
+  {
+    shell: "border-t border-t-zinc-200",
+    iconWrap: "bg-blue-50 text-blue-700",
+    chevron: "text-zinc-400 group-hover:text-blue-600",
+    hint: "text-zinc-500",
+    ctx: "text-zinc-500",
+    Icon: AlertCircle,
+  },
+] as const;
 
 function KpiStrip({
   items,
@@ -294,59 +299,80 @@ function KpiStrip({
   }[];
 }) {
   return (
-    <div className="grid grid-cols-1 items-stretch gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => {
+    <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
+      {items.map((item, index) => {
+        const vis = KPI_VARIANT_STYLES[index] ?? KPI_VARIANT_STYLES[0];
+        const Icon = vis.Icon;
         const body = (
-          <>
-            <div className="flex items-start justify-between gap-2">
-              <div className="type-kpi-value text-[1.5rem] sm:text-[1.65rem]">
+          <div
+            className={cn(
+              "flex min-h-0 min-w-0 flex-1 flex-col gap-1.5",
+              item.hint || item.context ? "justify-between" : "justify-start",
+            )}
+          >
+            <div className="min-w-0 space-y-1">
+              <div className="flex shrink-0 items-start justify-between gap-2">
+                <span
+                  className={cn(
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-md sm:h-7 sm:w-7",
+                    vis.iconWrap,
+                  )}
+                >
+                  <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden />
+                </span>
+                {item.href ? (
+                  <ChevronRight
+                    className={cn(
+                      "mt-0.5 h-3.5 w-3.5 shrink-0 opacity-0 transition-[opacity,transform] duration-150 motion-reduce:transition-none group-hover:translate-x-0.5 group-hover:opacity-70",
+                      vis.chevron,
+                    )}
+                    aria-hidden
+                  />
+                ) : null}
+              </div>
+              <div className="min-w-0 break-words text-4xl font-bold leading-none tracking-[-0.03em] text-gray-900">
                 {item.value}
               </div>
-              {item.href ? (
-                <ChevronRight
-                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400 opacity-0 transition-[opacity,transform] duration-[150ms] motion-reduce:transition-none group-hover:translate-x-0.5 group-hover:opacity-100"
-                  aria-hidden
-                />
-              ) : null}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <p className="type-kicker min-w-0 flex-1 text-zinc-600">{item.label}</p>
-              {item.contextHelp ? (
-                <span className="pointer-events-auto shrink-0" onPointerDown={(e) => e.stopPropagation()}>
-                  <HelpTooltip content={item.contextHelp} />
-                </span>
-              ) : null}
+              <div className="flex min-w-0 items-center gap-1.5">
+                <p className="min-w-0 flex-1 text-sm font-medium leading-snug text-gray-500">
+                  {item.label}
+                </p>
+                {item.contextHelp ? (
+                  <span className="shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+                    <HelpTooltip content={item.contextHelp} />
+                  </span>
+                ) : null}
+              </div>
             </div>
             {item.hint || item.context ? (
-              <div className="mt-0.5 space-y-0.5">
+              <div className="min-w-0 space-y-0.5 border-t border-zinc-200 pt-1.5">
                 {item.hint ? (
-                  <p className="text-[11px] font-medium leading-snug text-zinc-500/95">{item.hint}</p>
+                  <p className={cn("text-[11px] font-medium leading-snug", vis.hint)}>{item.hint}</p>
                 ) : null}
                 {item.context ? (
-                  <p className="text-[10px] font-medium leading-snug text-zinc-500/75">{item.context}</p>
+                  <p className={cn("text-[11px] font-medium leading-snug", vis.ctx)}>{item.context}</p>
                 ) : null}
               </div>
             ) : null}
-          </>
+          </div>
         );
 
         const shellClass = cn(
-          "group relative flex h-full min-h-[5rem] flex-col gap-1 surface-card p-3 sm:min-h-[5.25rem] sm:p-3.5",
-          item.href ? ["cursor-pointer", kpiCardInteractive] : "cursor-default",
+          "group flex h-full min-h-[118px] flex-col rounded-2xl border border-zinc-200 bg-[#FFFFFF] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] sm:min-h-[118px] sm:p-4",
+          vis.shell,
+          item.href ? KPI_CARD_INTERACTIVE : "cursor-default",
         );
 
         if (item.href) {
           return (
-            <div key={item.label} className={shellClass}>
-              <Link
-                href={item.href}
-                className="absolute inset-0 z-0 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2"
-                aria-label={item.ariaGoTo}
-              >
-                <span className="sr-only">{item.ariaGoTo}</span>
-              </Link>
-              <div className="relative z-[1] flex flex-col gap-1 pointer-events-none">{body}</div>
-            </div>
+            <Link
+              key={item.label}
+              href={item.href}
+              className={shellClass}
+              aria-label={item.ariaGoTo ?? item.label}
+            >
+              {body}
+            </Link>
           );
         }
 
@@ -441,7 +467,7 @@ function PanelCountStatic() {
 function ListPanelRowsSkeleton({ showPulse }: { showPulse: boolean }) {
   return (
     <div className="px-0.5 py-1">
-      <ul className="divide-y divide-zinc-200/70">
+      <ul className="divide-y divide-slate-100">
         {Array.from({ length: 2 }).map((_, i) => (
           <li key={i}>
             <div className="flex items-center justify-between gap-2 px-1.5 py-1">
@@ -502,7 +528,7 @@ function intakeUrlPresentation(url: string): { hostLine: string; pathLine: strin
   return { hostLine: trimmed, pathLine: null };
 }
 
-function IntakeCompact({
+function IntakePrimaryBar({
   intakeUrl,
   copied,
   onCopy,
@@ -516,33 +542,39 @@ function IntakeCompact({
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(whatsappPrefill)}`;
 
   return (
-    <div className="surface-card flex flex-col gap-2.5 rounded-xl px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <div className="flex min-w-0 flex-1 items-start gap-2.5">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200/80 bg-zinc-50/90 text-zinc-600">
+    <div
+      role="region"
+      aria-label={t("dashboard.operational.intake.label")}
+      className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:items-center">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-blue-700 sm:mt-0">
           <Link2 className="h-3.5 w-3.5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold leading-tight text-zinc-500">{t("dashboard.operational.intake.label")}</p>
-          <p className="mt-0.5 truncate text-[13px] font-semibold leading-snug tracking-[-0.015em] text-zinc-800" title={intakeUrl}>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500">
+            {t("dashboard.operational.intake.label")}
+          </p>
+          <p className="mt-0.5 truncate text-[13px] font-semibold leading-snug tracking-[-0.02em] text-zinc-900" title={intakeUrl}>
             {hostLine}
           </p>
           {pathLine ? (
-            <p className="mt-0.5 truncate font-mono text-[10px] font-medium leading-snug text-zinc-400" title={intakeUrl}>
+            <p className="mt-0.5 truncate font-mono text-[10px] font-medium leading-snug text-zinc-500" title={intakeUrl}>
               {pathLine}
             </p>
           ) : null}
           <p className="sr-only">{intakeUrl}</p>
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:justify-end">
-        <div className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200/65 bg-zinc-50/70 p-0.5">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        <div className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white p-0.5">
           <Button
             size="sm"
             type="button"
-            className="h-7 gap-1 rounded-md border-0 px-2.5 text-[12px] font-semibold !bg-primary !text-primary-foreground shadow-none motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] hover:!bg-[color:var(--primary-hover)] hover:!text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 [&_svg]:!text-primary-foreground"
+            className="h-8 gap-1.5 rounded-[6px] border-0 px-3 text-[12px] font-semibold !bg-primary !text-white shadow-none motion-safe:transition-[background-color,color] motion-safe:duration-[120ms] hover:!bg-[#1D4ED8] hover:!text-white focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 [&_svg]:!text-white"
             onClick={() => void onCopy()}
           >
-            <Copy className="h-3 w-3" aria-hidden />
+            <Copy className="h-3.5 w-3.5" aria-hidden />
             {t("common.actions.copy_link")}
           </Button>
           <Link
@@ -553,10 +585,10 @@ function IntakeCompact({
               variant: "outline",
               size: "sm",
               className:
-                "h-7 gap-1 rounded-md border-zinc-200/80 bg-white px-2.5 text-[12px] font-semibold text-zinc-800 shadow-none hover:bg-white hover:text-zinc-950",
+                "h-8 gap-1.5 rounded-[6px] border-zinc-200 bg-[#FFFFFF] px-3 text-[12px] font-semibold text-zinc-700 shadow-none hover:bg-[#EEF4F0] hover:text-zinc-900",
             })}
           >
-            <ExternalLink className="h-3 w-3" aria-hidden />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             {t("common.actions.open")}
           </Link>
           <a
@@ -569,7 +601,7 @@ function IntakeCompact({
               variant: "outline",
               size: "icon-sm",
               className:
-                "h-7 w-7 shrink-0 rounded-md border-zinc-200/80 bg-white text-primary hover:bg-zinc-50 hover:text-[color:var(--primary-hover)]",
+                "h-8 w-8 shrink-0 rounded-[6px] border-zinc-200 bg-[#FFFFFF] text-zinc-600 hover:bg-[#EEF4F0] hover:text-zinc-800",
             })}
           >
             <WhatsappGlyph className="h-3.5 w-3.5" />
@@ -577,8 +609,8 @@ function IntakeCompact({
         </div>
         <span
           className={cn(
-            "min-w-[4.5rem] text-right text-[10px] font-semibold leading-none text-primary motion-safe:transition-opacity motion-safe:duration-[150ms]",
-            copied ? "opacity-100" : "opacity-0",
+            "min-w-[4.5rem] text-right text-[10px] font-semibold leading-none text-zinc-500 motion-safe:transition-opacity motion-safe:duration-[150ms]",
+            copied ? "text-zinc-600 opacity-100" : "opacity-0",
           )}
           aria-live="polite"
         >
@@ -623,9 +655,9 @@ function ListRow({
     <Link
       href={href}
       className={cn(
-        "group motion-interactive flex items-start justify-between gap-2 rounded-md border border-transparent px-1.5 py-1.5 -mx-1.5 motion-safe:transition-[background-color,border-color] motion-safe:duration-[130ms] hover:border-zinc-200/70 hover:bg-zinc-950/[0.03] active:bg-zinc-950/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/22 focus-visible:ring-offset-2",
-        emphasis === "attention_high" && "border-l-2 border-l-rose-300/85 bg-rose-50/30 pl-2",
-        emphasis === "attention_mid" && "border-l-2 border-l-amber-300/80 bg-amber-50/25 pl-2",
+        "group motion-interactive flex items-start justify-between gap-2 rounded-md border border-transparent px-1.5 py-2 -mx-1.5 motion-safe:transition-[background-color,border-color] motion-safe:duration-[130ms] hover:border-zinc-200 hover:bg-[#EEF4F0] active:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/60 focus-visible:ring-offset-2",
+        emphasis === "attention_high" && "border-l-2 border-l-rose-500 pl-2",
+        emphasis === "attention_mid" && "border-l-2 border-l-[#4A7C59] pl-2",
       )}
     >
       <div className="min-w-0 flex-1 space-y-0">
@@ -633,16 +665,16 @@ function ListRow({
           {primary}
         </p>
         {secondary ? (
-          <p className="truncate text-[11.5px] font-medium leading-snug text-zinc-600">{secondary}</p>
+          <p className="truncate text-[11px] font-medium leading-snug text-zinc-500">{secondary}</p>
         ) : null}
         {tertiary ? (
-          <p className="type-meta truncate text-[10px] tabular-nums text-zinc-500/90">{tertiary}</p>
+          <p className="type-meta truncate text-[10px] tabular-nums text-slate-400">{tertiary}</p>
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1 self-start pt-0.5">
         {badge}
         <ChevronRight
-          className="h-3.5 w-3.5 shrink-0 text-zinc-400 opacity-0 transition-[opacity,transform] duration-[150ms] motion-reduce:transition-none group-hover:translate-x-0.5 group-hover:opacity-70"
+          className="h-3.5 w-3.5 shrink-0 text-slate-300 opacity-0 transition-[opacity,transform] duration-[150ms] motion-reduce:transition-none group-hover:translate-x-0.5 group-hover:opacity-60"
           aria-hidden
         />
       </div>
@@ -659,6 +691,9 @@ function OperationalPanel({
   footer,
   emphasis,
   variant = "default",
+  headerTone = "default",
+  compact = false,
+  className,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
@@ -668,56 +703,77 @@ function OperationalPanel({
   footer: ReactNode;
   emphasis?: boolean;
   variant?: "default" | "attention";
+  headerTone?: "default" | "slate";
+  compact?: boolean;
+  className?: string;
 }) {
   const isAttention = variant === "attention";
+  const headerBarClass = cn(
+    "border-b border-slate-200 bg-white",
+    compact ? "px-2.5 py-1.5" : "px-3 py-2",
+  );
+
   return (
     <section
-      className={
-        isAttention
-          ? `flex min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200/75 bg-white shadow-[0_1px_0_rgba(15,23,42,0.03)] motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 motion-safe:ease-out ${
-              emphasis ? "ring-1 ring-rose-200/45" : ""
-            }`
-          : "flex min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200/75 bg-white shadow-[0_1px_0_rgba(15,23,42,0.03)] motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 motion-safe:ease-out"
-      }
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-[#FFFFFF] shadow-[0_1px_3px_rgba(0,0,0,0.08)] motion-safe:transition-[border-color,box-shadow] motion-safe:duration-150 motion-safe:ease-out",
+        isAttention && emphasis && "border-l-2 border-l-rose-500/90",
+        className,
+      )}
     >
-      <div className="border-b border-zinc-200/65 bg-white px-3 py-2">
+      <div className={headerBarClass}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-2">
-            <span
-              className={
-                isAttention
-                  ? "mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-rose-50 text-rose-700 ring-1 ring-rose-200/55"
-                  : "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-white text-zinc-600"
-              }
-            >
-              <Icon className={isAttention ? "h-3 w-3" : "h-3 w-3"} aria-hidden />
-            </span>
+            {isAttention ? (
+              <span
+                className={cn("h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500", compact ? "mt-1" : "mt-1.5")}
+                aria-hidden
+              />
+            ) : (
+              <span
+                className={
+                  headerTone === "slate"
+                    ? "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600"
+                    : "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600"
+                }
+              >
+                <Icon className="h-3 w-3" aria-hidden />
+              </span>
+            )}
             <div className="min-w-0 space-y-0.5">
-              <h3 className="text-[13px] font-semibold leading-[1.25] tracking-[-0.02em] text-zinc-950">{title}</h3>
-              <p className="type-body-secondary text-[12px] leading-[1.4] text-zinc-500">{description}</p>
+              <h3
+                className={cn(
+                  "font-semibold leading-[1.25] tracking-[-0.02em] text-slate-900",
+                  compact ? "text-[12px]" : "text-[12.5px]",
+                )}
+              >
+                {title}
+              </h3>
+              {compact && isAttention ? null : (
+                <p
+                  className={cn(
+                    "font-medium leading-[1.35] text-slate-500",
+                    compact ? "text-[10px]" : "text-[11px]",
+                  )}
+                >
+                  {description}
+                </p>
+              )}
             </div>
           </div>
           <span
             className={
-              emphasis
-                ? "inline-flex min-h-[22px] min-w-[1.5rem] shrink-0 items-center justify-center rounded-lg bg-rose-700 px-2 text-[10px] font-semibold tabular-nums text-white"
-                : "inline-flex min-h-[22px] min-w-[1.5rem] shrink-0 items-center justify-center rounded-lg bg-zinc-100/90 px-2 text-[10px] font-semibold tabular-nums text-zinc-800"
+              emphasis && isAttention
+                ? "inline-flex min-h-[20px] min-w-[1.5rem] shrink-0 items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-1.5 text-[10px] font-semibold tabular-nums text-rose-800"
+                : "inline-flex min-h-[20px] min-w-[1.5rem] shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-semibold tabular-nums text-slate-700"
             }
           >
             {count}
           </span>
         </div>
       </div>
-      <div className="flex flex-col px-2 py-0.5">{children}</div>
-      <div
-        className={
-          isAttention
-            ? "border-t border-zinc-200/65 bg-zinc-50/50 px-3 py-2"
-            : "border-t border-zinc-200/65 px-3 py-2"
-        }
-      >
-        {footer}
-      </div>
+      <div className={cn("flex flex-col", compact ? "px-1.5 py-0" : "px-2 py-0.5")}>{children}</div>
+      <div className={cn("border-t border-slate-200", compact ? "px-2.5 py-1" : "px-3 py-1.5")}>{footer}</div>
     </section>
   );
 }
@@ -739,11 +795,11 @@ function OutcomeSplit({
 }) {
   if (totalRequests === 0) {
     return (
-      <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/40 px-3 py-2.5">
-        <p className="text-[12px] font-semibold leading-snug text-zinc-700">
+      <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+        <p className="text-[11px] font-semibold leading-snug text-slate-800">
           {t("dashboard.operational.outcomes.empty_title")}
         </p>
-        <p className="mt-1 text-[11px] leading-snug text-zinc-500">
+        <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
           {t("dashboard.operational.outcomes.empty_description", { days })}
         </p>
       </div>
@@ -755,46 +811,87 @@ function OutcomeSplit({
   const rejectedWidth = decidedTotal > 0 ? (rejectedCount / decidedTotal) * 100 : 0;
 
   return (
-    <div className="rounded-lg border border-zinc-200/70 bg-zinc-50/30 px-3 py-2.5">
+    <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.04em] text-zinc-500">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.05em] text-slate-400">
             {t("dashboard.operational.outcomes.accepted_label")}
           </p>
-          <p className="mt-0.5 text-[22px] font-semibold leading-none tracking-[-0.02em] text-zinc-950">
+          <p className="mt-0.5 text-lg font-semibold leading-none tracking-[-0.02em] text-slate-900">
             {acceptedRate.toFixed(1)}%
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.04em] text-zinc-500">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.05em] text-slate-400">
             {t("dashboard.operational.outcomes.rejected_label")}
           </p>
-          <p className="mt-0.5 text-[16px] font-semibold leading-none tabular-nums text-zinc-700">
+          <p className="mt-0.5 text-sm font-semibold leading-none tabular-nums text-slate-600">
             {rejectedRate.toFixed(1)}%
           </p>
         </div>
       </div>
 
-      <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200/85">
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         {decidedTotal > 0 ? (
           <div className="flex h-full w-full">
             <div className="h-full" style={{ width: `${acceptedWidth}%`, backgroundColor: "#1F7A3E" }} />
             <div className="h-full bg-zinc-400/80" style={{ width: `${rejectedWidth}%` }} />
           </div>
         ) : (
-          <div className="h-full w-full bg-zinc-300/70" />
+          <div className="h-full w-full bg-slate-200/90" />
         )}
       </div>
 
-      <p className="mt-2 text-[11px] font-medium leading-snug text-zinc-600">
+      <p className="mt-1.5 text-[10px] font-medium leading-snug text-slate-600">
         {t("dashboard.operational.outcomes.counts_line", {
           accepted: acceptedCount,
           rejected: rejectedCount,
         })}
       </p>
-      <p className="mt-0.5 text-[10px] leading-snug text-zinc-500">
+      <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
         {t("dashboard.operational.outcomes.total_line", { total: totalRequests, days })}
       </p>
+    </div>
+  );
+}
+
+function DashboardActivityLiveRow({
+  lastUpdatedMs,
+  isRefreshing,
+  visible,
+}: {
+  lastUpdatedMs: number;
+  isRefreshing: boolean;
+  visible: boolean;
+}) {
+  if (!visible) {
+    return null;
+  }
+  const timeStr =
+    lastUpdatedMs > 0
+      ? new Date(lastUpdatedMs).toLocaleTimeString(getDateLocale(), {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
+  return (
+    <div
+      className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[10px] font-medium text-slate-500"
+      aria-live="polite"
+    >
+      <span className="inline-flex items-center gap-1.5 text-slate-500">
+        <span
+          className={cn(
+            "h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500/90",
+            isRefreshing && "motion-safe:animate-pulse",
+          )}
+          aria-hidden
+        />
+        <span>{t("dashboard.operational.activity.live_badge")}</span>
+      </span>
+      {timeStr ? (
+        <span className="tabular-nums text-slate-400">{t("dashboard.operational.activity.last_updated", { time: timeStr })}</span>
+      ) : null}
     </div>
   );
 }
@@ -806,24 +903,57 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState(false);
   const [intakeRange, setIntakeRange] = useState<7 | 14 | 30 | 90>(30);
 
-  const leadsQuery = useTenantLeads(tenantId, canLoadTenantData);
-  const jobsQuery = useJobs(canLoadTenantData);
+  const leadsQuery = useTenantLeads(tenantId, canLoadTenantData, undefined, true);
+  const jobsQuery = useJobs(canLoadTenantData, undefined, true);
   const runsQuery = usePipelineRuns({
     tenantId: canLoadTenantData ? tenantId : undefined,
     enabled: canLoadTenantData,
     limit: OFFERS_PIPELINE_FETCH_LIMIT,
+    live: true,
   });
+  const tenantMeQuery = useTenantMe(canLoadTenantData);
   const operationalQuery = useOperationalDashboard({
     tenantId,
     chartDays: intakeRange,
     enabled: canLoadTenantData,
+    live: true,
   });
+
+  const dashboardLiveDataUpdatedAt = useMemo(
+    () => Math.max(leadsQuery.dataUpdatedAt, operationalQuery.dataUpdatedAt, jobsQuery.dataUpdatedAt),
+    [leadsQuery.dataUpdatedAt, operationalQuery.dataUpdatedAt, jobsQuery.dataUpdatedAt],
+  );
+  const dashboardLiveHydrated =
+    leadsQuery.dataUpdatedAt > 0 || operationalQuery.dataUpdatedAt > 0 || jobsQuery.dataUpdatedAt > 0;
+  const dashboardLiveRefreshing =
+    canLoadTenantData &&
+    dashboardLiveHydrated &&
+    (leadsQuery.isFetching || operationalQuery.isFetching || jobsQuery.isFetching);
+
+  useEffect(() => {
+    if (!canLoadTenantData) {
+      return;
+    }
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      void Promise.all([
+        leadsQuery.refetch(),
+        operationalQuery.refetch(),
+        jobsQuery.refetch(),
+        runsQuery.refetch(),
+      ]);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [canLoadTenantData, leadsQuery, operationalQuery, jobsQuery, runsQuery]);
 
   const runs = useMemo(
     () => (runsQuery.data?.items ?? []).filter((run) => run.tenant_id === tenantId),
     [runsQuery.data?.items, tenantId],
   );
-  const leads = leadsQuery.data ?? [];
+  const leads = useMemo(() => leadsQuery.data ?? [], [leadsQuery.data]);
   const filteredOffers = useMemo(() => {
     const rows = buildOfferRowsSummaryFromPipelineAndLeads(runs, leads);
     return rows.filter((offer) => isOfferFlowStatus(offer.status));
@@ -868,7 +998,7 @@ export default function DashboardPage() {
       primaryHref: row.primary_href,
       urgencyScore: row.urgency_score,
     }));
-  }, [operational?.attention?.items]);
+  }, [operational]);
 
   const acceptedToday =
     operational && !jobsBoot
@@ -907,9 +1037,32 @@ export default function DashboardPage() {
       return mapApiIntakeSeriesToChart(operational.intake.series, intakeRange);
     }
     return [];
-  }, [operational?.intake?.series, intakeRange]);
+  }, [operational, intakeRange]);
 
   const chartSummary = operational?.intake.summary ?? null;
+
+  const intakePeriodSummary = useMemo(() => {
+    if (!chartSummary) {
+      return null;
+    }
+    const total = chartSummary.total;
+    const prior = chartSummary.prior_range_total;
+    if (prior > 0) {
+      const rawPct = ((total - prior) / prior) * 100;
+      const pct = Math.round(rawPct * 10) / 10;
+      if (pct > 0) {
+        return { total, trend: "up" as const, pct };
+      }
+      if (pct < 0) {
+        return { total, trend: "down" as const, pct };
+      }
+      return { total, trend: "stable" as const, pct: 0 };
+    }
+    if (total > 0) {
+      return { total, trend: "new" as const, pct: null as number | null };
+    }
+    return { total, trend: "empty" as const, pct: null as number | null };
+  }, [chartSummary]);
 
   const handleCopyIntake = async () => {
     try {
@@ -923,7 +1076,7 @@ export default function DashboardPage() {
 
   if (session.isLoading) {
     return (
-      <div className={cn(DASHBOARD_PAGE_CLASS, "space-y-2.5")}>
+      <div className={cn(DASHBOARD_PAGE_CLASS, "space-y-4")}>
         <SessionLoadingPlaceholder />
       </div>
     );
@@ -947,8 +1100,13 @@ export default function DashboardPage() {
   const kpiBoot = operationalBoot;
   const pipelineRunsInView = operational?.activity_strip.pipeline_runs_in_view ?? runs.length;
 
+  const dashSector = resolveDashboardSector(tenantMeQuery.data?.sector);
+  const SectorGlyph = dashSector === "insurance" ? Home : dashSector === "logistics" ? Sun : Briefcase;
+  const headerPrimaryTitle =
+    tenantMeQuery.data?.vertical?.label?.trim() || t("dashboard.operational.title");
+
   return (
-    <div className={cn(DASHBOARD_PAGE_CLASS, "space-y-2.5")}>
+    <div className={cn(DASHBOARD_PAGE_CLASS, "space-y-5")}>
       {hasPartialError ? (
         <Alert
           variant="default"
@@ -987,24 +1145,23 @@ export default function DashboardPage() {
         </Alert>
       ) : null}
 
-      <PageHeader
-        className="gap-1 sm:items-end sm:justify-between sm:gap-5"
-        kicker={t("dashboard.operational.header_kicker")}
-        title={t("dashboard.operational.title")}
-        description={t("dashboard.operational.subtitle")}
-        descriptionClassName="max-w-[min(100%,40rem)] text-[12.5px] leading-[1.45] text-zinc-500"
-        aside={
-          <p className="text-[12px] font-medium tabular-nums text-zinc-500">
-            {new Date().toLocaleDateString(getDateLocale(), {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}
-          </p>
-        }
-      />
-
-      <DashboardShortcuts />
+      <header className="flex flex-col gap-1 border-b border-slate-200/90 pb-2.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500">
+            <SectorGlyph className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          <h1 className="min-w-0 text-[1.05rem] font-semibold leading-tight tracking-[-0.02em] text-slate-900 sm:text-[1.125rem]">
+            {headerPrimaryTitle}
+          </h1>
+        </div>
+        <p className="shrink-0 text-[11px] font-medium tabular-nums text-slate-500">
+          {new Date().toLocaleDateString(getDateLocale(), {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })}
+        </p>
+      </header>
 
       <section className="w-full">
         <KpiStrip
@@ -1015,7 +1172,7 @@ export default function DashboardPage() {
               hint: t("dashboard.operational.kpi.new_requests.hint"),
               context: !kpiBoot && operational ? kpiContextNewRequests(operational.kpis.new_requests) : undefined,
               contextHelp: t("context_help.dashboard_kpi_new_requests"),
-              href: "/customers",
+              href: "/customers?filter=open",
               ariaGoTo: t("dashboard.operational.kpi.go_to_aria", {
                 label: t("dashboard.operational.kpi.new_requests.label"),
               }),
@@ -1046,7 +1203,7 @@ export default function DashboardPage() {
               hint: t("dashboard.operational.kpi.review_queue.hint"),
               context: !kpiBoot && operational ? kpiContextReview(operational.kpis.review_queue) : undefined,
               contextHelp: t("context_help.dashboard_kpi_review_queue"),
-              href: "/review",
+              href: "/review?filter=attention",
               ariaGoTo: t("dashboard.operational.kpi.go_to_aria", {
                 label: t("dashboard.operational.kpi.review_queue.label"),
               }),
@@ -1055,45 +1212,98 @@ export default function DashboardPage() {
         />
       </section>
 
-      <section className="w-full">
-        <IntakeCompact intakeUrl={intakeUrl} copied={copied} onCopy={handleCopyIntake} />
-      </section>
+      <IntakePrimaryBar intakeUrl={intakeUrl} copied={copied} onCopy={handleCopyIntake} />
 
-      {/* Chart (dominant) + attention rail (fixed width on large screens) */}
-      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:items-start lg:gap-3">
-        <div className="min-w-0">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-5">
+          <OperationalPanel
+            icon={Inbox}
+            title={t("dashboard.operational.new_requests_panel.title")}
+            description={t("dashboard.operational.new_requests_panel.description")}
+            count={
+              leadsBoot ? (
+                leadsDelay ? (
+                  <KpiValueSkeleton className="h-[22px] min-w-[1.5rem] rounded-[10px]" />
+                ) : (
+                  <PanelCountStatic />
+                )
+              ) : (
+                leads.length
+              )
+            }
+            footer={
+              <Link
+                href="/customers"
+                className="motion-interactive inline-flex items-center gap-1 text-[13px] font-semibold text-zinc-900 underline-offset-4 transition-[color,text-decoration-color] duration-[120ms] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2"
+              >
+                {t("dashboard.operational.new_requests_panel.footer_link")}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            }
+          >
+            <div className="flex min-h-[min(220px,36vh)] flex-col">
+              {leadsBoot ? (
+                <ListPanelRowsSkeleton showPulse={leadsDelay} />
+              ) : leads.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400">
+                    <Inbox className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                  <p className="mt-2.5 text-[12.5px] font-semibold leading-snug text-slate-900">
+                    {t("dashboard.operational.new_requests_panel.empty_title")}
+                  </p>
+                  <p className="sr-only">{t("dashboard.operational.new_requests_panel.empty_description")}</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {leads.slice(0, 5).map((lead: TenantLeadListItem) => (
+                    <li key={lead.id}>
+                      <ListRow
+                        href={`/customers/${lead.id}`}
+                        primary={
+                          (lead.name ?? "").trim()
+                            ? (lead.name ?? "").trim()
+                            : t("dashboard.operational.fallback_customer_label")
+                        }
+                        secondary={lead.email || null}
+                        badge={<StatusBadge status={lead.status}>{tStatus(lead.status)}</StatusBadge>}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </OperationalPanel>
+
           <section
             aria-labelledby="dash-analytics-heading"
-            className="overflow-hidden rounded-xl border border-zinc-200/75 bg-white shadow-[0_1px_0_rgba(15,23,42,0.03)]"
+            className="overflow-hidden rounded-2xl border border-zinc-200 bg-[#FFFFFF] shadow-sm"
           >
-          <div className="border-b border-zinc-200/60 bg-gradient-to-b from-white to-zinc-50/35 px-3 py-2.5 sm:px-4 sm:py-3">
-            <p className="text-[10px] font-semibold uppercase leading-none tracking-[0.05em] text-zinc-500">
-              {t("dashboard.operational.analytics_section.kicker")}
-            </p>
+          <div className="border-b border-zinc-200 px-4 py-3">
             <h2
               id="dash-analytics-heading"
-              className="mt-1 text-[14px] font-semibold leading-tight tracking-[-0.02em] text-zinc-950"
+              className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-zinc-900"
             >
               {t("dashboard.operational.analytics_section.title")}
             </h2>
-            <p className="mt-0.5 text-[12px] font-medium leading-snug text-zinc-500">
+            <p className="mt-0.5 text-[11px] font-medium leading-snug text-zinc-500">
               {t("dashboard.operational.analytics_section.subtitle")}
             </p>
           </div>
 
-          <div className="space-y-2.5 p-2.5 sm:p-3">
+          <div className="space-y-2.5 p-2 sm:p-2.5">
             <div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold leading-snug tracking-tight text-zinc-600">
+                  <p className="text-[12px] font-semibold leading-snug text-zinc-800">
                     {t("dashboard.operational.analytics_section.line_title")}
                   </p>
-                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-zinc-500">
+                  <p className="mt-0.5 text-[11px] font-medium leading-snug text-zinc-500">
                     {t("dashboard.operational.analytics_section.line_description", { days: intakeRange })}
                   </p>
                 </div>
                 <div
-                  className="flex w-full shrink-0 rounded-lg border border-zinc-200/70 bg-zinc-100/40 p-0.5 sm:w-auto"
+                  className="flex w-full shrink-0 rounded-full border border-zinc-200 bg-[#EEF4F0] p-0.5 sm:w-auto"
                   role="group"
                   aria-label={t("dashboard.operational.chart.range_group_aria")}
                 >
@@ -1104,10 +1314,10 @@ export default function DashboardPage() {
                       disabled={intakeChartBoot}
                       onClick={() => setIntakeRange(d)}
                       className={cn(
-                        "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-[150ms] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/28 focus-visible:ring-offset-2 sm:flex-initial sm:px-2.5",
+                        "flex-1 rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums motion-safe:transition-[background-color,color,box-shadow] motion-safe:duration-[150ms] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A7C59]/28 focus-visible:ring-offset-2 sm:flex-initial sm:px-3",
                         intakeRange === d
-                          ? "bg-white text-zinc-950 shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-zinc-200/90"
-                          : "text-zinc-600 hover:bg-white/85 hover:text-zinc-900",
+                          ? "bg-[#4A7C59] text-white shadow-sm"
+                          : "text-zinc-600 hover:bg-white hover:text-zinc-800",
                       )}
                     >
                       {d === 7
@@ -1121,12 +1331,66 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <div className="mt-1.5 min-h-0 rounded-lg border border-zinc-100/80 bg-zinc-50/30 p-0.5 sm:p-1">
+
+              <div className="mt-2 border-t border-slate-200 pt-2">
                 {intakeChartBoot ? (
                   operationalDelay ? (
-                    <DashSkeleton className="h-[224px] w-full rounded-[10px]" />
+                    <div className="space-y-2">
+                      <DashSkeleton className="h-9 w-44 max-w-full rounded-md" />
+                      <DashSkeleton className="h-4 w-56 max-w-full rounded-md" />
+                    </div>
                   ) : (
-                    <div className="h-[224px] w-full rounded-[10px] bg-zinc-100/75" aria-hidden />
+                    <div className="space-y-2" aria-hidden>
+                      <div className="h-9 w-44 max-w-full rounded-md bg-zinc-100/75" />
+                      <div className="h-4 w-56 max-w-full rounded-md bg-zinc-100/75" />
+                    </div>
+                  )
+                ) : intakePeriodSummary ? (
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xl font-semibold tabular-nums tracking-[-0.03em] text-slate-900">
+                        {t("dashboard.operational.analytics_section.intake_headline", {
+                          count: intakePeriodSummary.total,
+                        })}
+                      </p>
+                      <p className="mt-0.5 text-[11px] font-medium tabular-nums text-zinc-500">
+                        {t("dashboard.operational.analytics_section.intake_period_caption", { days: intakeRange })}
+                      </p>
+                    </div>
+                    <p
+                      className={cn(
+                        "shrink-0 text-[13px] font-semibold tabular-nums leading-snug",
+                        intakePeriodSummary.trend === "up" && "text-emerald-700",
+                        intakePeriodSummary.trend === "down" && "text-rose-700",
+                        intakePeriodSummary.trend === "stable" && "text-zinc-500",
+                        (intakePeriodSummary.trend === "new" || intakePeriodSummary.trend === "empty") && "text-zinc-500",
+                      )}
+                    >
+                      {intakePeriodSummary.trend === "up" || intakePeriodSummary.trend === "down" ? (
+                        t("dashboard.operational.analytics_section.intake_trend_vs_prior", {
+                          pct: formatIntakeTrendPctLabel(
+                            intakePeriodSummary.pct ?? 0,
+                            intakePeriodSummary.trend,
+                          ),
+                        })
+                      ) : intakePeriodSummary.trend === "stable" ? (
+                        t("dashboard.operational.analytics_section.intake_trend_stable")
+                      ) : intakePeriodSummary.trend === "new" ? (
+                        t("dashboard.operational.analytics_section.intake_trend_no_baseline")
+                      ) : (
+                        t("dashboard.operational.analytics_section.intake_trend_no_data")
+                      )}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-1.5 min-h-0 rounded-md border border-slate-200 bg-white p-0">
+                {intakeChartBoot ? (
+                  operationalDelay ? (
+                    <DashSkeleton className="h-[264px] w-full rounded-md" />
+                  ) : (
+                    <div className="h-[264px] w-full rounded-md bg-slate-100/80" aria-hidden />
                   )
                 ) : (
                   <FadeIn>
@@ -1139,12 +1403,12 @@ export default function DashboardPage() {
                   </FadeIn>
                 )}
               </div>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {operationalBoot ? (
                   operationalDelay ? (
-                    <DashSkeleton className="h-[118px] w-full rounded-[10px]" />
+                    <DashSkeleton className="h-[104px] w-full rounded-md" />
                   ) : (
-                    <div className="h-[118px] w-full rounded-[10px] bg-zinc-100/75" aria-hidden />
+                    <div className="h-[104px] w-full rounded-md bg-slate-100/80" aria-hidden />
                   )
                 ) : (
                   <FadeIn>
@@ -1161,14 +1425,14 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="border-t border-zinc-200/65 pt-2">
-              <p className="text-[11px] font-semibold leading-snug tracking-tight text-zinc-600">
+            <div className="border-t border-zinc-200 pt-2">
+              <p className="text-[11.5px] font-semibold leading-snug text-slate-800">
                 {t("dashboard.operational.analytics_section.donut_title")}
               </p>
-              <p className="mt-0.5 text-[12px] font-medium leading-snug text-zinc-500">
+              <p className="mt-0.5 text-[11px] font-medium leading-snug text-slate-500">
                 {t("dashboard.operational.analytics_section.donut_description")}
               </p>
-              <div className="mt-1.5">
+              <div className="mt-2">
                 {statusDistributionBoot ? (
                   statusDelay ? (
                     <div className="space-y-2">
@@ -1182,7 +1446,7 @@ export default function DashboardPage() {
                     </div>
                   )
                 ) : statusDistribution.length === 0 ? (
-                  <p className="type-body-secondary py-2 text-center text-[13px] leading-[1.45] text-zinc-600">
+                  <p className="py-2 text-center text-[11px] font-medium leading-snug text-slate-500">
                     {t("dashboard.operational.distribution.no_data")}
                   </p>
                 ) : (
@@ -1196,16 +1460,142 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-2.5">
+        <div className="flex min-w-0 flex-col gap-5">
+          <section
+            aria-labelledby="dash-activity-heading"
+            className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
+          >
+            <div className="flex flex-col gap-0.5 border-b border-zinc-200 bg-white px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-[9px] font-semibold uppercase leading-none tracking-[0.06em] text-slate-400">
+                  {t("dashboard.operational.activity.kicker")}
+                </p>
+                <h2
+                  id="dash-activity-heading"
+                  className="text-[13px] font-semibold leading-tight tracking-[-0.02em] text-zinc-900"
+                >
+                  {t("dashboard.operational.activity.title")}
+                </h2>
+                {operationalBoot ? (
+                  operationalDelay ? (
+                    <DashSkeleton className="mt-0.5 h-2.5 w-[10rem] rounded" />
+                  ) : (
+                    <span className="mt-0.5 block h-2.5 w-[10rem] rounded bg-slate-100" aria-hidden />
+                  )
+                ) : (
+                  <p className="text-[10px] font-medium leading-snug text-zinc-500">
+                    {t("dashboard.operational.activity.subtitle", { count: pipelineRunsInView })}
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
+                <DashboardActivityLiveRow
+                  lastUpdatedMs={dashboardLiveDataUpdatedAt}
+                  isRefreshing={dashboardLiveRefreshing}
+                  visible={canLoadTenantData}
+                />
+                <div className="flex shrink-0 items-baseline gap-1 self-end rounded-md border border-zinc-200 bg-white px-1.5 py-0.5">
+                  <span className="text-[9px] font-semibold uppercase leading-none tracking-wide text-slate-400">
+                    {t("dashboard.operational.activity.scheduled_label")}
+                  </span>
+                  {jobsBoot ? (
+                    jobsDelay ? (
+                      <DashSkeleton className="h-3.5 w-5 rounded" />
+                    ) : (
+                      <span className="inline-block h-3.5 w-5 rounded bg-slate-100" aria-hidden />
+                    )
+                  ) : (
+                    <span className="text-xs font-semibold tabular-nums tracking-[-0.02em] text-slate-900">{acceptedToday}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="border-b border-slate-100 px-3 py-1.5">
+              <p className="text-[10px] font-medium leading-snug text-slate-500">{t("dashboard.operational.activity.body")}</p>
+            </div>
+
+            <div className="flex items-start justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
+              <div className="flex min-w-0 items-start gap-2">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500">
+                  <ClipboardList className="h-3 w-3" aria-hidden />
+                </span>
+                <div className="min-w-0 space-y-0.5">
+                  <h3 className="text-[11.5px] font-semibold leading-tight tracking-[-0.02em] text-slate-900">
+                    {t("dashboard.operational.recent_done.title")}
+                  </h3>
+                  <p className="text-[10px] font-medium leading-snug text-slate-500">
+                    {t("dashboard.operational.recent_done.description")}
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex min-h-[20px] min-w-[1.5rem] shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-semibold tabular-nums text-slate-700">
+                {jobsBoot ? (
+                  jobsDelay ? (
+                    <KpiValueSkeleton className="h-[20px] min-w-[1.5rem] rounded-md" />
+                  ) : (
+                    <PanelCountStatic />
+                  )
+                ) : (
+                  doneJobs.length
+                )}
+              </span>
+            </div>
+
+            <div className="flex flex-col px-1.5 py-0">
+              {jobsBoot ? (
+                <ListPanelRowsSkeleton showPulse={jobsDelay} />
+              ) : doneJobs.length === 0 ? (
+                <div className="px-2 py-2 text-center">
+                  <p className="text-[11px] font-medium leading-snug text-slate-600">
+                    {t("dashboard.operational.recent_done.empty_title")}
+                  </p>
+                  <p className="sr-only">{t("dashboard.operational.recent_done.empty_description")}</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {doneJobs.slice(0, 5).map((job: JobListItem) => {
+                    const meta = formatDateTime(job.done_at);
+                    return (
+                      <li key={job.id}>
+                        <ListRow
+                          href={`/offertes/${job.lead_id}`}
+                          primary={
+                            job.lead_name?.trim()
+                              ? job.lead_name
+                              : t("dashboard.operational.fallback_customer_label")
+                          }
+                          secondary={
+                            meta !== "—" ? t("dashboard.operational.job_done_secondary", { date: meta }) : null
+                          }
+                          badge={<StatusBadge status={job.status}>{tStatus(job.status)}</StatusBadge>}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div className="border-t border-slate-100 px-3 py-1.5">
+              <p className="text-[10px] leading-snug text-slate-500">
+                {t("dashboard.operational.recent_done.footer_pipeline")}{" "}
+                <span className="font-semibold tabular-nums text-slate-800">
+                  {hasQuoteAmountsInPipeline ? `€ ${amountTotal.toFixed(0)}` : "—"}
+                </span>
+              </p>
+            </div>
+          </section>
+
           <OperationalPanel
             variant="attention"
+            compact
             icon={AlertCircle}
             title={t("dashboard.operational.attention.title")}
             description={t("dashboard.operational.attention.description")}
             count={
               operationalBoot ? (
                 operationalDelay ? (
-                  <KpiValueSkeleton className="h-[22px] min-w-[1.5rem] rounded-[10px]" />
+                  <KpiValueSkeleton className="h-[20px] min-w-[1.5rem] rounded-md" />
                 ) : (
                   <PanelCountStatic />
                 )
@@ -1222,8 +1612,9 @@ export default function DashboardPage() {
                     variant: needsAttentionEmpty ? "outline" : "default",
                     size: "sm",
                   }),
+                  "h-8",
                   needsAttentionEmpty
-                    ? "w-full justify-center gap-1.5 border-zinc-300/85 font-semibold text-zinc-800 hover:bg-white hover:text-zinc-950 sm:w-auto"
+                    ? "w-full justify-center gap-1.5 border-slate-300 font-semibold text-slate-800 hover:bg-slate-50 hover:text-slate-950 sm:w-auto"
                     : "w-full justify-center gap-1.5 font-semibold sm:w-auto",
                 )}
               >
@@ -1236,21 +1627,18 @@ export default function DashboardPage() {
               {operationalBoot ? (
                 <ListPanelRowsSkeleton showPulse={operationalDelay} />
               ) : needsAttentionEmpty ? (
-                <div className="flex flex-col items-center px-2 py-4 text-center">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200/80 bg-zinc-50 text-primary">
-                    <CheckCircle2 className="h-4 w-4" aria-hidden />
-                  </span>
-                  <p className="mt-2.5 text-[13px] font-semibold leading-[1.45] text-zinc-900">
+                <div className="px-2 py-2 text-center">
+                  <p className="text-[12px] font-semibold text-slate-900">
                     {t("dashboard.operational.attention.empty_title")}
                   </p>
-                  <p className="type-body-secondary mt-1 max-w-[200px] text-zinc-600">
+                  <p className="mt-0.5 text-[10px] font-medium leading-snug text-slate-500">
                     {t("dashboard.operational.attention.empty_description")}
                   </p>
                 </div>
               ) : (
                 <>
                   {operational?.attention.summary ? (
-                    <p className="px-1 pb-1.5 text-[11px] font-medium leading-snug text-zinc-500">
+                    <p className="px-0.5 pb-1 text-[10px] font-medium leading-snug text-slate-500">
                       {t("dashboard.operational.attention.summary_line", {
                         shown: operational.attention.summary.shown,
                         total: operational.attention.summary.total,
@@ -1263,7 +1651,7 @@ export default function DashboardPage() {
                       })}
                     </p>
                   ) : null}
-                  <ul className="divide-y divide-zinc-200/70">
+                  <ul className="divide-y divide-slate-100">
                     {reviewItems.map((item: ReviewQueueRow) => {
                       const meta = formatDateTime(item.updatedAt ?? item.createdAt);
                       const issueLine = attentionFriendlyStatus(item.status);
@@ -1285,7 +1673,7 @@ export default function DashboardPage() {
                                   {t("dashboard.operational.attention.urgency_high")}
                                 </StatusBadge>
                               ) : mid ? (
-                                <StatusBadge status={item.status} className="ring-1 ring-amber-200/60">
+                                <StatusBadge status={item.status} className="ring-1 ring-[#4A7C59]/35">
                                   {t("dashboard.operational.attention.urgency_mid")}
                                 </StatusBadge>
                               ) : null
@@ -1299,176 +1687,7 @@ export default function DashboardPage() {
               )}
             </div>
           </OperationalPanel>
-
-          <section className="overflow-hidden rounded-xl border border-zinc-200/75 bg-white shadow-[0_1px_0_rgba(15,23,42,0.03)]">
-              <div className="flex flex-col gap-0.5 border-b border-zinc-200/65 bg-white px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-[10px] font-semibold uppercase leading-none tracking-[0.05em] text-zinc-500">
-                    {t("dashboard.operational.activity.kicker")}
-                  </p>
-                  <h2 className="text-[13px] font-semibold leading-tight tracking-[-0.02em] text-zinc-950">
-                    {t("dashboard.operational.activity.title")}
-                  </h2>
-                  {operationalBoot ? (
-                    operationalDelay ? (
-                      <DashSkeleton className="mt-0.5 h-3 w-[11rem] rounded" />
-                    ) : (
-                      <span className="mt-0.5 block h-3 w-[11rem] rounded bg-zinc-100/75" aria-hidden />
-                    )
-                  ) : (
-                    <p className="text-[11px] font-medium leading-snug text-zinc-500">
-                      {t("dashboard.operational.activity.subtitle", { count: pipelineRunsInView })}
-                    </p>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-baseline gap-1 rounded-md border border-zinc-200/70 bg-zinc-50/90 px-2 py-0.5">
-                  <span className="text-[9px] font-semibold uppercase leading-none tracking-wide text-zinc-500">
-                    {t("dashboard.operational.activity.scheduled_label")}
-                  </span>
-                  {jobsBoot ? (
-                    jobsDelay ? (
-                      <DashSkeleton className="h-4 w-5 rounded" />
-                    ) : (
-                      <span className="inline-block h-4 w-5 rounded bg-zinc-100/75" aria-hidden />
-                    )
-                  ) : (
-                    <span className="text-sm font-semibold tabular-nums tracking-[-0.02em] text-zinc-950">{acceptedToday}</span>
-                  )}
-                </div>
-              </div>
-              <div className="px-3 py-2">
-                <p className="text-[12px] font-medium leading-snug text-zinc-500">{t("dashboard.operational.activity.body")}</p>
-              </div>
-          </section>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:items-start lg:gap-3">
-        <OperationalPanel
-          icon={Inbox}
-          title={t("dashboard.operational.new_requests_panel.title")}
-          description={t("dashboard.operational.new_requests_panel.description")}
-          count={
-            leadsBoot ? (
-              leadsDelay ? (
-                <KpiValueSkeleton className="h-[22px] min-w-[1.5rem] rounded-[10px]" />
-              ) : (
-                <PanelCountStatic />
-              )
-            ) : (
-              leads.length
-            )
-          }
-          footer={
-            <Link
-              href="/customers"
-              className="motion-interactive inline-flex items-center gap-1 text-[13px] font-semibold text-zinc-900 underline-offset-4 transition-[color,text-decoration-color] duration-[120ms] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2"
-            >
-              {t("dashboard.operational.new_requests_panel.footer_link")}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          }
-        >
-          <div className="flex flex-col">
-            {leadsBoot ? (
-              <ListPanelRowsSkeleton showPulse={leadsDelay} />
-            ) : leads.length === 0 ? (
-              <div className="flex flex-col items-center px-3 py-4 text-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200/80 bg-zinc-50 text-primary">
-                  <Inbox className="h-4 w-4" aria-hidden />
-                </span>
-                <p className="mt-2.5 text-[13px] font-semibold leading-[1.45] text-zinc-900">
-                  {t("dashboard.operational.new_requests_panel.empty_title")}
-                </p>
-                <p className="type-body-secondary mt-1 max-w-[220px] text-zinc-600">
-                  {t("dashboard.operational.new_requests_panel.empty_description")}
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-zinc-200/70">
-                {leads.slice(0, 5).map((lead: TenantLeadListItem) => (
-                  <li key={lead.id}>
-                    <ListRow
-                      href={`/customers/${lead.id}`}
-                      primary={
-                        (lead.name ?? "").trim()
-                          ? (lead.name ?? "").trim()
-                          : t("dashboard.operational.fallback_customer_label")
-                      }
-                      secondary={lead.email || null}
-                      badge={<StatusBadge status={lead.status}>{tStatus(lead.status)}</StatusBadge>}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </OperationalPanel>
-
-        <OperationalPanel
-          icon={ClipboardList}
-          title={t("dashboard.operational.recent_done.title")}
-          description={t("dashboard.operational.recent_done.description")}
-          count={
-            jobsBoot ? (
-              jobsDelay ? (
-                <KpiValueSkeleton className="h-[22px] min-w-[1.5rem] rounded-[10px]" />
-              ) : (
-                <PanelCountStatic />
-              )
-            ) : (
-              doneJobs.length
-            )
-          }
-          footer={
-            <p className="type-body-secondary text-zinc-600">
-              {t("dashboard.operational.recent_done.footer_pipeline")}{" "}
-              <span className="font-semibold tabular-nums text-zinc-900">
-                {hasQuoteAmountsInPipeline ? `€ ${amountTotal.toFixed(0)}` : "—"}
-              </span>
-            </p>
-          }
-        >
-          <div className="flex flex-col">
-            {jobsBoot ? (
-              <ListPanelRowsSkeleton showPulse={jobsDelay} />
-            ) : doneJobs.length === 0 ? (
-              <div className="flex flex-col items-center px-3 py-4 text-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200/80 bg-zinc-50 text-primary">
-                  <ClipboardList className="h-4 w-4" aria-hidden />
-                </span>
-                <p className="mt-2.5 text-[13px] font-semibold leading-[1.45] text-zinc-900">
-                  {t("dashboard.operational.recent_done.empty_title")}
-                </p>
-                <p className="type-body-secondary mt-1 max-w-[220px] text-zinc-600">
-                  {t("dashboard.operational.recent_done.empty_description")}
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-zinc-200/70">
-                {doneJobs.slice(0, 5).map((job: JobListItem) => {
-                  const meta = formatDateTime(job.done_at);
-                  return (
-                    <li key={job.id}>
-                      <ListRow
-                        href={`/offertes/${job.lead_id}`}
-                        primary={
-                          job.lead_name?.trim()
-                            ? job.lead_name
-                            : t("dashboard.operational.fallback_customer_label")
-                        }
-                        secondary={
-                          meta !== "—" ? t("dashboard.operational.job_done_secondary", { date: meta }) : null
-                        }
-                        badge={<StatusBadge status={job.status}>{tStatus(job.status)}</StatusBadge>}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </OperationalPanel>
       </div>
     </div>
   );

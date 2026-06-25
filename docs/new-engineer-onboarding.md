@@ -1,4 +1,4 @@
-# New Engineer Onboarding Guide
+﻿# New Engineer Onboarding Guide
 
 _Inversiq — June 2026_
 
@@ -8,7 +8,7 @@ Welcome to Inversiq. This guide gets you from zero to productive in the first we
 
 ## The Business in Two Paragraphs
 
-Inversiq automates the gap between a customer submitting an inquiry and receiving a priced estimate. A painting contractor gets 40 lead requests per week. Without Inversiq: manual site visits, inconsistent pricing, missed follow-ups, no systematic feedback on whether prices were right.
+Inversiq automates the gap between a customer submitting an inquiry and receiving a priced estimate. A construction operator gets 40 lead requests per week. Without Inversiq: manual site visits, inconsistent pricing, missed follow-ups, no systematic feedback on whether prices were right.
 
 With Inversiq: the customer fills in an intake form, uploads photos, and receives a branded HTML estimate within seconds. The system screens photos for quality, sends usable ones to OpenAI Vision to extract area and condition signals, runs them through a JSON-rules pricing engine, and decides automatically whether to deliver the estimate or route it to human review. After the deal closes, the operator records the outcome, and the intelligence layer uses that feedback to detect systematic pricing errors over time.
 
@@ -84,7 +84,7 @@ If you don't have AWS credentials, set `USE_MOCK_STORAGE=true` in your `.env`. T
 
 ### Day 2: Read the Core Pipeline
 
-The entire product is `app/verticals/painting/pipeline.py`. Read it completely. It is about 400 lines and contains:
+The entire product is `app/verticals/construction/pipeline.py`. Read it completely. It is about 400 lines and contains:
 
 1. `_demo_vision()` — fallback when no photos are uploaded
 2. `_extract_estimated_area()` — reads m² from intake payload
@@ -143,7 +143,7 @@ The `inversiq/engine/` package is the next-generation pipeline runner. It is mor
 
 The runner handles: DB persistence of PipelineRun/PipelineStepRun, EngineEvent emission, confidence accumulation, structured logging, Prometheus metrics, error categorization, step contract validation. It is decoupled from the app layer via lazy imports.
 
-The `PaintingVertical.get_workflows()` in `app/verticals/painting/__init__.py` defines the step configuration that will drive this runner when the migration is complete.
+The `ConstructionVertical.get_workflows()` in `app/verticals/construction/__init__.py` defines the step configuration that will drive this runner when the migration is complete.
 
 ---
 
@@ -175,12 +175,12 @@ You will see `service=aether-api` in startup logs and `aether_` prefixes on Prom
 
 ### What a "Vertical" Is
 
-A vertical is a trade/service category: painting, roofing, solar. Each vertical has:
+A vertical is a trade/service category: painting, insurance, logistics, real_estate. Each vertical has:
 - Its own intake form (collects relevant fields)
 - Its own pricing rules (different trade = different cost structure)
 - Its own vision prompt (painting vs roofing requires different photo analysis)
 
-The painting vertical is the reference implementation. Roofing and solar have intake forms but no estimation pipeline yet.
+The construction vertical is the reference implementation. Roofing and solar have intake forms but no estimation pipeline yet.
 
 ### What a "Lead" Is
 
@@ -200,16 +200,16 @@ Operators subscribe at different plan tiers. Plan codes gate feature access. `SE
 
 | Task | Where to Look |
 |---|---|
-| Add a field to intake forms | `app/verticals/painting/templates/intake_form_nl.html` (form), `app/verticals/painting/intake_schema.json` (validation), and potentially `app/models/lead.py` if it needs a DB column |
-| Change pricing logic | `app/verticals/painting/pricing_engine_us.py` and/or the JSON rule files in `app/verticals/painting/rules/` |
-| Change the vision prompt | `app/verticals/painting/prompts/vision.md` |
-| Change review routing thresholds | `app/verticals/painting/needs_review.py` |
+| Add a field to intake forms | `app/verticals/construction/templates/intake_form_nl.html` (form), `app/verticals/construction/intake_schema.json` (validation), and potentially `app/models/lead.py` if it needs a DB column |
+| Change pricing logic | `app/verticals/construction/pricing_engine_us.py` and/or the JSON rule files in `app/verticals/construction/rules/` |
+| Change the vision prompt | `app/verticals/construction/prompts/vision.md` |
+| Change review routing thresholds | `app/verticals/construction/needs_review.py` |
 | Add an intelligence signal | `app/intelligence/detectors.py` (new detector function) + `app/intelligence/engine.py` (register in `run_all()`) + `app/intelligence/types.py` (add to `SignalType`) |
 | Add a new vertical | Copy `app/verticals/roofing/__init__.py` and `app/verticals/roofing/adapter.py` as a template |
 | Debug a failed pipeline run | Query `/pipeline-runs?status=FAILED`, inspect `failure_step` and step-level `error_message` |
 | Check what's in the operator's review queue | Query `/proposed-changes?tenant_id={id}` |
 | Add an API endpoint | Create a new router file in `app/routers/`, add `app.include_router()` in `app/main.py` |
-| Change email templates | `app/verticals/painting/estimate_email.py` and associated template files |
+| Change email templates | `app/verticals/construction/estimate_email.py` and associated template files |
 | Understand a branding decision | Check `app/services/branding.py` — branding allowed/denied logic and `app/billing/entitlements.py` |
 
 ---
@@ -218,7 +218,7 @@ Operators subscribe at different plan tiers. Plan codes gate feature access. `SE
 
 ### If you're stuck on the pipeline
 
-The pipeline is `compute_quote_for_lead()` in `app/verticals/painting/pipeline.py`. The vision step calls `run_vision_for_lead()` in `app/tasks/vision_task.py`. The pricing step calls `run_pricing_engine()` in `app/verticals/painting/pricing_engine_us.py`. These are the three most important files in the product.
+The pipeline is `compute_quote_for_lead()` in `app/verticals/construction/pipeline.py`. The vision step calls `run_vision_for_lead()` in `app/tasks/vision_task.py`. The pricing step calls `run_pricing_engine()` in `app/verticals/construction/pricing_engine_us.py`. These are the three most important files in the product.
 
 ### If you're stuck on the data model
 

@@ -1,4 +1,4 @@
-# System Diagrams
+﻿# System Diagrams
 
 _Inversiq — June 2026_
 _All diagrams are Mermaid. Render with any Mermaid-compatible viewer._
@@ -12,7 +12,7 @@ graph TB
     subgraph CLIENTS["Client Surfaces"]
         CF["Customer Intake Forms\n(Public, Jinja2 HTML)"]
         NS["Next.js Operator SPA\n(frontend/, port 3000)"]
-        OD["Ops Dashboard\n(Jinja2 + HTMX, painting vertical)"]
+        OD["Ops Dashboard\n(Jinja2 + HTMX, construction vertical)"]
     end
 
     subgraph BACKEND["FastAPI Backend (app/main.py)"]
@@ -31,7 +31,7 @@ graph TB
             PIPE["Pipeline & Runs\n/pipeline-runs, /ops"]
             INT["Intelligence Layer\n/anomalies, /intelligence\n/trends, /health\n/reasoning, /focus"]
             GOV["Governance\n/proposed-changes\n/proposed-change-*"]
-            PAINT["Painting Vertical\n/app, /htmx, /integrations"]
+            PAINT["Construction Vertical\n/app, /htmx, /integrations"]
         end
 
         subgraph PIPELINE["Estimation Pipeline"]
@@ -423,7 +423,7 @@ erDiagram
 
 ```mermaid
 graph TB
-    subgraph TENANT_A["Tenant A (painting contractor)"]
+    subgraph TENANT_A["Tenant A (construction operator)"]
         LA["Leads"]
         PA["Pipeline Runs"]
         FA["Feedback"]

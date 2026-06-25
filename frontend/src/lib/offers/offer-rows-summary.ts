@@ -21,7 +21,7 @@ export function dedupeLatestByLead(items: PipelineRunItem[]): PipelineRunItem[] 
  * Dashboard / overview: offer rows from pipeline + leads only (no `/quotes/{id}/json`).
  * Amount and project description are left empty until a full offers fetch loads quote JSON.
  *
- * `publish_quote` / painting `compute_and_persist_quote` often update `Lead` without creating a
+ * `publish_quote` / `compute_and_persist_quote` often update `Lead` without creating a
  * `pipeline_runs` row. Those leads are merged in when they have an offer-flow status and no run exists.
  */
 export function buildOfferRowsSummaryFromPipelineAndLeads(

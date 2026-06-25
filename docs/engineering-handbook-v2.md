@@ -1,4 +1,4 @@
-# Inversiq Engineering Handbook v2
+﻿# Inversiq Engineering Handbook v2
 
 _Version 2.0 — June 2026_
 _Prepared by: Staff Engineering Review_
@@ -35,17 +35,17 @@ Inversiq is a **decision infrastructure platform** for trade and service busines
 
 ### What the Platform Does
 
-A painting contractor receives a customer inquiry. The customer fills in an intake form and uploads photos. Inversiq's pipeline runs within seconds: photos are scored for quality by a local ML model, usable photos are analyzed by OpenAI Vision to extract area estimates and surface conditions, a JSON-rules-based pricing engine computes a line-item estimate, and a branded HTML estimate is delivered to the customer. If any step produces low confidence or detects damage that raises risk, the system routes the estimate to a human review queue instead.
+A construction operator receives a customer inquiry. The customer fills in an intake form and uploads photos. Inversiq's pipeline runs within seconds: photos are scored for quality by a local ML model, usable photos are analyzed by OpenAI Vision to extract area estimates and surface conditions, a JSON-rules-based pricing engine computes a line-item estimate, and a branded HTML estimate is delivered to the customer. If any step produces low confidence or detects damage that raises risk, the system routes the estimate to a human review queue instead.
 
 After the deal closes, the operator records the outcome. Over time, the feedback loop feeds an intelligence layer: anomaly detection flags structural contradictions in run history, an intelligence engine detects behavioral patterns (systematic underpricing, repeated fallback usage), a trend engine classifies metric directions, a health layer produces pipeline health scores, a reasoning engine diagnoses root causes, and a governance layer surfaces proposed changes for human approval.
 
 ### Why It Matters
 
-The addressable market is vast: millions of trade businesses globally operate without systematic pricing infrastructure. CRMs help with pipeline management. Scheduling tools help with dispatch. No good generic solution exists for the core problem of turning a customer's vague request into a defensible, margin-protecting price. Inversiq is purpose-built for that gap.
+The addressable market is vast: millions of operators globally across construction, insurance, logistics, and real estate operate without systematic pricing infrastructure. CRMs help with pipeline management. Scheduling tools help with dispatch. No good generic solution exists for the core problem of turning a customer's vague request into a defensible, margin-protecting price. Inversiq is purpose-built for that gap.
 
 ### Technical Maturity
 
-The painting vertical is production-grade with a complete pipeline: intake → vision → pricing → HTML delivery → feedback → intelligence loop. Two additional verticals (roofing, solar) are scaffolded with intake forms and adapters. The backend is a FastAPI application with 70+ mounted routers, a PostgreSQL primary database, Redis for task queuing, and AWS S3 for file storage. The frontend is a Next.js operator SPA. An emerging `inversiq.engine` package provides a formally typed, config-driven pipeline runner that will eventually become the universal execution substrate.
+The construction vertical is production-grade with a complete pipeline: intake → vision → pricing → HTML delivery → feedback → intelligence loop. Two additional verticals (roofing, solar) are scaffolded with intake forms and adapters. The backend is a FastAPI application with 70+ mounted routers, a PostgreSQL primary database, Redis for task queuing, and AWS S3 for file storage. The frontend is a Next.js operator SPA. An emerging `inversiq.engine` package provides a formally typed, config-driven pipeline runner that will eventually become the universal execution substrate.
 
 ---
 
@@ -53,7 +53,7 @@ The painting vertical is production-grade with a complete pipeline: intake → v
 
 ### The Problem
 
-Trade and home services businesses share a universal bottleneck: turning inbound customer interest into a priced, delivered quote takes too long, varies too much between operators, and produces outcomes that are hard to analyze or improve. A painting contractor who receives 40 lead requests per week cannot manually visit all of them, price them consistently, or track which pricing decisions led to won or lost deals.
+Operational industries share a universal bottleneck: turning inbound customer interest into a priced, delivered quote takes too long, varies too much between operators, and produces outcomes that are hard to analyze or improve. A construction operator who receives 40 lead requests per week cannot manually visit all of them, price them consistently, or track which pricing decisions led to won or lost deals.
 
 ### The Architecture of the Solution
 
@@ -88,7 +88,7 @@ graph TB
             PUB["Public Intake\nRouters"]
             AUTH["Auth / Billing\nRouters"]
             OPS["Analytics / Ops\nRouters"]
-            PAINT["Painting Vertical\nRouters (app/htmx/integrations)"]
+            PAINT["Construction Vertical\nRouters (app/htmx/integrations)"]
         end
 
         subgraph PIPELINE["Pipeline Engine"]
@@ -159,11 +159,11 @@ graph TB
 | Service | Entry Point | Purpose |
 |---|---|---|
 | FastAPI App | `app/main.py` | HTTP API, routing (~70 routers), middleware |
-| Painting Pipeline | `app/verticals/painting/pipeline.py` | Imperative estimation pipeline (production) |
+| Construction Pipeline | `app/verticals/construction/pipeline.py` | Imperative estimation pipeline (production) |
 | Engine Runner | `inversiq/engine/runner.py` | Config-driven pipeline runner (next-gen) |
 | Vision Service | `app/tasks/vision_task.py` + `app/services/vision/` | OpenAI vision + photo quality screening |
-| Pricing Engine | `app/verticals/painting/pricing_engine_us.py` | JSON-rules-based pricing |
-| Review Decision | `app/verticals/painting/needs_review.py` | Hard/soft blocker review routing |
+| Pricing Engine | `app/verticals/construction/pricing_engine_us.py` | JSON-rules-based pricing |
+| Review Decision | `app/verticals/construction/needs_review.py` | Hard/soft blocker review routing |
 | Anomaly Engine | `app/anomaly/engine.py` | Structural contradiction detection |
 | Intelligence Engine | `app/intelligence/engine.py` | Behavioral pattern detection |
 | Trend Engine | `app/services/trend_engine.py` | Metric direction classification |
@@ -224,15 +224,15 @@ graph TB
 The vertical registry (`app/verticals/registry.py`) is the plugin system for trade verticals. A `VERTICALS` dict maps vertical keys to registered vertical instances. Two protocols exist: `BaseVertical` (Python class with `key`, `label`, `get_workflows()`, etc.) and `VerticalAdapter` (structural protocol for adapters that implement `render_intake_form()` and `create_lead_from_form()`).
 
 **Registered verticals (verified):**
-- `painting` — `PaintingVertical` (fully implemented, production-grade)
-- `roofing` — `RoofingAdapter` (intake form and lead creation implemented, no pipeline)
-- `solar` — `SolarAdapter` (intake form and lead creation implemented, no pipeline)
+- `painting` — `ConstructionVertical` (fully implemented, production-grade)
+
+
 
 The `Tenant.sector` field is validated against registered verticals at model save time via a `@validates("sector")` decorator. This enforces data consistency at the ORM layer.
 
 ### 5.2 Execution Engine (Pipeline)
 
-**Current production pipeline:** `app/verticals/painting/pipeline.py` — `compute_quote_for_lead()`
+**Current production pipeline:** `app/verticals/construction/pipeline.py` — `compute_quote_for_lead()`
 
 An imperative Python function that orchestrates five stages in sequence. No formal step registry — steps are direct function calls. Each stage's output feeds the next.
 
@@ -240,33 +240,33 @@ An imperative Python function that orchestrates five stages in sequence. No form
 
 A fully typed, config-driven pipeline runner. Steps are registered in a `StepRegistry`, step configurations are loaded from YAML (`inversiq/engine/config.py`), and execution is driven by iterating `config.steps`. The runner handles: PipelineRun DB persistence, per-step PipelineStepRun persistence, EngineEvent emission, confidence score accumulation (weakest-link min), structured logging via structlog, Prometheus metric emission, step contract validation, and error categorization. The runner is decoupled from the app layer via lazy imports.
 
-**Key design:** The `PaintingVertical.get_workflows()` method returns the step configuration list that will drive the engine runner when the migration from the imperative pipeline is complete. Eight steps are defined: `photo_quality`, `vision`, `aggregate`, `pricing`, `output`, `needs_review`, `render_html`, `store_html`.
+**Key design:** The `ConstructionVertical.get_workflows()` method returns the step configuration list that will drive the engine runner when the migration from the imperative pipeline is complete. Eight steps are defined: `photo_quality`, `vision`, `aggregate`, `pricing`, `output`, `needs_review`, `render_html`, `store_html`.
 
 ### 5.3 Vision Layer
 
 **Photo quality screening:** Local PyTorch/timm model in `app/ml/photo_qualtity/` (note: directory name has a typo — "qualtity" not "quality"). Training, evaluation, and export code exists. Inference via `app/services/photo_quality/inference.py`. Photos below the quality threshold are excluded before OpenAI API calls.
 
-**Vision inference:** `app/services/vision/openai_provider.py` sends usable photos to the OpenAI Vision API with the prompt from `app/verticals/painting/prompts/vision.md`. A `fallback_provider.py` handles primary provider failures. `aggregate.py` combines per-image predictions into a lead-level result.
+**Vision inference:** `app/services/vision/openai_provider.py` sends usable photos to the OpenAI Vision API with the prompt from `app/verticals/construction/prompts/vision.md`. A `fallback_provider.py` handles primary provider failures. `aggregate.py` combines per-image predictions into a lead-level result.
 
-**Vertical-specific aggregation:** `app/verticals/painting/vision_aggregate_us.py` applies painting-domain logic to the raw image predictions.
+**Vertical-specific aggregation:** `app/verticals/construction/vision_aggregate_us.py` applies painting-domain logic to the raw image predictions.
 
 **Output signals:** `area` (value_m2, confidence, sanity), `scope` (interior, paint_walls, paint_ceiling, paint_trim), `modifiers` (prep_level, complexity, risk), `vision_signal_confidence`, `uncertainty_score`, `coverage_score`, `needs_review`, `review_reasons`.
 
 ### 5.4 Pricing Engine
 
-**Entry point:** `app/verticals/painting/pricing_engine_us.py` — `run_pricing_engine()`
+**Entry point:** `app/verticals/construction/pricing_engine_us.py` — `run_pricing_engine()`
 
 Loads JSON rule sets (EU or US based on `lead.market`/locale), applies tenant pricing overrides from `Tenant.pricing_json`, and computes line-item estimates.
 
 **Rule files:**
-- `app/verticals/painting/rules/paintly_price_rules_eu.json` — EU rule set (verified)
+- `app/verticals/construction/rules/paintly_price_rules_eu.json` — EU rule set (verified)
 - US rule set referenced by `_pick_rules_from_lead()` function
 
 **Tenant overrides:** `Tenant.pricing_json` allows any rule parameter to be adjusted per tenant without modifying base rule files. Loaded and applied at runtime in `app/services/tenant_pricing.py`.
 
 ### 5.5 Review Decision Engine
 
-**Entry point:** `app/verticals/painting/needs_review.py` — `needs_review_from_output()`
+**Entry point:** `app/verticals/construction/needs_review.py` — `needs_review_from_output()`
 
 Returns a list of reason codes (empty list = auto-deliver; non-empty = needs human review).
 
@@ -531,30 +531,30 @@ Tenant
   app/tasks/vision_task.py → run_vision_for_lead()
   ├── Each photo scored: local PyTorch model (app/services/photo_quality/inference.py)
   ├── Usable photos → OpenAI Vision API
-  │   └── Prompt: app/verticals/painting/prompts/vision.md
+  │   └── Prompt: app/verticals/construction/prompts/vision.md
   ├── Per-image predictions aggregated (vision_aggregate_us.py)
   │   └── area_m2, scope, modifiers, damages, uncertainty, coverage
   └── Fallback: no files → _demo_vision() returns placeholder signals
 
 [3. PRICING]
-  app/verticals/painting/pricing_engine_us.py → run_pricing_engine()
+  app/verticals/construction/pricing_engine_us.py → run_pricing_engine()
   ├── Rules loaded from JSON (EU or US based on locale)
   ├── Tenant pricing overrides applied (Tenant.pricing_json)
   └── Output: line items, subtotals, VAT, grand total, assumptions
 
 [4. OUTPUT BUILDER]
-  app/verticals/painting/pricing_output_builder.py → build_pricing_output()
+  app/verticals/construction/pricing_output_builder.py → build_pricing_output()
   ├── Merges vision metadata into estimate output
   └── Resolves branding (company name, logo) based on plan tier / entitlements
 
 [5. REVIEW DECISION]
-  app/verticals/painting/needs_review.py → needs_review_from_output()
+  app/verticals/construction/needs_review.py → needs_review_from_output()
   ├── Hard blockers: missing total, zero/negative total → REVIEW
   ├── Soft signals: low confidence, extreme areas, photo issues, damage
   └── Decision: auto-deliver if 0–1 soft signals; NEEDS_REVIEW if 2+
 
 [6. HTML RENDER + S3 STORAGE]
-  app/verticals/painting/render_estimate.py → render_estimate_html()
+  app/verticals/construction/render_estimate.py → render_estimate_html()
   ├── Jinja2 renders estimate to HTML
   ├── HTML stored in S3: leads/{lead_id}/estimates/{date}/{uuid}.html
   └── public_token generated if not yet set
@@ -635,7 +635,7 @@ Every entity carries `tenant_id`. Database queries scope to tenant by default. T
 
 ### 8. Config Over Code for Verticals
 
-New verticals register through the vertical registry. The `PaintingVertical.get_workflows()` method defines the step sequence as configuration. The `inversiq.engine` runner executes whatever steps are configured. The goal: new verticals through registration, not architecture changes.
+New verticals register through the vertical registry. The `ConstructionVertical.get_workflows()` method defines the step sequence as configuration. The `inversiq.engine` runner executes whatever steps are configured. The goal: new verticals through registration, not architecture changes.
 
 ---
 
@@ -653,9 +653,9 @@ Inversiq/
 │   ├── verticals/
 │   │   ├── base.py               # BaseVertical abstract class
 │   │   ├── registry.py           # VERTICALS dict, register/get functions
-│   │   ├── painting/             # Fully implemented (pipeline, pricing, vision, templates)
-│   │   ├── roofing/              # Adapter + intake form (no pipeline)
-│   │   └── solar/                # Adapter + intake form (no pipeline)
+│   │   └── construction/         # Fully implemented (pipeline, pricing, vision, templates)
+
+
 │   ├── intelligence/             # Behavioral pattern detectors
 │   ├── anomaly/                  # Structural anomaly detectors
 │   ├── health/                   # Pipeline/vertical health aggregation
@@ -699,14 +699,14 @@ Inversiq/
 
 | Goal | Start Here |
 |---|---|
-| Understand the business | `app/verticals/painting/pipeline.py` |
+| Understand the business | `app/verticals/construction/pipeline.py` |
 | Understand routing | `app/main.py` |
 | Understand data model | `app/models/__init__.py` → `lead.py` → `pipeline_run.py` |
 | Understand intelligence | `app/intelligence/engine.py` → `app/services/trend_engine.py` → `app/services/reasoning_engine.py` |
 | Understand governance | `app/services/proposed_changes.py` → `app/models/proposed_change_review_state.py` |
 | Understand multi-tenancy | `app/models/tenant.py` → `app/verticals/registry.py` |
 | Understand the next-gen engine | `inversiq/engine/runner.py` → `inversiq/engine/config.py` |
-| Add a new vertical | `app/verticals/roofing/__init__.py` side-by-side with `app/verticals/painting/__init__.py` |
+| Add a new vertical | `app/verticals/roofing/__init__.py` side-by-side with `app/verticals/construction/__init__.py` |
 
 ---
 
@@ -742,8 +742,8 @@ Inversiq/
 
 ### ADR-005: Dual Pipeline (Imperative + Engine Runner)
 
-**Decision:** The production pipeline (`app/verticals/painting/pipeline.py`) is an imperative function while the engine runner (`inversiq/engine/runner.py`) is the next-generation abstraction. Both coexist.
-**Context:** Migrating to the engine runner is a significant refactor. The `PaintingVertical.get_workflows()` step definition exists but the engine runner is not yet driving production traffic.
+**Decision:** The production pipeline (`app/verticals/construction/pipeline.py`) is an imperative function while the engine runner (`inversiq/engine/runner.py`) is the next-generation abstraction. Both coexist.
+**Context:** Migrating to the engine runner is a significant refactor. The `ConstructionVertical.get_workflows()` step definition exists but the engine runner is not yet driving production traffic.
 **Rationale:** Coexistence allows incremental migration without production risk. The engine runner is exercised through `pipeline_engine.py` while the imperative pipeline handles production load.
 **Consequences:** Two execution paths to maintain. Engineers must understand which path is active. The engine runner has richer observability (EngineEvent emission, structured logging via structlog) — this is a strong pull toward completing the migration.
 
@@ -756,10 +756,10 @@ Inversiq/
 
 ### ADR-007: Server-Side HTML for Ops Dashboard
 
-**Decision:** The operator application dual-surfaces: Next.js SPA for the main operator interface, Jinja2-rendered HTML with HTMX for the painting vertical's ops dashboard.
+**Decision:** The operator application dual-surfaces: Next.js SPA for the main operator interface, Jinja2-rendered HTML with HTMX for the construction vertical's ops dashboard.
 **Context:** The ops dashboard was built before the Next.js SPA. HTMX partial updates allowed interactive behavior without a full React frontend.
 **Rationale:** Pragmatic — the ops dashboard needed to ship fast. The Next.js SPA is the long-term direction but the Jinja2/HTMX surface continues to serve real operators.
-**Consequences:** Two frontend paradigms to maintain. Engineers need familiarity with both. The Jinja2 templates are in `app/verticals/painting/templates/app/`.
+**Consequences:** Two frontend paradigms to maintain. Engineers need familiarity with both. The Jinja2 templates are in `app/verticals/construction/templates/app/`.
 
 ---
 
@@ -793,7 +793,7 @@ When a request arrives at a public intake endpoint, the vertical is resolved fro
 2. The tenant's `sector` field (default routing)
 3. The `vertical` field on the Lead (set at creation)
 
-The `Tenant.get_vertical()` method resolves the vertical instance from the registry, falling back to "painting" when `sector` is unset.
+The `Tenant.get_vertical()` method resolves the vertical instance from the registry, falling back to "construction" when `sector` is unset.
 
 ---
 
@@ -841,7 +841,7 @@ The anomaly and intelligence engines are themselves an observability layer — t
 ### Current AI Usage
 
 **OpenAI Vision API (production, revenue-critical):**
-Used in `app/services/vision/openai_provider.py`. Analyzes customer-uploaded photos to extract: area estimates (m²), surface conditions, scope (interior/exterior/ceiling/trim), preparation level, complexity, damage signals, and uncertainty/coverage scores. The vision prompt (`app/verticals/painting/prompts/vision.md`) is a key IP asset.
+Used in `app/services/vision/openai_provider.py`. Analyzes customer-uploaded photos to extract: area estimates (m²), surface conditions, scope (interior/exterior/ceiling/trim), preparation level, complexity, damage signals, and uncertainty/coverage scores. The vision prompt (`app/verticals/construction/prompts/vision.md`) is a key IP asset.
 
 **Photo quality classifier (local, cost-optimization):**
 PyTorch/timm model in `app/ml/photo_qualtity/` screens photos before sending to OpenAI. Excludes blurry, dark, or irrelevant images to reduce API cost. Training, evaluation, and export infrastructure exists in the repository.
@@ -889,7 +889,7 @@ This is a human-supervised continuous improvement system, not autonomous AI lear
 ### Input Validation
 
 - **Pydantic validation** on all FastAPI request bodies
-- **JSON Schema validation** on intake form submissions (`app/verticals/painting/intake_schema.json`)
+- **JSON Schema validation** on intake form submissions (`app/verticals/construction/intake_schema.json`)
 - **ORM-level validation** on `Tenant.sector` via `@validates("sector")` decorator
 - **Email validation** via `email-validator` dependency
 
@@ -1045,7 +1045,7 @@ Items documented in the original handbook, verified as confirmed gaps in the rep
 
 ### 1. Complete the `inversiq.engine` Migration (High Priority)
 
-The engine runner (`inversiq/engine/runner.py`) is fully implemented with richer observability than the imperative pipeline. The `PaintingVertical.get_workflows()` step definition exists. The missing piece is wiring the engine runner to replace the production pipeline.
+The engine runner (`inversiq/engine/runner.py`) is fully implemented with richer observability than the imperative pipeline. The `ConstructionVertical.get_workflows()` step definition exists. The missing piece is wiring the engine runner to replace the production pipeline.
 
 **Impact:** Config-driven pipelines, portable step registry, automatic config_hash tracking, better step contract enforcement.
 
@@ -1071,9 +1071,9 @@ The intelligence loop is currently on-demand. No scheduled job triggers it autom
 
 Pricing rules are JSON files in the repository. Tenant overrides are in `Tenant.pricing_json`. Neither has version history, diff view, or connection to the proposed-change governance workflow. Storing rule sets in the database and routing changes through `ProposedChangeReviewState` would close the governance loop.
 
-### 6. Roofing and Solar Pipelines
+### 6. Insurance, Logistics, and Real Estate Pipelines
 
-Roofing and Solar have intake forms and adapters. Neither has an estimation pipeline, pricing engine, or vision prompt. This is the natural next expansion for the platform.
+These verticals are next in the expansion roadmap. Each will follow the Construction vertical as the reference implementation: intake → adapter → pipeline → pricing engine → output template.
 
 ### 7. Confidence Score Calibration
 

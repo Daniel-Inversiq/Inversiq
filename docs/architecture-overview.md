@@ -7,7 +7,7 @@ _Quick reference for engineers and technical stakeholders_
 
 ## One-Page System Overview
 
-Inversiq is a FastAPI backend (Python 3.11) backed by PostgreSQL and Redis, serving two frontend surfaces: a Next.js SPA for operators and Jinja2-rendered HTML views for the ops dashboard. AWS S3 stores uploaded photos and rendered HTML estimates. The OpenAI Vision API is the only external AI dependency. A `inversiq.engine` package provides a formally typed pipeline runner that sits alongside (and is in the process of replacing) the imperative painting pipeline.
+Inversiq is the AI Operating System for Operational Industries. It is a FastAPI backend (Python 3.11) backed by PostgreSQL and Redis, serving two frontend surfaces: a Next.js SPA for operators and Jinja2-rendered HTML views for the ops dashboard. AWS S3 stores uploaded photos and rendered HTML estimates. The OpenAI Vision API is the only external AI dependency. A `inversiq.engine` package provides a formally typed pipeline runner that sits alongside (and is in the process of replacing) the imperative construction pipeline.
 
 ```
 Customer            Operator               Ops Dashboard
@@ -44,11 +44,11 @@ Intake Form         Next.js SPA           Jinja2 + HTMX
 |---|---|---|
 | **FastAPI App** | `app/main.py` | HTTP routing, middleware stack, startup |
 | **Vertical Registry** | `app/verticals/registry.py` | Plugin system for trade verticals |
-| **Painting Pipeline** | `app/verticals/painting/pipeline.py` | Production estimation pipeline (imperative) |
+| **Construction Pipeline** | `app/verticals/construction/pipeline.py` | Production estimation pipeline (imperative) |
 | **Engine Runner** | `inversiq/engine/runner.py` | Next-gen config-driven pipeline (emerging) |
 | **Vision Task** | `app/tasks/vision_task.py` | Photo quality screening + OpenAI Vision |
-| **Pricing Engine** | `app/verticals/painting/pricing_engine_us.py` | JSON-rules-based estimate calculation |
-| **Review Decision** | `app/verticals/painting/needs_review.py` | Hard/soft blocker review routing |
+| **Pricing Engine** | `app/verticals/construction/pricing_engine_us.py` | JSON-rules-based estimate calculation |
+| **Review Decision** | `app/verticals/construction/needs_review.py` | Hard/soft blocker review routing |
 | **Anomaly Engine** | `app/anomaly/engine.py` | Structural contradiction detection (5 detectors) |
 | **Intelligence Engine** | `app/intelligence/engine.py` | Behavioral pattern detection (5 detectors) |
 | **Trend Engine** | `app/services/trend_engine.py` | Metric direction classification (pure function) |
@@ -74,7 +74,7 @@ Intake Form         Next.js SPA           Jinja2 + HTMX
 | Deterministic change IDs | Same system state always produces the same proposal ID. Prevents duplicate proposals. |
 | No static AWS keys | Machine-enforced at startup. IAM roles or profiles required. |
 | JSON pricing rules | Rules are files, not database state. Auditable, version-controlled, replaceable. |
-| Dual pipeline (imperative + engine runner) | Incremental migration. Engine runner has richer observability but is not yet driving production. |
+| Dual pipeline (imperative + engine runner) | Incremental migration. Engine runner has richer observability but is not yet driving production. Construction is the reference implementation. |
 | Shared-schema multi-tenancy | `tenant_id` on every entity. Isolation at application layer. Simpler than per-tenant schemas for current scale. |
 | Explicit rules over ML | Pricing, review logic, reasoning: all explicit code. Only AI: OpenAI Vision (photos) and local photo quality model. |
 
@@ -165,7 +165,7 @@ Gunicorn (multi-worker UvicornWorker)
 Each vertical must implement one of:
 
 **`BaseVertical`** (Python class):
-- `key: str` — registry key (e.g. "painting")
+- `key: str` — registry key (e.g. "construction")
 - `label: str` — display label
 - `get_workflows() -> list[dict]` — step configuration for the engine runner
 - `get_ui_workflows() -> list[str]`
@@ -178,4 +178,4 @@ Each vertical must implement one of:
 - `create_lead_from_form(request, db, tenant_id) -> IntakeResult`
 - `upsert_lead_from_form(request, db, tenant_id) -> IntakeResult`
 
-Registered verticals: `painting` (PaintingVertical + PaintlyAdapter), `roofing` (RoofingAdapter), `solar` (SolarAdapter).
+Registered verticals: `construction` (ConstructionVertical + ConstructionAdapter). Future verticals: `insurance`, `logistics`, `real_estate`.

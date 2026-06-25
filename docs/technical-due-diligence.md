@@ -1,4 +1,4 @@
-# Technical Due Diligence Report
+﻿# Technical Due Diligence Report
 
 _Inversiq — June 2026_
 _Prepared for: Potential investors and strategic acquirers_
@@ -8,7 +8,7 @@ _Basis: Direct analysis of the production codebase_
 
 ## Executive Assessment
 
-Inversiq has built a technically ambitious and well-structured platform for a real market gap. The codebase shows meaningful architectural maturity: explicit intelligence layers, a formal governance model, multi-tenant data isolation, and a clear evolution path toward a horizontal platform. The painting vertical is production-grade and revenue-generating. The primary technical risks are execution-stage concerns (migration backlog, missing scheduled intelligence runs, the imperative-to-engine-runner migration) rather than architectural flaws. There is no evidence of critical security vulnerabilities or data model decisions that would require significant rework.
+Inversiq has built a technically ambitious and well-structured platform for a real market gap. The codebase shows meaningful architectural maturity: explicit intelligence layers, a formal governance model, multi-tenant data isolation, and a clear evolution path toward a horizontal platform. The construction vertical is production-grade and revenue-generating. The primary technical risks are execution-stage concerns (migration backlog, missing scheduled intelligence runs, the imperative-to-engine-runner migration) rather than architectural flaws. There is no evidence of critical security vulnerabilities or data model decisions that would require significant rework.
 
 **Overall technical risk: Medium-Low** for a company at this stage.
 
@@ -216,7 +216,7 @@ None of these require architectural rework — they are evolutionary steps on a 
 
 **Risk:** The imperative pipeline and the engine runner both require maintenance as business logic evolves. A change to pricing logic must be reflected in the active production path.
 
-**Mitigation:** Complete the migration to the engine runner. The `PaintingVertical.get_workflows()` step configuration exists; wiring it to the engine runner requires implementation work but the architecture is clear.
+**Mitigation:** Complete the migration to the engine runner. The `ConstructionVertical.get_workflows()` step configuration exists; wiring it to the engine runner requires implementation work but the architecture is clear.
 
 ---
 
@@ -265,7 +265,7 @@ A **Data Engineer** would have high leverage on the intelligence loop: scheduled
 
 ### Summary
 
-The roadmap is technically credible. The most valuable near-term items (intelligence loop automation, vision async, engine migration) have clear implementation paths from the current codebase. The vertical expansion roadmap (roofing, solar) requires significant domain work (pricing rules, vision prompts) but follows a well-established pattern set by the painting vertical.
+The roadmap is technically credible. The most valuable near-term items (intelligence loop automation, vision async, engine migration) have clear implementation paths from the current codebase. The vertical expansion roadmap (insurance, logistics, real_estate) requires significant domain work (pricing rules, vision prompts) but follows a well-established pattern set by the construction vertical.
 
 ---
 
