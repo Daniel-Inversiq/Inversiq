@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_proposal_staleness.py
 
 Unit tests for app/services/proposal_staleness.py.
@@ -31,7 +31,7 @@ def _change(
     category: str = "confidence_threshold_tuning",
     parameter: str = "review_confidence_threshold",
     scope_type: str = "pipeline",
-    scope_id: str = "paintly",
+    scope_id: str = "construction",
 ) -> dict:
     return {
         "change_id": change_id,
@@ -76,7 +76,7 @@ def _detect(
     reasoning_categories: list[str] | None = None,
     control_categories: list[str] | None = None,
     scope_type: str = "pipeline",
-    scope_id: str = "paintly",
+    scope_id: str = "construction",
 ) -> dict:
     return detect_proposal_staleness(
         scope_type=scope_type,
@@ -385,7 +385,7 @@ def test_top_level_output_shape():
     for key in ("scope", "scope_id", "proposal_count", "stale_count", "aging_count", "summary", "staleness"):
         assert key in result, f"Missing top-level key: {key}"
     assert result["scope"] == "pipeline"
-    assert result["scope_id"] == "paintly"
+    assert result["scope_id"] == "construction"
     assert result["proposal_count"] == 1
 
 

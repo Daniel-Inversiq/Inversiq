@@ -74,7 +74,7 @@ def _resolve_vertical_id_from_quote(quote) -> str:
     if v:
         return str(v)
 
-    # fallback (jij draait nu alleen painters_us)
+    # fallback (construction is the active vertical)
     return "construction"
 
 

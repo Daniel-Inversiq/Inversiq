@@ -1,4 +1,4 @@
-﻿# app/verticals/painters_us/tests/test_copy_terminology.py
+﻿# app/verticals/construction/tests/test_copy_terminology.py
 
 from app.verticals.construction.copy import assert_no_forbidden_terms
 

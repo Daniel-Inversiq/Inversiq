@@ -1,4 +1,4 @@
-﻿# app/verticals/painters_us/pricing_job_us.py
+﻿# app/verticals/construction/pricing_job_us.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple

@@ -144,11 +144,11 @@ class TestOutputShape:
         result = _propose(
             suggestions=[_suggestion("confidence_threshold_tuning", parameter="review_confidence_threshold")],
             scope_type="pipeline",
-            scope_id="paintly",
+            scope_id="construction",
         )
         target = result["proposed_changes"][0]["target"]
         assert target["scope_type"] == "pipeline"
-        assert target["scope_id"] == "paintly"
+        assert target["scope_id"] == "construction"
         assert target["parameter"] == "review_confidence_threshold"
 
     def test_approval_intent_block_shape(self):
@@ -413,7 +413,7 @@ class TestChangeIdGeneration:
     def test_change_id_format(self):
         result = _propose(
             scope_type="pipeline",
-            scope_id="paintly",
+            scope_id="construction",
             suggestions=[_suggestion("confidence_threshold_tuning", parameter="review_confidence_threshold")],
         )
         item = result["proposed_changes"][0]
@@ -422,7 +422,7 @@ class TestChangeIdGeneration:
     def test_change_id_stable_across_calls(self):
         kwargs = dict(
             scope_type="pipeline",
-            scope_id="paintly",
+            scope_id="construction",
             suggestions=[_suggestion("margin_guardrail_adjustment", parameter="margin_protection_floor")],
         )
         r1 = _propose(**kwargs)
@@ -451,7 +451,7 @@ class TestDeduplication:
         s = _suggestion("confidence_threshold_tuning", parameter="review_confidence_threshold")
         result = _propose(
             scope_type="pipeline",
-            scope_id="paintly",
+            scope_id="construction",
             suggestions=[s, s],
         )
         cids = [c["change_id"] for c in result["proposed_changes"]]

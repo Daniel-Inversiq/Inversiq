@@ -1,4 +1,4 @@
-# app/verticals/painters_us/email_render.py
+﻿# app/verticals/construction/email_render.py
 from __future__ import annotations
 
 from pathlib import Path

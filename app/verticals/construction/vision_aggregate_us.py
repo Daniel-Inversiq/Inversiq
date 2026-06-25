@@ -1,4 +1,4 @@
-# app/verticals/painters_us/vision_aggregate_us.py
+﻿# app/verticals/construction/vision_aggregate_us.py
 from __future__ import annotations
 
 import json
