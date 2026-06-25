@@ -5,7 +5,7 @@ Idempotent demo seed for the Delin CEO walkthrough.
 
 Creates or resets:
   - A demo user   (demo@inversiq.com / Demo2025!)
-  - A demo tenant (sector=painting, onboarding complete)
+  - A demo tenant (sector=construction, onboarding complete)
   - A workspace   "Basingstoke Logistics Park -- Delin Q2 2025"
     with 5 synthetic documents and 3 pre-seeded flags
 
@@ -199,7 +199,7 @@ FLAGS = [
     {
         "flag_type": "erv_deviation",
         "severity": "high",
-        "title": "ERV Source Conflict -- 11.2% Spread",
+        "title": "ERV Source Conflict — 11.2% Spread",
         "detail": (
             "The Information Memorandum states an ERV of 85/sqm while the Cushman & Wakefield "
             "Valuation Report (April 2025) independently values the same space at 95/sqm -- "

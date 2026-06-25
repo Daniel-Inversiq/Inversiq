@@ -48,7 +48,7 @@ class ResolveFlagRequest(BaseModel):
     action: str  # "resolve" | "escalate"
     resolution_note: Optional[str] = None
     resolution_value: Optional[str] = None
-    resolved_by: Optional[str] = "operator"
+    resolved_by: Optional[str] = "Demo User"
 
 
 # ---------------------------------------------------------------------------
@@ -289,7 +289,7 @@ def resolve_flag(
         raise HTTPException(status_code=400, detail="action must be 'resolve' or 'escalate'")
 
     flag.status = "resolved" if body.action == "resolve" else "escalated"
-    flag.resolved_by = body.resolved_by or "operator"
+    flag.resolved_by = body.resolved_by or "Demo User"
     flag.resolved_at = datetime.now(timezone.utc)
     flag.resolution_note = body.resolution_note
     flag.resolution_value = body.resolution_value

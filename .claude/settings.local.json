@@ -245,7 +245,9 @@
       "Bash(curl -s http://127.0.0.1:8000/health)",
       "Bash(curl -s http://127.0.0.1:8000/)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/api/workspaces?tenant_id=demo -H \"Authorization: Bearer demo-token\")",
-      "PowerShell(Start-Sleep -Seconds 5; try { $r = Invoke-WebRequest -Uri \"http://127.0.0.1:8000/\" -UseBasicParsing -TimeoutSec 3; \"Backend up: $\\($r.StatusCode\\)\" } catch { \"Backend not ready: $_\" })"
+      "PowerShell(Start-Sleep -Seconds 5; try { $r = Invoke-WebRequest -Uri \"http://127.0.0.1:8000/\" -UseBasicParsing -TimeoutSec 3; \"Backend up: $\\($r.StatusCode\\)\" } catch { \"Backend not ready: $_\" })",
+      "Bash(mkdir -p \"C:/Users/dvanl/Inversiq/frontend/src/app/\\(demo\\)/workspaces/[workspaceId]\")",
+      "Bash(cp \"C:/Users/dvanl/Inversiq/frontend/src/app/\\(app\\)/workspaces/page.tsx\" \\\\ *)"
     ]
   }
 }

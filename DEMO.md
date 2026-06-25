@@ -219,6 +219,19 @@ Als alle drie zijn opgelost, verschijnt de groene banner.
 
 ---
 
+## Pre-flight checklist
+
+Run through this in order before the meeting starts:
+
+- [ ] Backend running — `uvicorn app.main:app --port 8000 --reload` → `Application startup complete.`
+- [ ] Frontend running — `npm run dev` in `frontend/` → `Ready` on port 3000
+- [ ] Seed run — `python scripts/seed_demo.py` → prints workspace URL, note it
+- [ ] Login works — open `http://localhost:3000`, sign in as `demo@inversiq.com` / `Demo2025!`
+- [ ] Workspace opens — navigate to printed URL, metrics strip shows 72% / 5/5 / 3 open / ~15h
+- [ ] Flag resolve works — click ERV flag, click Mark Resolved, counter drops to 2, re-seed after
+
+---
+
 ## Reset
 
 ```bash

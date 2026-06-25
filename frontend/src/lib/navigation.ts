@@ -3,7 +3,6 @@ import {
   CalendarDays,
   CreditCard,
   FileText,
-  FolderOpen,
   Home,
   LifeBuoy,
   LogOut,
@@ -33,7 +32,6 @@ export const appNavigationGroups: AppNavigationGroup[] = [
       { labelKey: "nav.items.jobs", href: "/jobs", icon: BriefcaseBusiness },
       { labelKey: "nav.items.review", href: "/review", icon: ShieldCheck },
       { labelKey: "nav.items.agenda", href: "/agenda", icon: CalendarDays },
-      { labelKey: "nav.items.workspaces", href: "/workspaces", icon: FolderOpen },
     ],
   },
   {
