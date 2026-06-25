@@ -132,6 +132,7 @@ const STATUS_KEY_MAP: Record<string, string> = {
   in_progress: "status.in_progress",
   unknown: "status.unknown",
   skipped: "status.skipped",
+  config_needed: "status.config_needed",
 };
 
 export function tStatus(status: string | null | undefined): string {

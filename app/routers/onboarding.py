@@ -1,4 +1,4 @@
-# app/routers/onboarding.py
+﻿# app/routers/onboarding.py
 # TODO: When POST /onboarding/tenant also creates an owner User (same contract as /auth/register),
 # schedule `send_welcome_email_task` after commit, mirroring the auth register flow. Today this
 # endpoint only creates a Tenant row — welcome mail is triggered from /auth/register.
@@ -22,7 +22,7 @@ from app.i18n.service import setup_jinja_i18n
 from app.services.tenant_onboarding import create_tenant_with_pricing
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
-templates = Jinja2Templates(directory="app/verticals/painting/templates")
+templates = Jinja2Templates(directory="app/verticals/construction/templates")
 setup_jinja_i18n(templates)
 
 

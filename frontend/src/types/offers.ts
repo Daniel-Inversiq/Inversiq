@@ -94,6 +94,14 @@ export type QuoteTotalsPayload = {
     full_name?: string;
     name?: string;
   };
+  /** Merged by GET /quotes/{id}/json from current tenant pricing (not frozen estimate meta). */
+  quote_readiness?: {
+    isReady?: boolean;
+    missingConfig?: string[];
+    missing_pricing_config?: boolean;
+  };
+  /** Persisted Lead.status for SPA actions (e.g. recalculate after CONFIG_NEEDED). */
+  lead_status?: string;
 };
 
 export type TenantLeadListItem = {

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import json
@@ -50,7 +50,7 @@ def branding_html_debug_summary(
     name = (branding_name or "").strip()
     contains_branding_name = bool(name and name.lower() in lower)
     summary = {
-        "contains_paintly": "paintly" in lower,
+        "contains_construction": "construction" in lower,
         "contains_img_tag": "<img" in lower,
         "contains_branding_name": contains_branding_name,
         "html_length": len(text),

@@ -1,4 +1,4 @@
-# app/routers/uploads.py
+﻿# app/routers/uploads.py
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -548,14 +548,14 @@ async def complete_upload(
 
     # ------------------------------------------------------------------
     # Paintly-specific auto-generation timing:
-    # - Alleen voor vertical "paintly"
+    # - Alleen voor vertical "construction"
     # - Alleen als er nu minimaal 1 LeadFile is
     # - Alleen als er nog geen estimate_html_key is
     # ------------------------------------------------------------------
     try:
         vertical = (getattr(lead, "vertical", "") or "").strip().lower()
-        if vertical == "paintly":
-            from app.verticals.painting.adapter import PaintlyAdapter
+        if vertical == "construction":
+            from app.verticals.construction.adapter import ConstructionAdapter
 
             # Reload lead state after file/record writes
             db.refresh(lead)
@@ -581,7 +581,7 @@ async def complete_upload(
                         tenant_id,
                         files_count,
                     )
-                    adapter = PaintlyAdapter()
+                    adapter = ConstructionAdapter()
                     adapter.compute_quote(db, req.lead_id)
                     # The engine writes lead.status as part of compute_quote;
                     # refresh to ensure we log the final persisted status.
@@ -720,8 +720,8 @@ async def public_complete_upload(
     lead_id_value = str(getattr(lead, "id", req.lead_id) or req.lead_id)
     try:
         vertical = (getattr(lead, "vertical", "") or "").strip().lower()
-        if vertical == "paintly":
-            from app.verticals.painting.adapter import PaintlyAdapter
+        if vertical == "construction":
+            from app.verticals.construction.adapter import ConstructionAdapter
 
             db.refresh(lead)
             has_estimate = bool(getattr(lead, "estimate_html_key", None))
@@ -743,7 +743,7 @@ async def public_complete_upload(
                         tenant_id,
                         files_count,
                     )
-                    adapter = PaintlyAdapter()
+                    adapter = ConstructionAdapter()
                     adapter.compute_quote(db, req.lead_id)
                     db.refresh(lead)
                     logger.info(

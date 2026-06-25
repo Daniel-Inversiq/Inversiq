@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import logging
@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from inversiq.engine.assets import load_assets, repo_root
 from inversiq.engine.context import EngineContext
-from inversiq.engine.config import EngineConfig, load_engine_config
+from inversiq.engine.config import EngineConfig, StepConfig, load_engine_config
 from inversiq.engine.registry import StepRegistry
 from inversiq.engine.runner import run_pipeline
 
@@ -46,7 +46,7 @@ class EngineLeadInput(TypedDict, total=False):
     (Tenant, User, LeadFile, UploadRecord) rather than relying on pre-loaded
     ORM associations.  This means the engine does not need an eager-loaded Lead.
 
-    Migration path: engine steps in paintly_steps.py still import app.models directly
+    Migration path: engine steps in construction_steps.py still import app.models directly
     (Lead, Tenant, User, etc.) for DB queries.  Once those are refactored to receive
     plain data rather than ORM objects, the engine package will have no app.models
     dependency at all.
@@ -155,6 +155,61 @@ def _tail(xs: list, n: int = 50) -> list:
     return xs[-n:] if xs else []
 
 
+def _step_config_from_workflow_item(item: dict[str, Any]) -> StepConfig:
+    return StepConfig(
+        id=str(item["id"]),
+        use=str(item["use"]),
+        with_=item.get("with", {}) or {},
+        on_fail=str(item.get("on_fail", "STOP")),
+        on_needs_review=str(item.get("on_needs_review", "STOP")),
+    )
+
+
+def _resolve_dynamic_pipeline_steps(
+    db: Session,
+    lead: EngineLeadInput,
+    cfg: EngineConfig,
+) -> list[StepConfig]:
+    """
+    Build step config dynamically from the tenant's vertical definition.
+
+    Falls back to config-defined steps when tenant/vertical/workflows are unavailable.
+    """
+    if db is None:
+        return cfg.steps
+
+    try:
+        from app.models.tenant import Tenant
+    except Exception:
+        return cfg.steps
+
+    tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+    if tenant is None:
+        return cfg.steps
+
+    try:
+        vertical = tenant.get_vertical()
+    except Exception:
+        return cfg.steps
+
+    if not hasattr(vertical, "get_workflows"):
+        return cfg.steps
+
+    workflows = vertical.get_workflows()
+    if not isinstance(workflows, list) or len(workflows) == 0:
+        return cfg.steps
+
+    dynamic_steps: list[StepConfig] = []
+    for item in workflows:
+        if not isinstance(item, dict):
+            return cfg.steps
+        if "id" not in item or "use" not in item:
+            return cfg.steps
+        dynamic_steps.append(_step_config_from_workflow_item(item))
+
+    return dynamic_steps or cfg.steps
+
+
 def _step_payload(step: Any) -> Dict[str, Any]:
     """
     Steps in state.data["steps"] are usually StepResult objects:
@@ -198,7 +253,7 @@ def _extract_pricing_raw(
     """
     Returns the inner pricing dict from the named step's payload.
     Step payload shape: {"pricing": {...actual pricing dict...}}
-    step_id defaults to "pricing" (painting convention); pass vertical.pricing_step_id to override.
+    step_id defaults to "pricing" (construction convention); pass vertical.pricing_step_id to override.
     """
     pricing_step = steps.get(step_id) if isinstance(steps, dict) else None
     payload = _step_payload(pricing_step)
@@ -309,7 +364,7 @@ def _apply_option1_provisional_total_if_missing(
 # ---------------------------------------------------------------------------
 # Engine validation note — 2025
 #
-# Proven: three workflows (painting, roofing, solar) ran end-to-end through
+# Proven: the construction workflow ran end-to-end through
 # compute_quote_for_lead_v15 without changes to the engine core.
 # VerticalDefinition correctly routes config load, step registration, asset
 # preparation, and result extraction per workflow.
@@ -322,8 +377,8 @@ def _apply_option1_provisional_total_if_missing(
 #     Non-HTML workflows can return a synthetic key (e.g. a path or URI).
 #   - data["needs_review"] bool is the canonical review signal.
 #
-# Remaining painting-specific leakage in the generic path:
-#   - _apply_option1_provisional_total_if_missing: painting-specific fallback
+# Remaining construction-specific items in the generic path:
+#   - _apply_option1_provisional_total_if_missing: construction-specific fallback
 #     logic that runs for all verticals; silently no-ops unless the pricing step
 #     returns an estimate_range dict.  Label fixed to generic wording (see below).
 #     Should eventually move to a VerticalDefinition post-processing hook.
@@ -340,21 +395,21 @@ class VerticalDefinition:
       register_steps_fn   — registers the vertical's step implementations into a StepRegistry
       prepare_assets_fn   — returns vertical-specific extra assets merged into the base assets dict
 
-    Result-extraction step IDs (defaults match the current painting pipeline):
+    Result-extraction step IDs (defaults match the construction pipeline):
       output_step_id       — step whose data["estimate_json"] becomes the output estimate
       store_html_step_id   — step whose data["estimate_html_key"] becomes the HTML location
       needs_review_step_id — step whose data["needs_review"] becomes the review flag
-      pricing_step_id      — step used for the provisional-total debug pass (painting-specific
+      pricing_step_id      — step used for the provisional-total debug pass (construction-specific
                              logic; silently no-ops for verticals without a matching step)
 
-    A second vertical (e.g. solar) only needs to override the fields that differ.
-    Painting inherits all defaults unchanged.
+    A second vertical (e.g. insurance) only needs to override the fields that differ.
+    Construction inherits all defaults unchanged.
     """
 
     vertical_id: str
     register_steps_fn: Callable[[StepRegistry], None]
     prepare_assets_fn: Callable[[Session, Any], Dict[str, Any]]
-    # Result extraction — defaults match painting pipeline step IDs
+    # Result extraction — defaults match construction pipeline step IDs
     output_step_id: str = "output"
     store_html_step_id: str = "store_html"
     needs_review_step_id: str = "needs_review"
@@ -376,6 +431,9 @@ def compute_quote_for_lead_v15(
     registry = StepRegistry()
     vertical.register_steps_fn(registry)
 
+    # 2b) dynamic pipeline creation from tenant vertical workflows.
+    cfg.steps = _resolve_dynamic_pipeline_steps(db, lead, cfg)
+
     # 3) context
     ctx = EngineContext(
         tenant_id=str(lead.tenant_id),
@@ -394,7 +452,7 @@ def compute_quote_for_lead_v15(
     # 5) assets (template + jinja env)
     assets_obj = load_assets(cfg, rules=rules_dict)
 
-    # 6) vertical-specific asset preparation (painting: tenant_pricing, image_refs, branding_context)
+    # 6) vertical-specific asset preparation (construction: tenant_pricing, image_refs, branding_context)
     _extra_assets = vertical.prepare_assets_fn(db, lead)
 
     assets = {

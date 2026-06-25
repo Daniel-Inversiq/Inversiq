@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.models.lead import Lead
 from app.models.tenant import Tenant, get_tenant_by_slug
-from app.verticals.registry import get as get_vertical
+from app.verticals.intake import get_intake_adapter_for_tenant
 
 router = APIRouter(tags=["public-intake"])
 
@@ -19,7 +20,7 @@ def public_intake_page(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    v = get_vertical("paintly")
+    v = get_intake_adapter_for_tenant(tenant)
 
     return v.render_intake_form(
         request=request,
@@ -43,11 +44,37 @@ def intake_by_slug(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    v = get_vertical("paintly")
+    v = get_intake_adapter_for_tenant(tenant)
 
     return v.render_intake_form(
         request=request,
         lead_id="",
+        tenant_id=tenant.id,
+        extra_context={
+            "tenant": tenant,
+            "tenant_slug": tenant.slug,
+        },
+    )
+
+
+@router.get("/i/{public_token}/intake")
+def intake_by_public_token(
+    request: Request,
+    public_token: str,
+    db: Session = Depends(get_db),
+):
+    lead = db.query(Lead).filter(Lead.public_token == public_token).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    v = get_intake_adapter_for_tenant(tenant)
+    return v.render_intake_form(
+        request=request,
+        lead_id=str(lead.id),
         tenant_id=tenant.id,
         extra_context={
             "tenant": tenant,

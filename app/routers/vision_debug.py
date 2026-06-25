@@ -1,4 +1,4 @@
-# app/routers/vision_debug.py
+﻿# app/routers/vision_debug.py
 import json
 import logging
 from datetime import datetime
@@ -10,7 +10,7 @@ from app.core.settings import settings
 from app.db import get_db
 from app.models import Lead
 from app.verticals.registry import get as get_vertical
-from app.verticals.painting import compute_quote_for_lead, needs_review_from_output
+from app.verticals.construction import compute_quote_for_lead, needs_review_from_output
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def run_vision(lead_id: str, db: Session = Depends(get_db)):
     try:
         # Single-vertical for now, but registry-based
-        v = get_vertical("paintly")
+        v = get_vertical("construction")
         vision_output = v.run_vision(db, lead_id)
 
         return {
@@ -43,7 +43,7 @@ def inspect_vision_flow(lead_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Not found")
 
     try:
-        v = get_vertical("paintly")
+        v = get_vertical("construction")
         vision_output = v.run_vision(db, lead_id)
         if not isinstance(vision_output, dict):
             return {
@@ -175,7 +175,7 @@ def validate_vision_flow(lead_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Not found")
 
     try:
-        v = get_vertical("paintly")
+        v = get_vertical("construction")
         vision_output = v.run_vision(db, lead_id)
         if not isinstance(vision_output, dict):
             raise RuntimeError("vision_output_not_dict")

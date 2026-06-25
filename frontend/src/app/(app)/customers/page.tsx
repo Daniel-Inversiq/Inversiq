@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Inbox } from "lucide-react";
 import { useSessionContext } from "@/components/shared/session-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,6 +23,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useTenantLeads } from "@/hooks/use-tenant-leads";
 import { t, tStatus } from "@/lib/i18n";
+import { isOpenLeadCustomerFilter } from "@/lib/product-flow";
 
 function CustomersLoadingSkeleton() {
   return (
@@ -37,12 +40,23 @@ function CustomersLoadingSkeleton() {
   );
 }
 
-export default function CustomersPage() {
+function CustomersPageContent() {
   const session = useSessionContext();
+  const searchParams = useSearchParams();
+  const filterOpen = (searchParams.get("filter") ?? "").toLowerCase() === "open";
+
   const tenantId = session.user?.tenant_id?.trim() ?? "";
   const canLoadLeads = session.isAuthenticated && tenantId.length > 0;
   const leadsQuery = useTenantLeads(tenantId, canLoadLeads);
-  const leads = leadsQuery.data ?? [];
+  const leads = leadsQuery.data;
+
+  const visibleLeads = useMemo(() => {
+    const list = leads ?? [];
+    if (!filterOpen) {
+      return list;
+    }
+    return list.filter((lead) => isOpenLeadCustomerFilter(lead.status));
+  }, [leads, filterOpen]);
 
   if (session.isLoading || leadsQuery.isLoading) {
     return <CustomersLoadingSkeleton />;
@@ -83,12 +97,18 @@ export default function CustomersPage() {
         description={t("customers.header.subtitle")}
       />
 
-      {leads.length === 0 ? (
+      {(leads?.length ?? 0) === 0 ? (
         <EmptyState
           icon={Inbox}
           title={t("customers.empty.title")}
           description={t("customers.empty.description")}
         />
+      ) : filterOpen && visibleLeads.length === 0 ? (
+        <EmptyState icon={Inbox} title={t("customers.filter_open.empty_title")} description={t("customers.filter_open.empty_description")}>
+          <Link href="/customers" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            {t("customers.filter_open.show_all")}
+          </Link>
+        </EmptyState>
       ) : (
         <SectionCard padding="none" className="p-0">
           <Table>
@@ -101,7 +121,7 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leads.map((lead) => (
+              {visibleLeads.map((lead) => (
                 <TableRow key={lead.id}>
                   <TableCell className="font-semibold text-zinc-900">
                     {lead.name || t("common.states.unknown")}
@@ -133,5 +153,13 @@ export default function CustomersPage() {
         </SectionCard>
       )}
     </section>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<CustomersLoadingSkeleton />}>
+      <CustomersPageContent />
+    </Suspense>
   );
 }

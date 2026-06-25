@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 from uuid import uuid4
 import re
 import logging
@@ -41,7 +41,7 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 TEMPLATES_DIR = (
-    Path(__file__).resolve().parents[1] / "verticals" / "painting" / "templates"
+    Path(__file__).resolve().parents[1] / "verticals" / "construction" / "templates"
 )
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 setup_jinja_i18n(templates)
@@ -356,7 +356,7 @@ async def register_form(
             if walls_rate_eur_per_sqm is not None
             else {}
         ),
-        enabled_verticals=["painting"],
+        enabled_verticals=["construction"],
     )
 
     user = User(
@@ -721,7 +721,7 @@ def google_auth_callback(
                                         subscription_status="trialing",
                                         trial_ends_at=trial_end,
                                         pricing_json={},
-                                        enabled_verticals=["painting"],
+                                        enabled_verticals=["construction"],
                                     )
                                     user = User(
                                         id=str(uuid4()),

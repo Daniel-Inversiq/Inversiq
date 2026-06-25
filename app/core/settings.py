@@ -139,6 +139,7 @@ class Settings(BaseSettings):
 
     # --- AI / ML services ---
     OPENAI_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: Optional[str] = None
     VISION_API_URL: Optional[str] = None
     VISION_API_KEY: Optional[str] = None
     PRICING_MODEL_URL: Optional[str] = None

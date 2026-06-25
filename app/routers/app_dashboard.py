@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+﻿from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -112,9 +112,9 @@ def lead_detail_page(
     # Fallback router compatibility:
     # delegate to the Paintly quote detail page so /app/leads/{lead_id}
     # always renders the full offerte-detail UI with quote actions.
-    from app.verticals.painting.router_app import app_lead_detail as paintly_lead_detail
+    from app.verticals.construction.router_app import app_lead_detail as construction_lead_detail
 
-    return paintly_lead_detail(
+    return construction_lead_detail(
         request=request,
         lead_id=lead_id,
         db=db,
@@ -125,4 +125,4 @@ def lead_detail_page(
 @router.get("/new")
 def new_estimate(request: Request):
     # MVP: redirect naar jouw intake entrypoint (Paintly demo tenant via slug)
-    return RedirectResponse(url="/intake/paintly", status_code=302)
+    return RedirectResponse(url="/intake/construction", status_code=302)

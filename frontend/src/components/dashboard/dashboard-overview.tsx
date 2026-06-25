@@ -166,11 +166,6 @@ export function DashboardOverview() {
         <p className="type-eyebrow-md text-zinc-600">{t("dashboard.header.kicker")}</p>
         <h1 className="type-page-title mt-0.5">{t("dashboard.header.title")}</h1>
         <p className="type-body-secondary mt-1 max-w-3xl text-zinc-600">{t("dashboard.header.subtitle")}</p>
-        {session.isAuthenticated ? (
-          <p className="type-meta mt-1 text-zinc-600">
-            Tenant: {session.user?.tenant_id} | User: {session.user?.email}
-          </p>
-        ) : null}
       </header>
 
       <section className="space-y-1.5">

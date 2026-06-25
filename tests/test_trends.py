@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_trends.py
 
 Tests for the Trend Intelligence layer:
@@ -584,23 +584,23 @@ class TestVerticalTrendsEnvelope:
 
     def test_scope_type_is_vertical(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="painting", days_ago=1)
+        _make_run(db, tenant_id=tid, vertical_id="construction", days_ago=1)
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         assert resp.json()["scope_type"] == "vertical"
 
     def test_groups_by_vertical_id(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="painting", days_ago=1)
+        _make_run(db, tenant_id=tid, vertical_id="construction", days_ago=1)
         _make_run(db, tenant_id=tid, vertical_id="roofing", days_ago=1)
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         body = resp.json()
         assert body["total"] == 2
         scope_ids = {item["scope_id"] for item in body["items"]}
-        assert scope_ids == {"painting", "roofing"}
+        assert scope_ids == {"construction", "roofing"}
 
     def test_item_scope_is_vertical(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="painting", days_ago=1)
+        _make_run(db, tenant_id=tid, vertical_id="construction", days_ago=1)
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         item = resp.json()["items"][0]
         assert item["scope"] == "vertical"
@@ -617,10 +617,10 @@ class TestVerticalTrendsTenantIsolation:
     def test_scoped_to_tenant(self, client, db, api_auth):
         tid_a = _uid()
         tid_b = _uid()
-        _make_run(db, tenant_id=tid_a, vertical_id="painting", days_ago=1)
+        _make_run(db, tenant_id=tid_a, vertical_id="construction", days_ago=1)
         _make_run(db, tenant_id=tid_b, vertical_id="roofing", days_ago=1)
 
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid_a}, headers=api_auth)
         items = resp.json()["items"]
         assert len(items) == 1
-        assert items[0]["scope_id"] == "painting"
+        assert items[0]["scope_id"] == "construction"

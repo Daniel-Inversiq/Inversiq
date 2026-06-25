@@ -1,4 +1,4 @@
-# app/services/onboarding_email_service.py
+﻿# app/services/onboarding_email_service.py
 from __future__ import annotations
 
 import logging
@@ -70,8 +70,8 @@ def _build_context(*, owner: User, tenant: Tenant) -> dict[str, object]:
 
 
 def _render_bodies(context: dict[str, object]) -> tuple[str, str]:
-    html_t = _jinja_env.get_template("welcome_paintly.html")
-    text_t = _jinja_env.get_template("welcome_paintly.txt")
+    html_t = _jinja_env.get_template("welcome_construction.html")
+    text_t = _jinja_env.get_template("welcome_construction.txt")
     return html_t.render(**context), text_t.render(**context)
 
 

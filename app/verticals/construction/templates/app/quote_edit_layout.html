@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    {% if title %}
+      {{ title }} — {{ company_name or "Inversiq" }}
+    {% else %}
+      Offerte bewerken — {{ company_name or "Inversiq" }}
+    {% endif %}
+  </title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/app.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Segoe UI', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          boxShadow: {
+            card: '0 1px 2px rgba(15,23,42,0.04), 0 6px 14px -10px rgba(15,23,42,0.16)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --iq-brand-blue: #2563eb;
+      --iq-brand-blue-strong: #1d4ed8;
+      --iq-brand-blue-soft: #dbeafe;
+      --iq-brand-blue-bg: #eff6ff;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .ui-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+    }
+    .quote-secondary-btn {
+      border-color: #d1d5db;
+      color: #334155;
+      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+    .quote-secondary-btn:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    .quote-edit-surface input:focus,
+    .quote-edit-surface textarea:focus,
+    .quote-edit-surface select:focus {
+      border-color: var(--iq-brand-blue) !important;
+      box-shadow: 0 0 0 1px var(--iq-brand-blue) !important;
+      outline: none !important;
+    }
+    .iq-accent-dot { color: #64748b; }
+    .iq-pill {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .iq-primary-btn {
+      border-color: var(--iq-brand-blue-strong);
+      background: var(--iq-brand-blue);
+    }
+    .iq-primary-btn:hover { background: var(--iq-brand-blue-strong); }
+    .iq-primary-btn:active { background: #1e40af; }
+    .iq-summary-head {
+      border-bottom-color: #dbeafe;
+      background: #f8fbff;
+    }
+    .iq-total-wrap {
+      border-color: #dbeafe;
+      background: #eff6ff;
+    }
+    .iq-total-text { color: #1d4ed8; }
+  </style>
+</head>
+<body class="quote-edit-surface min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-white text-slate-900">
+  <div class="border-b border-slate-200/90 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8">
+      <a href="/app/quotes" class="inline-flex items-center gap-2 text-[13px] font-semibold tracking-[-0.01em] text-slate-900">
+        <span class="iq-pill inline-flex h-7 w-7 items-center justify-center rounded-lg text-[12px] font-semibold">IQ</span>
+        {{ company_name or "Inversiq" }}
+      </a>
+      <a href="/offertes/{{ lead.id }}" class="quote-secondary-btn inline-flex h-9 items-center justify-center rounded-lg border bg-white px-3.5 text-[12px] font-semibold">
+        Terug naar offerte
+      </a>
+    </div>
+  </div>
+
+  <main class="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

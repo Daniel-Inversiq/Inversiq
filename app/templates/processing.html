@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>We maken je offerte - Inversiq</title>
+  <title>Offerte wordt gemaakt - Inversiq</title>
 
   <style>
     * { box-sizing: border-box; }
@@ -141,7 +141,7 @@
   <div class="block" role="status" aria-live="polite">
     <div class="spinner" id="spinner"></div>
 
-    <h1 class="title" id="pageTitle">We maken je offerte...</h1>
+    <h1 class="title" id="pageTitle">Offerte wordt gemaakt...</h1>
     <p class="sub">Dit duurt meestal een paar seconden.</p>
 
     <div class="step-line" id="stepLine">Foto's analyseren...</div>
@@ -161,6 +161,7 @@
     const statusEndpoint = String({{ (status_endpoint or ('/leads/' ~ lead_id ~ '/status')) | tojson }});
     const retryEndpoint = String({{ (retry_endpoint or ('/quotes/publish/' ~ lead_id)) | tojson }});
     const initKey = `processing_init_${leadId}`;
+    const stuckDeadlineMs = Date.now() + 12 * 60 * 1000;
 
     const errorBox  = document.getElementById("errorBox");
     const errorText = document.getElementById("errorText");
@@ -172,9 +173,9 @@
 
     // ── Step rotation ──────────────────────────────────────────────
     const loadingSteps = [
-      "Foto's analyseren...",
-      "Oppervlakte bepalen...",
-      "Offerte opstellen...",
+      "Aanvraag wordt verwerkt...",
+      "Gegevens worden gecontroleerd...",
+      "Offerte wordt gemaakt...",
     ];
     let stepIdx = 0;
     let stepTimerId = null;
@@ -204,9 +205,9 @@
     // ── State helpers ──────────────────────────────────────────────
     function showReviewPending(msg) {
       stopStepRotation();
-      if (pageTitle) pageTitle.textContent = "Je offerte wordt gecontroleerd";
+      if (pageTitle) pageTitle.textContent = "Uw aanvraag wordt gecontroleerd";
       if (spinner)   spinner.classList.add("hidden");
-      if (stepLine)  { setStep(msg || "Er is nog een extra controle nodig."); }
+      if (stepLine)  { setStep(msg || "Er is handmatige controle nodig."); }
       if (errorBox)  errorBox.style.display = "none";
     }
 
@@ -221,7 +222,7 @@
     }
 
     function showLoading() {
-      if (pageTitle) pageTitle.textContent = "We maken je offerte...";
+      if (pageTitle) pageTitle.textContent = "Offerte wordt gemaakt...";
       if (spinner)   spinner.classList.remove("hidden");
       if (errorBox)  errorBox.style.display = "none";
       startStepRotation();
@@ -255,6 +256,17 @@
     }
 
     async function pollOnceAndAct() {
+      if (!isStopping && Date.now() > stuckDeadlineMs) {
+        isStopping = true;
+        stopPolling();
+        showFailed(
+          "Dit duurt langer dan verwacht. Controleer je verbinding of probeer het later opnieuw. "
+          + "Als het probleem aanhoudt, neem contact op met de schilder.",
+          { back_url: "/" }
+        );
+        return;
+      }
+
       const data = await fetchStatusOnce();
       if (!data || isStopping) return;
 

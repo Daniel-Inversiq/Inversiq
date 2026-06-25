@@ -4,12 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Upload } from "lucide-react";
 import { useCompanySettings } from "@/hooks/use-company-settings";
 import { updateCompanySettings, uploadCompanyLogo } from "@/lib/api/settings";
 import { useSessionContext } from "@/components/shared/session-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { t } from "@/lib/i18n";
@@ -29,6 +29,12 @@ export function CompanySettingsForm() {
   const [logoMessage, setLogoMessage] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoPreviewUrl = useMemo(() => {
+    if (logoFile) {
+      return URL.createObjectURL(logoFile);
+    }
+    return settingsQuery.data?.logo_url ?? null;
+  }, [logoFile, settingsQuery.data?.logo_url]);
 
   const companySettingsSchema = useMemo(
     () =>
@@ -69,6 +75,13 @@ export function CompanySettingsForm() {
           : "",
     });
   }, [form, settingsQuery.data]);
+
+  useEffect(() => {
+    if (!logoFile || !logoPreviewUrl?.startsWith("blob:")) {
+      return;
+    }
+    return () => URL.revokeObjectURL(logoPreviewUrl);
+  }, [logoFile, logoPreviewUrl]);
 
   const parsePricePerM2 = (raw: string): number | null => {
     const normalized = raw.trim().replace(",", ".");
@@ -124,14 +137,12 @@ export function CompanySettingsForm() {
 
   if (session.isLoading || (settingsQuery.isLoading && !settingsQuery.data)) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.header.title")}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="rounded-xl border bg-white p-6">
+        <h1 className="text-xl font-semibold text-slate-900">{t("settings.header.title")}</h1>
+        <div className="mt-2">
           <p className="text-sm text-muted-foreground">{t("settings.loading")}</p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
@@ -156,113 +167,142 @@ export function CompanySettingsForm() {
   }
 
   return (
-    <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.header.title")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="companyName">{t("settings.form.company_name")}</Label>
-            <Input id="companyName" {...form.register("companyName")} />
-            {form.formState.errors.companyName ? (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.companyName.message}
-              </p>
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="supportEmail">{t("settings.form.support_email")}</Label>
-            <Input id="supportEmail" {...form.register("supportEmail")} disabled />
-            {form.formState.errors.supportEmail ? (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.supportEmail.message}
-              </p>
-            ) : null}
-            <p className="text-xs text-muted-foreground">
-              {t("settings.form.support_email_hint")}
+    <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            {t("settings.header.title")}
+          </h1>
+          <p className="text-sm text-slate-500">{t("settings.form.support_email_hint")}</p>
+        </div>
+        <Button type="submit" disabled={form.formState.isSubmitting} className="min-w-52 shrink-0">
+          {form.formState.isSubmitting ? t("settings.form.saving") : "Wijzigingen opslaan"}
+        </Button>
+      </div>
+
+      <section className="space-y-4 rounded-xl border bg-white p-6">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-900">Bedrijf</h2>
+          <p className="text-sm text-slate-500">Basisgegevens en branding van je bedrijf.</p>
+        </div>
+
+        <div className="max-w-md space-y-2">
+          <Label htmlFor="companyName" className="text-xs font-medium text-slate-500">
+            {t("settings.form.company_name")}
+          </Label>
+          <Input id="companyName" {...form.register("companyName")} />
+          {form.formState.errors.companyName ? (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.companyName.message}
             </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="logoFile">{t("settings.form.company_logo")}</Label>
-            {settingsQuery.data?.logo_url ? (
-              <a
-                href={settingsQuery.data?.logo_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex text-xs font-medium text-primary hover:text-primary/80"
-              >
-                {t("settings.form.open_current_logo")}
-              </a>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {t("settings.form.no_logo")}
-              </p>
-            )}
-            <Input
+          ) : null}
+        </div>
+
+        <div className="max-w-md space-y-2">
+          <Label htmlFor="supportEmail" className="text-xs font-medium text-slate-500">
+            {t("settings.form.support_email")}
+          </Label>
+          <Input id="supportEmail" {...form.register("supportEmail")} disabled />
+          {form.formState.errors.supportEmail ? (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.supportEmail.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-3">
+          <div className="max-w-md space-y-1">
+            <Label htmlFor="logoFile" className="text-xs font-medium text-slate-500">
+              {t("settings.form.company_logo")}
+            </Label>
+            <input
               id="logoFile"
               type="file"
               accept="image/png,image/jpeg"
+              className="sr-only"
               onChange={(event) => setLogoFile(event.target.files?.[0] ?? null)}
             />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isUploadingLogo}
-              onClick={onUploadLogo}
+            <label
+              htmlFor="logoFile"
+              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/50 px-4 py-7 text-center transition-colors duration-150 hover:border-primary/40 hover:bg-slate-50"
             >
-              {isUploadingLogo ? t("settings.form.uploading_logo") : t("settings.form.upload_logo")}
-            </Button>
-            {logoMessage ? <p className="text-xs text-primary">{logoMessage}</p> : null}
-            {logoError ? <p className="text-xs text-destructive">{logoError}</p> : null}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.pricing.title")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="pricePerM2">{t("settings.pricing.price_per_m2_label")}</Label>
-            <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3">
-              <span className="text-sm text-muted-foreground">€</span>
-              <Input
-                id="pricePerM2"
-                type="number"
-                step="0.01"
-                min="0"
-                inputMode="decimal"
-                className="border-0 px-0 shadow-none focus-visible:ring-0"
-                placeholder={t("settings.pricing.price_per_m2_placeholder")}
-                {...form.register("pricePerM2")}
-              />
-              <span className="text-sm text-muted-foreground">/m²</span>
-            </div>
-            {form.formState.errors.pricePerM2 ? (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.pricePerM2.message}
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm">
+                <Upload className="h-4 w-4" aria-hidden />
+              </span>
+              <p className="text-sm font-medium text-slate-700">
+                Klik om logo te uploaden of sleep hier
               </p>
-            ) : null}
-            <p className="text-xs text-muted-foreground">
-              {t("settings.pricing.price_per_m2_help")}
-            </p>
+              <p className="text-xs text-slate-500">PNG of JPG, maximaal 5MB</p>
+            </label>
           </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="pt-6">
+
+          {logoPreviewUrl ? (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-500">Preview</p>
+              <img
+                src={logoPreviewUrl}
+                alt={t("settings.form.company_logo")}
+                className="h-16 w-auto rounded-md border border-slate-200 bg-white p-2"
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">{t("settings.form.no_logo")}</p>
+          )}
+
           <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            className="min-w-40"
+            type="button"
+            variant="outline"
+            disabled={isUploadingLogo}
+            onClick={onUploadLogo}
           >
-            {form.formState.isSubmitting ? t("settings.form.saving") : t("settings.form.save")}
+            {isUploadingLogo ? t("settings.form.uploading_logo") : t("settings.form.upload_logo")}
           </Button>
+          {logoMessage ? <p className="text-xs text-primary">{logoMessage}</p> : null}
+          {logoError ? <p className="text-xs text-destructive">{logoError}</p> : null}
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-xl border bg-white p-6">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-900">{t("settings.pricing.title")}</h2>
+          <p className="text-sm text-slate-500">Stel je standaardtarief in voor calculaties.</p>
+        </div>
+
+        <div className="max-w-md space-y-2">
+          <Label htmlFor="pricePerM2" className="text-xs font-medium text-slate-500">
+            {t("settings.pricing.price_per_m2_label")}
+          </Label>
+          <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3">
+            <span className="text-sm text-muted-foreground">€</span>
+            <Input
+              id="pricePerM2"
+              type="number"
+              step="0.01"
+              min="0"
+              inputMode="decimal"
+              className="border-0 px-0 shadow-none focus-visible:ring-0"
+              placeholder={t("settings.pricing.price_per_m2_placeholder")}
+              {...form.register("pricePerM2")}
+            />
+            <span className="text-sm text-muted-foreground">/m²</span>
+          </div>
+          {form.formState.errors.pricePerM2 ? (
+            <p className="text-xs text-destructive">
+              {form.formState.errors.pricePerM2.message}
+            </p>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            {t("settings.pricing.price_per_m2_help")}
+          </p>
+        </div>
+      </section>
+
+      {(saveMessage || saveError) && (
+        <div className="rounded-xl border bg-white p-4">
           {saveMessage ? <p className="text-xs text-primary">{saveMessage}</p> : null}
           {saveError ? <p className="text-xs text-destructive">{saveError}</p> : null}
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </form>
   );
 }

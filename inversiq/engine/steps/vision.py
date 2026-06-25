@@ -1,4 +1,4 @@
-# aether/engine/steps/vision.py
+﻿# aether/engine/steps/vision.py
 from __future__ import annotations
 from inversiq.engine.context import PipelineState, StepResult
 from inversiq.engine.config import StepConfig
@@ -15,7 +15,7 @@ def vision_v1(state: PipelineState, step: StepConfig, assets: dict) -> StepResul
     vision_out = {"rooms": [], "confidence": 0.0}  # stub
 
     # Always return OK here; Paintly-specific needs_review
-    # is decided centrally in paintly_steps.needs_review_v1.
+    # is decided centrally in construction_steps.needs_review_v1.
     # We still surface confidence/diagnostic info via meta.
     meta = {}
     try:

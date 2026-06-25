@@ -1,4 +1,4 @@
-# app/services/tenant_onboarding.py
+﻿# app/services/tenant_onboarding.py
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -61,7 +61,7 @@ def create_tenant_with_pricing(db: Session, payload: TenantOnboardingCreate) -> 
         pricing_json={
             "walls_rate_eur_per_sqm": float(payload.walls_rate_eur_per_sqm),
         },
-        enabled_verticals=["painting"],
+        enabled_verticals=["construction"],
     )
 
     db.add(tenant)

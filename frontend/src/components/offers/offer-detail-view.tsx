@@ -124,6 +124,7 @@ export function OfferDetailView({ leadId }: OfferDetailViewProps) {
     [leadId, leadsQuery.data],
   );
   const [isSending, setIsSending] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [isSavingFollowup, setIsSavingFollowup] = useState(false);
   const [actionMessage, setActionMessage] = useState<string>("");
   const [actionError, setActionError] = useState<string>("");
@@ -260,12 +261,26 @@ export function OfferDetailView({ leadId }: OfferDetailViewProps) {
   const totals = detailQuery.data?.totals;
   const detailOverrides = asObject(detailMeta?.overrides);
   const detailFollowupSummary = asObject(detailPayload?.followup_summary) ?? asObject(detailMeta?.followup_summary);
-  const quoteReadiness = asObject(detailPayload?.quote_readiness);
-  const missingPricingConfig =
+  const quoteReadiness =
+    asObject(detailPayload?.quote_readiness) ?? asObject(reviewDetail?.quote_readiness);
+  const missingFromReadiness =
     quoteReadiness?.missing_pricing_config === true ||
-    detailMeta?.missing_pricing_config === true ||
     (Array.isArray(quoteReadiness?.missingConfig) &&
-      (quoteReadiness?.missingConfig as unknown[]).includes("price_per_m2"));
+      (quoteReadiness.missingConfig as unknown[]).includes("price_per_m2"));
+  /** Prefer live tenant readiness from API; avoid stale estimate_json.meta alone. */
+  const missingPricingConfig = quoteReadiness
+    ? Boolean(missingFromReadiness)
+    : Boolean(detailMeta?.missing_pricing_config);
+  const missingConfigKeys = Array.isArray(quoteReadiness?.missingConfig)
+    ? (quoteReadiness.missingConfig as unknown[]).filter((k): k is string => typeof k === "string")
+    : [];
+  const missingConfigLabels: Record<string, string> = {
+    price_per_m2: "Prijs per m²",
+  };
+  const leadStatusForRecalc = String(
+    (detailPayload?.lead_status as string | undefined) || lead?.status || "",
+  ).toUpperCase();
+  const canRecalculateQuote = leadStatusForRecalc === "CONFIG_NEEDED" && quoteReadiness?.isReady === true;
   const summary = detailQuery.data?.summary;
   const intake = detailQuery.data?.intake;
   const statusForNextAction = (latestRun?.status || lead.status || "").trim().toLowerCase();
@@ -370,6 +385,33 @@ export function OfferDetailView({ leadId }: OfferDetailViewProps) {
     }
   };
 
+  const recalculateQuote = async () => {
+    setActionError("");
+    setActionMessage("");
+    setIsRecalculating(true);
+    try {
+      const response = await fetch(getBackendHref(`/quotes/publish/${encodeURIComponent(leadId)}`), {
+        method: "POST",
+        credentials: "include",
+        redirect: "manual",
+      });
+      if (response.status >= 400) {
+        throw new Error("Opnieuw berekenen mislukt");
+      }
+      await Promise.all([
+        detailQuery.refetch(),
+        reviewDetailQuery.refetch(),
+        runsQuery.refetch(),
+        leadsQuery.refetch(),
+      ]);
+      setActionMessage("Offerte is opnieuw berekend.");
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Opnieuw berekenen mislukt");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const cardShellClass = "rounded-xl border border-zinc-200/75 bg-white p-3 shadow-[0_1px_0_rgba(15,23,42,0.03)] sm:p-3.5";
   const compactHeadingClass = "text-[13px] font-semibold leading-tight tracking-[-0.02em] text-zinc-950";
 
@@ -381,6 +423,12 @@ export function OfferDetailView({ leadId }: OfferDetailViewProps) {
             <AlertTitle>Prijsinstellingen ontbreken</AlertTitle>
             <AlertDescription className="mt-2 space-y-2">
               <p>Je hebt nog geen prijs per m² ingesteld. Stel dit eerst in om offertes te genereren.</p>
+              {missingConfigKeys.length > 0 ? (
+                <p className="text-[12px] font-medium text-zinc-700">
+                  Ontbrekend:{" "}
+                  {missingConfigKeys.map((k) => missingConfigLabels[k] ?? k).join(", ")}
+                </p>
+              ) : null}
               <Link
                 href="/instellingen"
                 className={buttonVariants({
@@ -391,6 +439,26 @@ export function OfferDetailView({ leadId }: OfferDetailViewProps) {
               >
                 Ga naar instellingen
               </Link>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {canRecalculateQuote ? (
+          <Alert className="rounded-xl border border-zinc-200/75 bg-white text-zinc-900 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+            <AlertTitle>Offerte opnieuw berekenen</AlertTitle>
+            <AlertDescription className="mt-2 space-y-2">
+              <p className="text-[12px] text-zinc-700">
+                Prijsinstellingen zijn nu ingevuld. Deze offerte staat nog op &quot;instellingen nodig&quot; tot je de
+                berekening opnieuw uitvoert.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isRecalculating}
+                onClick={() => void recalculateQuote()}
+                className="h-8 rounded-md px-2.5 text-[12px] font-semibold"
+              >
+                {isRecalculating ? "Bezig…" : "Offerte opnieuw berekenen"}
+              </Button>
             </AlertDescription>
           </Alert>
         ) : null}

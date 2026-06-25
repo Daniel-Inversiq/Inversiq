@@ -1,0 +1,51 @@
+{% set q = quote_ui or {} %}
+{% set qs = q.quote_status or 'none' %}
+{% set quote_labels = {
+  'none': t('lead_detail.quote_status.none'),
+  'generated': t('lead_detail.quote_status.generated'),
+  'review': t('lead_detail.quote_status.review'),
+  'sent': t('lead_detail.quote_status.sent'),
+  'accepted': t('lead_detail.quote_status.accepted')
+} %}
+{% if qs == 'accepted' %}
+  {% set qbadge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
+{% elif qs == 'review' %}
+  {% set qbadge = 'border border-blue-200 bg-blue-50 text-blue-700' %}
+{% elif qs == 'sent' %}
+  {% set qbadge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
+{% elif qs == 'generated' %}
+  {% set qbadge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
+{% else %}
+  {% set qbadge = 'border border-sky-100 bg-sky-50/70 text-slate-700' %}
+{% endif %}
+{% set lead_badge = lead_status_badge %}
+{% if st == 'SENT' %}
+  {% set lead_badge = 'border border-emerald-200 bg-emerald-50 text-emerald-700' %}
+{% elif st in ['VIEWED', 'RUNNING', 'PROCESSING'] %}
+  {% set lead_badge = 'border border-sky-200 bg-sky-50 text-sky-700' %}
+{% elif st == 'NEEDS_REVIEW' %}
+  {% set lead_badge = 'border border-blue-200 bg-blue-50 text-blue-700' %}
+{% elif st == 'CONFIG_NEEDED' %}
+  {% set lead_badge = 'border border-amber-200 bg-amber-50 text-amber-700' %}
+{% elif st in ['FAILED', 'ERROR'] %}
+  {% set lead_badge = 'border border-rose-200 bg-rose-50 text-rose-700' %}
+{% endif %}
+
+<div class="flex flex-wrap items-center gap-2">
+  <span class="text-[11px] text-[#9ca3af]">{{ t('lead_detail.meta_label') }}</span>
+  <span class="inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold {{ qbadge }}">
+    {{ quote_labels.get(qs, t('lead_detail.quote_status.none')) }}
+  </span>
+  <span class="text-[#d0d4dd]">·</span>
+  <span class="text-[11px] text-[#9ca3af]">{{ t('lead_detail.badges.request') }}</span>
+  <span class="inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold {{ lead_badge }}">
+    {{ status_labels.get(st, t('lead_detail.status.new')) }}
+  </span>
+</div>
+
+{% if sent_display %}
+  <div class="mt-2 border-t border-[#e8eaee] pt-2">
+    <span class="text-[11px] text-[#9ca3af]">{{ t('lead_detail.badges.last_sent') }}</span>
+    <span class="ml-1 text-[11px] font-medium text-[#374151]">{{ sent_display }} <span class="font-normal text-[#9ca3af]">({{ tz_name }})</span></span>
+  </div>
+{% endif %}

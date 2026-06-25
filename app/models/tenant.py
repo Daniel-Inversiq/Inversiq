@@ -1,9 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String, func
-from sqlalchemy.orm import Mapped, mapped_column, Session
+from sqlalchemy.orm import Mapped, Session, mapped_column, validates
 from sqlalchemy.types import JSON
 from app.db import Base
+
+if TYPE_CHECKING:
+    from app.core.contracts import VerticalAdapter
+    from app.verticals.base import BaseVertical
 
 
 class Tenant(Base):
@@ -16,6 +21,7 @@ class Tenant(Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     slug: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    sector: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     pricing_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
@@ -40,6 +46,40 @@ class Tenant(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+    @validates("sector")
+    def _validate_sector(self, _key: str, value: str | None) -> str | None:
+        """
+        Ensure sector contains a known vertical key.
+
+        Validation accepts currently registered keys and a safe bootstrap set.
+        """
+        if value is None:
+            return None
+
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+
+        from app.verticals.registry import VERTICALS
+
+        known_keys = set(VERTICALS.keys())
+        if normalized not in known_keys:
+            choices = ", ".join(sorted(known_keys))
+            raise ValueError(
+                f"Invalid sector '{value}'. Expected one of: {choices}."
+            )
+        return normalized
+
+    def get_vertical(self) -> "BaseVertical | VerticalAdapter":
+        """
+        Resolve the tenant vertical instance from registry.
+
+        Falls back to the construction vertical when sector is unset.
+        """
+        from app.verticals.registry import get_vertical
+
+        return get_vertical(self.sector or "construction")
 
     def __repr__(self) -> str:
         return f"<Tenant id={self.id!r} name={self.name!r}>"

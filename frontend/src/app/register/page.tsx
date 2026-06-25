@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSessionContext } from "@/components/shared/session-provider";
-import { getGoogleAuthStartUrl, register } from "@/lib/api/session";
+import { getGoogleAuthStartUrl, login, register } from "@/lib/api/session";
 import { ApiError } from "@/lib/api/client";
 import { APP_ROUTES } from "@/lib/routes";
 
@@ -44,7 +44,12 @@ export default function RegisterPage() {
         phone: phone || undefined,
         password,
       });
-      router.replace(APP_ROUTES.dashboard);
+      await login({
+        email,
+        password,
+        next: APP_ROUTES.onboarding,
+      });
+      router.replace(APP_ROUTES.onboarding);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {

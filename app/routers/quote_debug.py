@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Lead
-from app.verticals.painting import compute_quote_for_lead
+from app.verticals.construction import compute_quote_for_lead
 
 router = APIRouter(prefix="/quote", tags=["quote"])
 

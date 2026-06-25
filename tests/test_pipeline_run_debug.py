@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_pipeline_run_debug.py
 
 Tests for GET /api/pipeline-runs/{id}/debug.
@@ -68,7 +68,7 @@ def _make_run(
     run = PipelineRun(
         tenant_id=f"t-{uuid.uuid4().hex[:8]}",
         lead_id=uuid.uuid4().hex,
-        vertical_id="painting",
+        vertical_id="construction",
         trace_id=uuid.uuid4().hex,
         pipeline_name="test_pipeline",
         engine_version=engine_version,

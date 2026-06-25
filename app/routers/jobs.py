@@ -17,7 +17,7 @@ class JobStatusResponse(BaseModel):
     error: Optional[str] = None
     updated_at: Optional[str] = None
     public_url: Optional[str] = None
-
+ 
 @router.get("/{job_id}", response_model=JobStatusResponse)
 async def get_job_status_endpoint(
     job_id: str,

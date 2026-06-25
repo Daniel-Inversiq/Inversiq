@@ -26,16 +26,16 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="sticky top-3 flex h-[calc(100vh-1.5rem)] min-h-0 w-[240px] shrink-0 flex-col overflow-hidden rounded-[12px] border border-zinc-800/90 bg-zinc-900 shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
-      <div className="shrink-0 px-3 pb-2 pt-3">
+    <aside className="sticky top-3 flex h-[calc(100vh-1.5rem)] min-h-0 w-[244px] shrink-0 flex-col overflow-hidden rounded-lg border border-[#2A312B] bg-[#1A1D1A] shadow-sm">
+      <div className="shrink-0 px-2.5 pb-1.5 pt-2.5">
         <WorkspaceSwitcher forDarkSidebar />
       </div>
-      <div className="mx-3 h-px shrink-0 bg-zinc-700/80" aria-hidden />
-      <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 pb-3 pt-2">
+      <div className="mx-2.5 h-px shrink-0 bg-[#2E3630]" aria-hidden />
+      <nav className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-2.5 pb-2.5 pt-2">
         {appNavigationGroups.map((group) => (
-          <section key={group.labelKey} className="space-y-1.5">
-            <p className="type-sidebar-section px-0.5 text-zinc-500">{t(group.labelKey)}</p>
-            <div className="space-y-px">
+          <section key={group.labelKey} className="space-y-1">
+            <p className="type-sidebar-section px-1 text-[#A79E93]">{t(group.labelKey)}</p>
+            <div className="space-y-1">
               {group.items.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 const Icon = item.icon;
@@ -44,16 +44,16 @@ export function AppSidebar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "group type-sidebar-nav motion-interactive flex w-full min-w-0 items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] font-medium leading-[18px]",
+                      "group type-sidebar-nav flex w-full min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium leading-[18px] transition-all duration-150",
                       isActive
-                        ? "bg-primary/10 text-white shadow-[inset_3px_0_0_0_rgba(31,122,62,0.72)] active:bg-primary/[0.14]"
-                        : "text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 active:bg-zinc-800/90",
+                        ? "bg-[rgba(59,130,246,0.12)] text-white"
+                        : "text-slate-400 hover:bg-[rgba(255,255,255,0.04)] hover:text-slate-200 active:bg-[rgba(255,255,255,0.06)]",
                     )}
                   >
                     <Icon
                       className={cn(
-                        "h-[17px] w-[17px] shrink-0 stroke-[1.5] motion-interactive",
-                        isActive ? "text-primary" : "text-zinc-400 group-hover:text-zinc-300",
+                        "h-[17px] w-[17px] shrink-0 stroke-[1.5] transition-all duration-150",
+                        isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300",
                       )}
                     />
                     <span className="min-w-0 flex-1 truncate font-medium">{t(item.labelKey)}</span>
@@ -64,9 +64,9 @@ export function AppSidebar() {
           </section>
         ))}
       </nav>
-      <div className="shrink-0 space-y-2 border-t border-zinc-800 bg-zinc-900 px-3 pb-2.5 pt-2.5">
-        <SidebarProductUpdates />
-        <div className="space-y-px">
+      <div className="shrink-0 space-y-1.5 border-t border-[#2A312B] bg-[#1A1D1A] px-2.5 pb-2 pt-2">
+        <SidebarProductUpdates forDarkSidebar />
+        <div className="space-y-1">
           {appFooterNavigation.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -76,9 +76,9 @@ export function AppSidebar() {
                     key={item.href}
                     type="button"
                     onClick={handleLogout}
-                    className="group type-sidebar-nav motion-interactive flex w-full items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] font-medium text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 active:bg-zinc-800/90"
+                    className="group type-sidebar-nav flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-400 transition-all duration-150 hover:bg-[rgba(255,255,255,0.04)] hover:text-slate-200 active:bg-[rgba(255,255,255,0.06)]"
                   >
-                    <Icon className="h-[18px] w-[18px] shrink-0 text-zinc-400 group-hover:text-zinc-300" />
+                    <Icon className="h-[18px] w-[18px] shrink-0 text-slate-500 transition-all duration-150 group-hover:text-slate-300" />
                     <span>{t(item.labelKey)}</span>
                   </button>
                 );
@@ -87,17 +87,17 @@ export function AppSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={cn(
-                    "group type-sidebar-nav motion-interactive flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] font-medium",
+                    className={cn(
+                    "group type-sidebar-nav flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
                     isActive
-                      ? "bg-primary/10 text-white shadow-[inset_3px_0_0_0_rgba(31,122,62,0.72)] active:bg-primary/[0.14]"
-                      : "text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 active:bg-zinc-800/90",
+                      ? "bg-[rgba(59,130,246,0.12)] text-white"
+                      : "text-slate-400 hover:bg-[rgba(255,255,255,0.04)] hover:text-slate-200 active:bg-[rgba(255,255,255,0.06)]",
                   )}
                 >
                   <Icon
                     className={cn(
-                      "h-[18px] w-[18px] shrink-0 motion-interactive",
-                      isActive ? "text-primary" : "text-zinc-400 group-hover:text-zinc-300",
+                      "h-[18px] w-[18px] shrink-0 transition-all duration-150",
+                      isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300",
                     )}
                   />
                   <span>{t(item.labelKey)}</span>

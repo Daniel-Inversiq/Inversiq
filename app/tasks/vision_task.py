@@ -1,4 +1,4 @@
-# app/tasks/vision_task.py
+﻿# app/tasks/vision_task.py
 from __future__ import annotations
 
 import logging
@@ -356,7 +356,7 @@ def _resolve_vision_file_sources(
     return out, reasons
 
 
-def _paintly_enabled() -> bool:
+def _construction_enabled() -> bool:
     """Paintly vision on by default; set ENABLE_PAINTLY=false to disable."""
     return bool(getattr(settings, "ENABLE_PAINTLY", True))
 
@@ -510,11 +510,11 @@ def run_vision_for_lead(db: Session, lead_id: str, *, lead=None) -> Dict[str, An
     # Legacy predictor import stays available for safe fallback.
     from app.tasks.vision import predict_images
 
-    paintly_enabled = _paintly_enabled()
+    construction_enabled = _construction_enabled()
     logger.debug(
-        "VISION_PAINTLY_ENABLED lead_id=%s paintly_enabled=%s",
+        "VISION_CONSTRUCTION_ENABLED lead_id=%s construction_enabled=%s",
         lead.id,
-        paintly_enabled,
+        construction_enabled,
     )
 
     logger.debug(
@@ -542,7 +542,7 @@ def run_vision_for_lead(db: Session, lead_id: str, *, lead=None) -> Dict[str, An
     # If APP_PUBLIC_BASE_URL is missing, URL building may fail; we keep going.
     logger.debug("VISION_IMAGE_PATHS lead_id=%s image_paths=%s", lead.id, image_paths)
 
-    if not paintly_enabled:
+    if not construction_enabled:
         image_predictions = predict_images(image_paths)
         return {
             "mode": "image_predictions_only",

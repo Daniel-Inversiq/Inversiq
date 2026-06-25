@@ -112,8 +112,8 @@ export function WorkspaceSwitcher({ forDarkSidebar = false }: WorkspaceSwitcherP
               "transition-transform duration-200 ease-out will-change-transform",
               "group-hover/workspace:scale-[1.01] group-data-[popup-open]/workspace:scale-[1.01]",
               forDarkSidebar
-                ? "border border-zinc-600/90 bg-zinc-800 text-zinc-100"
-                : "border border-zinc-200/90 bg-white text-zinc-800",
+                ? "border border-blue-500/35 bg-blue-950/55 text-blue-100 shadow-[0_0_0_1px_rgba(59,130,246,0.12)]"
+                : "border border-slate-200/90 bg-slate-100 text-slate-700 shadow-sm",
             )}
           >
             {initials}
@@ -127,7 +127,7 @@ export function WorkspaceSwitcher({ forDarkSidebar = false }: WorkspaceSwitcherP
           <span
             className={cn(
               "block truncate text-[17px] font-semibold leading-tight tracking-[-0.02em]",
-              forDarkSidebar ? "text-zinc-100" : "text-zinc-950",
+              forDarkSidebar ? "text-zinc-100" : "text-slate-900",
             )}
           >
             Inversiq

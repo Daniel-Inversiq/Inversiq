@@ -145,13 +145,12 @@ type IntakeLineChartProps = {
   chartSummary?: IntakeChartSummary | null;
 };
 
-const LINE_STROKE = 2.35;
-/** Matches --primary / chart-intake tokens */
-const CHART_LINE = "#1F7A3E";
-const CHART_DEEP = "#176332";
+const LINE_STROKE = 2.25;
+const CHART_LINE = "#4A7C59";
+const CHART_DEEP = "#3D6B4A";
 const ANIM_MS = 400;
 /** SVG viewBox height — keep in sync with `h-[…px]` on the chart */
-const CHART_VB_H = 224;
+const CHART_VB_H = 264;
 
 function formatTooltipDate(dayKey: string) {
   const [y, m, d] = dayKey.split("-").map(Number);
@@ -250,7 +249,7 @@ function IntakeChartInsights({
   }
 
   return (
-    <div className="mt-2 border-t border-zinc-200/50 pt-2">
+    <div className="mt-2 border-t border-zinc-200 pt-2">
       <p className="text-[11px] font-semibold leading-snug text-zinc-800">
         {t("dashboard.operational.chart.insight_range", { days: dayRange })}
       </p>
@@ -437,8 +436,8 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
 
   if (n === 0) {
     return (
-      <div className="flex min-h-[224px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200/90 bg-gradient-to-b from-zinc-50/80 to-zinc-50/40 px-5 py-8 text-center">
-        <p className="max-w-[18rem] text-[13px] font-medium leading-relaxed text-zinc-600">
+      <div className="flex min-h-[264px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-[#FFFFFF] px-4 py-6 text-center">
+        <p className="max-w-[18rem] text-[12px] font-medium leading-relaxed text-zinc-500">
           {t("dashboard.operational.chart.empty_hint")}
         </p>
       </div>
@@ -449,7 +448,7 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
     <div className="relative w-full">
       <svg
         viewBox={`0 0 ${w} ${h}`}
-        className="font-sans h-[224px] w-full max-w-full touch-none rounded-[10px] text-zinc-600 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary/25"
+        className="font-sans h-[264px] w-full max-w-full touch-none rounded-xl bg-[#FFFFFF] text-zinc-500 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-slate-300/60"
         preserveAspectRatio="xMidYMid meet"
         role="img"
         tabIndex={0}
@@ -459,8 +458,8 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
       >
         <defs>
           <linearGradient id={areaGradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CHART_LINE} stopOpacity="0.22" />
-            <stop offset="45%" stopColor={CHART_DEEP} stopOpacity="0.08" />
+            <stop offset="0%" stopColor={CHART_LINE} stopOpacity="0.2" />
+            <stop offset="45%" stopColor={CHART_DEEP} stopOpacity="0.09" />
             <stop offset="100%" stopColor={CHART_LINE} stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -491,7 +490,7 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
               x2={w - padR}
               y1={y}
               y2={y}
-              stroke="#e4e4e7"
+              stroke="#E5E7EB"
               strokeOpacity={0.32}
               strokeWidth={1}
             />
@@ -516,10 +515,10 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
               d={lineD}
               fill="none"
               stroke={CHART_LINE}
-              strokeWidth={LINE_STROKE + 5}
+              strokeWidth={LINE_STROKE + 2}
               strokeLinecap="round"
               strokeLinejoin="round"
-              opacity={0.09}
+              opacity={0.07}
             />
             <path
               ref={lineRef}
@@ -539,7 +538,7 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
             x2={activePoint.x}
             y1={padT}
             y2={bottomY}
-            stroke="#d4d4d8"
+            stroke="#D1D5DB"
             strokeWidth={0.85}
             strokeDasharray="3 5"
             opacity={0.55}
@@ -570,7 +569,7 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
                 cy={p.y}
                 r={r}
                 fill="#ffffff"
-                stroke="var(--primary)"
+                stroke={CHART_LINE}
                 strokeWidth={isActive ? 2.75 : 2}
                 opacity={dimmed ? 0.22 : dash.ready ? 1 : 0}
                 style={{
@@ -597,7 +596,7 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
                 fontWeight: isActive ? 700 : 600,
                 fontFamily: "inherit",
                 letterSpacing: "0.01em",
-                fill: isActive ? "#18181b" : "#64748b",
+                fill: isActive ? "#1f2937" : "#6b7280",
                 pointerEvents: "none",
               }}
             >
@@ -618,7 +617,7 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
                 fontWeight: 600,
                 fontFamily: "inherit",
                 fontVariantNumeric: "tabular-nums",
-                fill: "#64748b",
+                fill: "#6b7280",
                 pointerEvents: "none",
               }}
             >
@@ -649,14 +648,14 @@ export function IntakeLineChart({ series, dayRange = 7, chartSummary = null }: I
 
       {activePoint && activeDayKey ? (
         <div
-          className="pointer-events-none absolute z-10 max-w-[min(260px,calc(100%-0.75rem))] rounded-lg border border-zinc-200/75 bg-white/98 px-2.5 py-2 text-left shadow-[0_4px_16px_-6px_rgba(15,23,42,0.1)] backdrop-blur-[2px] motion-safe:transition-[opacity,left,transform] motion-safe:duration-[150ms] motion-safe:ease-out"
+          className="pointer-events-none absolute z-10 max-w-[min(260px,calc(100%-0.75rem))] rounded-lg border border-zinc-200 bg-[#FFFFFF]/98 px-2.5 py-2 text-left shadow-sm backdrop-blur-[2px] motion-safe:transition-[opacity,left,transform] motion-safe:duration-[150ms] motion-safe:ease-out"
           style={{
             left: `${tooltipXPct}%`,
             top: 8,
             transform: tooltipTransform,
           }}
         >
-          <p className="text-[12.5px] font-semibold leading-snug text-zinc-800">{formatTooltipDate(activeDayKey)}</p>
+          <p className="text-[12.5px] font-semibold leading-snug text-zinc-900">{formatTooltipDate(activeDayKey)}</p>
           <p className="mt-2 text-[12px] font-medium leading-snug text-zinc-600">
             {activePoint.count === 1
               ? t("dashboard.operational.chart.tooltip_day_requests_one")
@@ -702,9 +701,9 @@ export function StatusStackedBar({ items }: StatusStackedBarProps) {
         <span className="font-medium text-zinc-400"> — </span>
         <span className="tabular-nums text-zinc-600">{pct}%</span>
       </p>
-      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-zinc-100/90">
+      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-zinc-100">
         <div
-          className="motion-interactive h-full rounded-full bg-primary"
+          className="motion-interactive h-full rounded-full bg-[#4A7C59]"
           style={{ width: `${pct}%` }}
           title={`${tStatus(topStatus)} ${pct}%`}
         />

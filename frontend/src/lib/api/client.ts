@@ -17,7 +17,31 @@ export function apiUrl(path: string): string {
  */
 export function apiBackendProxyPath(path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `/api/backend${normalizedPath}`;
+  const strippedPath = normalizedPath.startsWith("/api/backend")
+    ? normalizedPath.slice("/api/backend".length) || "/"
+    : normalizedPath;
+  const resolvedPath = strippedPath.startsWith("/") ? strippedPath : `/${strippedPath}`;
+  return `/api/backend${resolvedPath}`;
+}
+
+function normalizeSameOriginPath(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (normalizedPath.startsWith("/api/")) {
+    return normalizedPath;
+  }
+  if (/^\/me(?:\/)?(?:\?|$)/.test(normalizedPath)) {
+    return "/api/auth/me";
+  }
+  if (/^\/login(?:\/)?(?:\?|$)/.test(normalizedPath)) {
+    return "/api/auth/login";
+  }
+  if (/^\/register(?:\/)?(?:\?|$)/.test(normalizedPath)) {
+    return "/api/auth/register";
+  }
+  if (/^\/logout(?:\/)?(?:\?|$)/.test(normalizedPath)) {
+    return "/api/auth/logout";
+  }
+  return normalizedPath;
 }
 
 /** Prevents hung backend calls from keeping React Query in `isLoading` forever. */
@@ -170,7 +194,7 @@ export async function apiRequestSameOrigin<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedPath = normalizeSameOriginPath(path);
   return apiRequestWithResolvedUrl<T>(normalizedPath, normalizedPath, options);
 }
 
@@ -179,6 +203,7 @@ async function apiRequestWithResolvedUrl<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
+  let finalUrl = normalizeSameOriginPath(url);
   const method = (options.method ?? "GET").toUpperCase();
   const startedAt = Date.now();
   logDashboardApiRequest("start", { method, path, durationMs: 0 });
@@ -191,7 +216,40 @@ async function apiRequestWithResolvedUrl<T>(
       : timeoutSignal;
 
   try {
-    response = await fetch(url, {
+    const rewriteBareAuthPath = (inputUrl: string): string => {
+      const isAbsolute = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(inputUrl);
+      const baseOrigin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+      const parsed = new URL(inputUrl, baseOrigin);
+      const pathname = parsed.pathname;
+
+      const rewriteMap: Record<string, string> = {
+        "/me": "/api/auth/me",
+        "/login": "/api/auth/login",
+        "/register": "/api/auth/register",
+        "/logout": "/api/auth/logout",
+      };
+
+      const normalizePathname = pathname.endsWith("/") && pathname.length > 1
+        ? pathname.slice(0, -1)
+        : pathname;
+      const rewrittenPathname = rewriteMap[normalizePathname];
+      if (!rewrittenPathname) {
+        return inputUrl;
+      }
+
+      const oldUrl = inputUrl;
+      parsed.pathname = rewrittenPathname;
+      const rewritten = isAbsolute
+        ? parsed.toString()
+        : `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      if (process.env.NODE_ENV !== "production" && rewritten !== oldUrl) {
+        console.warn("Rewrote bare auth path", oldUrl, rewritten);
+      }
+      return rewritten;
+    };
+
+    finalUrl = rewriteBareAuthPath(finalUrl);
+    response = await fetch(finalUrl, {
       ...options,
       signal: mergedSignal,
       credentials: "include",
@@ -205,7 +263,7 @@ async function apiRequestWithResolvedUrl<T>(
   } catch (error) {
     const durationMs = Date.now() - startedAt;
     setLastApiDebugSnapshot({
-      url,
+      url: finalUrl,
       method,
       status: 0,
       ok: false,
@@ -249,7 +307,7 @@ async function apiRequestWithResolvedUrl<T>(
     }
 
     setLastApiDebugSnapshot({
-      url,
+      url: finalUrl,
       method,
       status: response.status,
       ok: false,
@@ -267,7 +325,7 @@ async function apiRequestWithResolvedUrl<T>(
 
   const payload = (await response.json()) as T;
   setLastApiDebugSnapshot({
-    url,
+    url: finalUrl,
     method,
     status: response.status,
     ok: true,

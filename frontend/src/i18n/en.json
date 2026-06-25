@@ -449,7 +449,7 @@
       },
       "open_quotes": {
         "label": "Open quotes",
-        "description": "Action required in pipeline"
+      "description": "Action required"
       },
       "accepted": {
         "label": "Accepted",
@@ -462,7 +462,7 @@
     },
     "analytics": {
       "kicker": "Analytics",
-      "title": "Revenue and pipeline split",
+      "title": "Revenue and progress",
       "subtitle": "Use these signals to adjust capacity and follow-up.",
       "revenue_trend": "Revenue trend",
       "status_distribution": "Status distribution"
@@ -470,7 +470,7 @@
     "activity": {
       "kicker": "Recent activity",
       "title": "Events and follow-up",
-      "subtitle": "Realtime changes in your tenant, sorted on timeline.",
+      "subtitle": "Realtime changes, sorted on timeline.",
       "empty": "No activity available yet.",
       "open_item": "Open item",
       "actions": {
@@ -519,13 +519,13 @@
     },
     "empty": {
       "title": "No data available",
-      "description": "The API did not return dashboard data. This can happen in an empty tenant environment."
+      "description": "No data is available for this overview yet."
     },
     "errors": {
       "load_failed_title": "Dashboard failed to load",
       "inactive_session": "Your session is not active. Log in through the FastAPI auth flow so the access_token cookie is sent.",
       "unauthenticated": "Not authenticated (401). Log in again so the session cookie is sent.",
-      "forbidden": "No access to tenant data (403). Verify your account is linked to the correct tenant.",
+      "forbidden": "You do not have access to this data.",
       "network": "Backend unreachable. Check API base URL, CORS, and whether FastAPI is running.",
       "unknown": "Unknown error while loading dashboard."
     },
@@ -535,6 +535,11 @@
     },
     "operational": {
       "header_kicker": "Overview",
+      "greeting": {
+        "morning": "Good morning",
+        "afternoon": "Good afternoon",
+        "evening": "Good evening"
+      },
       "title": "Your work",
       "subtitle": "See what needs your attention and track your work.",
       "errors": {
@@ -546,6 +551,15 @@
         "review_queue": "Open review queue",
         "create_quote": "Create quote",
         "open_jobs": "Open jobs"
+      },
+      "workflow": {
+        "kicker": "Process",
+        "title": "Workflow",
+        "description": "From request to completion",
+        "step1": "Requests",
+        "step2": "Quotes",
+        "step3": "Jobs",
+        "link": "Full overview"
       },
       "kpi": {
         "go_to_aria": "Open {label}",
@@ -568,16 +582,19 @@
       },
       "activity": {
         "kicker": "Activity",
-        "title": "New requests (last 7 days)",
+        "title": "Recent activity",
         "subtitle": "Requests received ({count} in this period).",
         "scheduled_label": "Scheduled",
-        "body": "The chart below shows how many requests came in. This block highlights what matters today."
+        "body": "Latest movement on requests and scheduling — scheduled jobs appear on the right.",
+        "footer_link": "View all activity",
+        "live_badge": "Live",
+        "last_updated": "Updated {time}"
       },
       "distribution": {
         "kicker": "Distribution",
         "title": "Status",
         "subtitle": "Quotes and jobs",
-        "no_data": "No status data yet."
+        "no_data": "Nothing to show yet."
       },
       "analytics_section": {
         "kicker": "Overview",
@@ -586,7 +603,13 @@
         "line_title": "New requests",
         "line_description": "Requests per day (last {days} days).",
         "donut_title": "Work progress",
-        "donut_description": "Quotes and jobs by stage."
+        "donut_description": "Quotes and jobs by stage.",
+        "intake_headline": "{count} requests",
+        "intake_period_caption": "Last {days} days",
+        "intake_trend_vs_prior": "{pct} vs previous period",
+        "intake_trend_stable": "Same as previous period",
+        "intake_trend_no_baseline": "No prior period to compare",
+        "intake_trend_no_data": "No intake in this period yet"
       },
       "outcomes": {
         "accepted_label": "Accepted",
@@ -633,7 +656,7 @@
         "urgency_high": "Urgent",
         "urgency_mid": "Priority"
       },
-      "fallback_customer_label": "Customer request",
+      "fallback_customer_label": "Customer",
       "new_requests_panel": {
         "title": "Requests",
         "description": "Latest customer requests, newest first.",
@@ -849,6 +872,11 @@
       "not_logged_in_description": "Log in to view this overview.",
       "load_failed_title": "Couldn’t load the list",
       "load_failed_description": "We couldn’t load the data right now. Please try again."
+    },
+    "filter_attention": {
+      "empty_title": "Nothing in this priority view",
+      "empty_description": "There are no items in this filtered view right now. Open the full review list to see everything.",
+      "show_all": "Show full review list"
     }
   },
   "agenda_page": {
@@ -1038,9 +1066,9 @@
       "errors": {
         "session_expired": "Your session expired. Log in again to view offer details.",
         "load_failed_title": "Failed to load offer detail",
-        "load_failed_description": "Check whether the backend is running and your tenant has access to this quote.",
+        "load_failed_description": "Check whether the backend is running and you have access to this quote.",
         "lead_not_found_title": "Quote not found",
-        "lead_not_found_description": "This quote does not belong to your tenant or no longer exists."
+        "lead_not_found_description": "This quote does not belong to your account or no longer exists."
       },
       "cards": {
         "status": {
@@ -1068,7 +1096,7 @@
   "customers": {
     "header": {
       "kicker": "Customers / leads",
-      "title": "Tenant customer overview",
+      "title": "Customer overview",
       "subtitle": "Use leads to validate intake details first, then continue to offer detail."
     },
     "errors": {
@@ -1078,7 +1106,7 @@
     },
     "empty": {
       "title": "No leads found",
-      "description": "There are no customers/leads in this tenant yet."
+      "description": "There are no customers or leads yet."
     },
     "table": {
       "name": "Name",
@@ -1089,38 +1117,43 @@
     "actions": {
       "open_lead": "Open lead",
       "open_offer": "Open offer"
+    },
+    "filter_open": {
+      "empty_title": "No open requests",
+      "empty_description": "Every lead here is already closed or archived. Open the full list to see all customers.",
+      "show_all": "Show all customers"
     }
   },
   "workflows": {
     "header": {
       "kicker": "Workflows",
-      "title": "Pipeline runs"
+      "title": "Process overview"
     },
     "errors": {
-      "not_logged_in_description": "Log in to fetch workflow runs.",
-      "load_failed_title": "Failed to load workflow overview",
-      "load_failed_description": "The /api/pipeline-runs endpoint could not be loaded."
+      "not_logged_in_description": "Log in to view the process overview.",
+      "load_failed_title": "Failed to load process overview",
+      "load_failed_description": "The process overview could not be loaded."
     },
     "empty": {
-      "title": "No runs found",
-      "description": "No workflow runs are present yet for tenant {tenant_id}."
+      "title": "No processes found",
+      "description": "No processes are available yet."
     },
     "table": {
-      "run": "Run",
+      "run": "Process",
       "lead": "Lead",
       "status": "Status",
       "created": "Created",
       "action": "Action"
     },
     "actions": {
-      "open_run": "Open run",
+      "open_run": "Open process",
       "open_lead": "Open lead"
     }
   },
   "uploads": {
     "header": {
       "kicker": "Uploads",
-      "title": "Tenant upload overview"
+      "title": "Upload overview"
     },
     "errors": {
       "not_logged_in_description": "Log in to fetch uploads.",
@@ -1129,7 +1162,7 @@
     },
     "empty": {
       "title": "No uploads found",
-      "description": "There are no verified uploads in this tenant yet."
+      "description": "There are no verified uploads yet."
     },
     "table": {
       "file": "File",
@@ -1225,7 +1258,7 @@
   },
   "nav": {
     "workspace": "Workspace",
-    "tenant_workspace": "Tenant workspace",
+    "tenant_workspace": "Workspace",
     "groups": {
       "core": "Core",
       "system": "Business"
@@ -1236,6 +1269,7 @@
       "jobs": "Jobs",
       "review": "Review",
       "agenda": "Agenda",
+      "workspaces": "Workspaces",
       "settings": "Settings"
     },
     "footer": {
@@ -1252,20 +1286,20 @@
   },
   "topbar": {
     "session_checking": "Checking session...",
-    "logged_in_as": "Logged in as {email} ({tenant_id})"
+    "logged_in_as": "Logged in as {email}"
   },
   "workflow_detail": {
     "header": {
-      "kicker": "Workflow run",
-      "run": "Run #{run_id}",
-      "meta": "Tenant {tenant_id} - Lead {lead_id}"
+      "kicker": "Process",
+      "run": "Process #{run_id}",
+      "meta": "Request {lead_id}"
     },
     "errors": {
       "invalid_run_id_title": "Invalid run id",
-      "invalid_run_id_description": "The workflow run id in the URL is invalid.",
-      "not_logged_in_description": "Log in to fetch workflow details.",
-      "load_failed_title": "Failed to load run detail",
-      "load_failed_description": "The /api/pipeline-runs/{run_id}/debug endpoint could not be loaded."
+      "invalid_run_id_description": "The process id in the URL is invalid.",
+      "not_logged_in_description": "Log in to view process details.",
+      "load_failed_title": "Failed to load process detail",
+      "load_failed_description": "The detail view could not be loaded."
     },
     "cards": {
       "status": "Status",
@@ -1313,6 +1347,7 @@
     "in_progress": "In progress",
     "unknown": "Unknown",
     "active": "Active",
-    "skipped": "Skipped"
+    "skipped": "Skipped",
+    "config_needed": "Settings required"
   }
 }

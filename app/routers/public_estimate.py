@@ -1,4 +1,4 @@
-# app/routers/public_estimate.py
+﻿# app/routers/public_estimate.py
 from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Form
@@ -29,7 +29,7 @@ from app.services.workflow import (
     mark_lead_viewed,
 )
 from app.services.activity_service import log_activity_event
-from app.verticals.painting.email_render import (
+from app.verticals.construction.email_render import (
     render_estimate_accepted_email,
     render_painter_estimate_accepted_email,
 )
@@ -39,8 +39,8 @@ from app.i18n.service import setup_jinja_i18n
 router = APIRouter(prefix="/e", tags=["public_estimate"])
 # Alias router for simple customer-friendly quote URL (/q/{public_token})
 router_q = APIRouter(prefix="/q", tags=["public_quote"])
-paintly_templates = Jinja2Templates(directory="app/verticals/painting/templates")
-setup_jinja_i18n(paintly_templates)
+construction_templates = Jinja2Templates(directory="app/verticals/construction/templates")
+setup_jinja_i18n(construction_templates)
 
 logger = logging.getLogger(__name__)
 
@@ -597,7 +597,7 @@ def public_estimate(token: str, request: Request, db: Session = Depends(get_db),
             },
         )
 
-    page_html = paintly_templates.env.get_template("public/customer_quote_page.html").render(
+    page_html = construction_templates.env.get_template("public/customer_quote_page.html").render(
         token=lead.public_token,
         can_customer_act=bool(can_customer_act),
         is_pre_send=bool(is_pre_send),
@@ -829,7 +829,7 @@ def public_accepted_confirmation(token: str, request: Request, db: Session = Dep
     lead = db.query(Lead).filter(Lead.public_token == token).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Not found")
-    return paintly_templates.TemplateResponse(
+    return construction_templates.TemplateResponse(
         "public/quote_accepted_confirmation.html",
         {
             "request": request,
@@ -843,7 +843,7 @@ def public_rejected_confirmation(token: str, request: Request, db: Session = Dep
     lead = db.query(Lead).filter(Lead.public_token == token).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Not found")
-    return paintly_templates.TemplateResponse(
+    return construction_templates.TemplateResponse(
         "public/quote_rejected_confirmation.html",
         {
             "request": request,

@@ -27,3 +27,5 @@ from app.models.lead_feedback import LeadFeedback  # noqa
 
 # (als je dit al had)
 from app.models.upload_record import UploadRecord  # noqa  (alleen als die bestaat)
+from app.models.workspace import Workspace, WorkspaceDocument, WorkspaceFlag  # noqa
+from app.models.workspace_job import WorkspaceJob  # noqa

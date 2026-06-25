@@ -1,4 +1,4 @@
-# scripts/rerender_estimate_html_snapshots.py
+﻿# scripts/rerender_estimate_html_snapshots.py
 """
 Re-materialize stored estimate HTML from lead.estimate_json (current Jinja templates).
 
@@ -39,7 +39,7 @@ def main() -> int:
 
     from app.db import SessionLocal
     from app.models.lead import Lead
-    from app.verticals.painting.router_app import rerender_stored_estimate_html_from_json
+    from app.verticals.construction.router_app import rerender_stored_estimate_html_from_json
 
     db = SessionLocal()
     try:

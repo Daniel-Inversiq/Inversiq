@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
@@ -32,6 +32,7 @@ from app.modules.outreach.services.suggestion_queue_actions import (
 )
 from app.services.founder_insights import get_tenant_health
 from app.i18n.service import setup_jinja_i18n
+from app.verticals.registry import VERTICALS
 
 router = APIRouter(
     prefix="/founder",
@@ -951,12 +952,12 @@ def founder_tenant_detail(
             "tenant_summary": tenant_summary,
             "app_public_origin": app_public_origin,
             "recent_quote_rows": recent_quote_rows,
-            "all_workflows": ["painting", "roofing", "solar"],
+            "all_workflows": list(VERTICALS.keys()),
         },
     )
 
 
-_VALID_WORKFLOWS = frozenset(["painting", "roofing", "solar"])
+_VALID_WORKFLOWS = frozenset(VERTICALS.keys())
 
 
 @router.post("/tenants/{tenant_id}/workflows", name="founder_tenant_workflows_update")
@@ -972,8 +973,8 @@ def founder_tenant_workflows_update(
         raise HTTPException(status_code=404, detail="Tenant not found")
 
     # Accept only known workflow ids; preserve order painting → roofing → solar.
-    enabled = [w for w in ["painting", "roofing", "solar"] if w in set(workflows) & _VALID_WORKFLOWS]
-    tenant.enabled_verticals = enabled if enabled else ["painting"]
+    enabled = [w for w in VERTICALS.keys() if w in set(workflows) & _VALID_WORKFLOWS]
+    tenant.enabled_verticals = enabled if enabled else ["construction"]
     db.add(tenant)
     db.commit()
 

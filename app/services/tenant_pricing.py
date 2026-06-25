@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any
@@ -24,7 +24,7 @@ def get_tenant_walls_rate(tenant: Any) -> float | None:
         return None
 
 
-def apply_paintly_tenant_pricing_overrides(rules: dict, tenant: Any) -> dict:
+def apply_construction_tenant_pricing_overrides(rules: dict, tenant: Any) -> dict:
     effective_rules = deepcopy(rules or {})
 
     walls_rate = get_tenant_walls_rate(tenant)

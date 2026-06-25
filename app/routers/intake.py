@@ -1,4 +1,4 @@
-# app/routers/intake.py
+﻿# app/routers/intake.py
 from __future__ import annotations
 
 import logging
@@ -12,17 +12,18 @@ from sqlalchemy.orm import Session
 from app.db import get_db, SessionLocal
 from app.models import LeadFile
 from app.verticals.registry import get as get_vertical
-from app.verticals.painting.eu_config import resolve_eu_config  # ✅ ADD
+from app.verticals.construction.eu_config import resolve_eu_config  # ✅ ADD
 
 from app.auth.optional_user import get_optional_user
 from app.models.user import User
 from app.models.tenant import Tenant, get_tenant_by_slug
 from app.models.lead import Lead as LeadModel
+from app.verticals.intake import get_intake_adapter_for_tenant
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 logger = logging.getLogger(__name__)
 
-DEFAULT_VERTICAL = "paintly"
+DEFAULT_VERTICAL = "construction"
 
 
 def _start_processing_for_lead_sync(lead_id: str) -> None:
@@ -201,7 +202,7 @@ async def _create_lead_impl(
 @router.get("/painters-us", include_in_schema=False)
 def intake_painters_us_redirect():
     # ✅ keep old link working, but always use tenant slug route now
-    return RedirectResponse(url="/intake/paintly", status_code=302)
+    return RedirectResponse(url="/intake/construction", status_code=302)
 
 
 @router.get("/t/{tenant_slug}", include_in_schema=False)
@@ -254,7 +255,10 @@ async def intake_roofing_submit(
     v = _get_vertical_or_404("roofing")
     tenant_id = str(user.tenant_id) if user and user.tenant_id else "dev-tenant"
 
-    result = await v.create_lead_from_form(request, db, tenant_id=tenant_id)
+    if hasattr(v, "upsert_lead_from_form"):
+        result = await v.upsert_lead_from_form(request, db, tenant_id=tenant_id)
+    else:
+        result = await v.create_lead_from_form(request, db, tenant_id=tenant_id)
 
     # Run the roofing engine immediately (no async photo processing needed).
     try:
@@ -316,7 +320,10 @@ async def intake_solar_submit(
     v = _get_vertical_or_404("solar")
     tenant_id = str(user.tenant_id) if user and user.tenant_id else "dev-tenant"
 
-    result = await v.create_lead_from_form(request, db, tenant_id=tenant_id)
+    if hasattr(v, "upsert_lead_from_form"):
+        result = await v.upsert_lead_from_form(request, db, tenant_id=tenant_id)
+    else:
+        result = await v.create_lead_from_form(request, db, tenant_id=tenant_id)
 
     # Run the solar engine immediately (pure math, no async photo processing needed).
     try:
@@ -372,7 +379,7 @@ def intake_by_tenant_slug(
         },
     )
 
-    v = _get_vertical_or_404(DEFAULT_VERTICAL)
+    v = get_intake_adapter_for_tenant(tenant)
 
     return v.render_intake_form(
         request,
@@ -409,7 +416,7 @@ async def create_lead_by_tenant_slug(
             },
         )
 
-        v = _get_vertical_or_404(DEFAULT_VERTICAL)
+        v = get_intake_adapter_for_tenant(tenant)
 
         if hasattr(v, "upsert_lead_from_form"):
             result = await v.upsert_lead_from_form(

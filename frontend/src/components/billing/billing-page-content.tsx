@@ -69,7 +69,7 @@ function usagePct(used: number, limit: number | null) {
 
 function UsageBar({ pct }: { pct: number }) {
   const tone =
-    pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-400" : "bg-primary";
+    pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-primary/80" : "bg-primary";
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
       <div className={cn("h-1.5 rounded-full transition-all", tone)} style={{ width: `${pct}%` }} />
@@ -293,15 +293,15 @@ export function BillingPageContent() {
         ) : null}
 
         {data.billing_status_error ? (
-          <Alert className="border-amber-200/80 bg-amber-50/65">
-            <AlertCircle className="size-4 text-amber-700" aria-hidden />
-            <AlertDescription className="text-[13px] text-amber-950">{t("billing.errors.inactive_subscription")}</AlertDescription>
+          <Alert className="border-[#4A7C59]/30 bg-[#EEF4F0]">
+            <AlertCircle className="size-4 text-[#4A7C59]" aria-hidden />
+            <AlertDescription className="text-[13px] text-zinc-900">{t("billing.errors.inactive_subscription")}</AlertDescription>
           </Alert>
         ) : null}
         {data.portal_error_no_customer ? (
-          <Alert className="border-amber-200/80 bg-amber-50/65">
-            <AlertCircle className="size-4 text-amber-700" aria-hidden />
-            <AlertDescription className="text-[13px] text-amber-950">{t("billing.errors.no_customer")}</AlertDescription>
+          <Alert className="border-[#4A7C59]/30 bg-[#EEF4F0]">
+            <AlertCircle className="size-4 text-[#4A7C59]" aria-hidden />
+            <AlertDescription className="text-[13px] text-zinc-900">{t("billing.errors.no_customer")}</AlertDescription>
           </Alert>
         ) : null}
 
@@ -342,7 +342,7 @@ export function BillingPageContent() {
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-600">{t("billing.labels.status")}</p>
                   <div className="mt-1.5">
                     {data.subscription_status === "trialing" ? (
-                      <Badge variant="outline" className="border-amber-200/80 bg-amber-50 text-amber-900">
+                      <Badge variant="outline" className="border-[#4A7C59]/30 bg-[#EEF4F0] text-zinc-900">
                         {data.subscription_status_label}
                       </Badge>
                     ) : data.subscription_status === "active" ? (
@@ -441,8 +441,8 @@ export function BillingPageContent() {
                         </div>
                       </div>
                       {usage.usage_warning_nl || pct >= 90 ? (
-                        <Alert className="mt-3 border-amber-200/80 bg-amber-50/65 py-2">
-                          <AlertDescription className="text-[12px] text-amber-950">
+                        <Alert className="mt-3 border-[#4A7C59]/30 bg-[#EEF4F0] py-2">
+                          <AlertDescription className="text-[12px] text-zinc-900">
                             {pct >= 100
                               ? t("billing.page.usage_hard_cap")
                               : pct >= 90
@@ -586,7 +586,7 @@ export function BillingPageContent() {
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-600">{t("billing.labels.status")}</p>
                   <div className="mt-1">
                     {data.subscription_status === "trialing" ? (
-                      <Badge variant="outline" className="border-amber-200/80 bg-amber-50 text-amber-900">
+                      <Badge variant="outline" className="border-[#4A7C59]/30 bg-[#EEF4F0] text-zinc-900">
                         {data.subscription_status_label}
                       </Badge>
                     ) : data.subscription_status === "active" ? (

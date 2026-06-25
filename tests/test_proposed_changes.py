@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_proposed_changes.py
 
 Unit tests for app/services/proposed_changes.py.
@@ -432,12 +432,12 @@ class TestChangeIdGeneration:
     def test_change_id_includes_scope_and_category(self):
         result = _propose(
             scope_type="vertical",
-            scope_id="painting",
+            scope_id="construction",
             suggestions=[_suggestion("review_trigger_narrowing", parameter="review_trigger_sensitivity")],
         )
         cid = result["proposed_changes"][0]["change_id"]
         assert "vertical" in cid
-        assert "painting" in cid
+        assert "construction" in cid
         assert "review_trigger_narrowing" in cid
 
 

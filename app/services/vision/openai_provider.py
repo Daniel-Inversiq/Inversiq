@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import base64
 import json
@@ -43,7 +43,7 @@ Rules:
 """.strip()
 
 VISION_RAW_SCHEMA: dict[str, Any] = {
-    "name": "paintly_vision_raw_output",
+    "name": "construction_vision_raw_output",
     "schema": {
         "type": "object",
         "additionalProperties": False,

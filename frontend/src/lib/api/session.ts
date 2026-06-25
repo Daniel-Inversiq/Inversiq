@@ -2,8 +2,13 @@ import { apiRequestSameOrigin, apiUrl } from "@/lib/api/client";
 import { APP_ROUTES } from "@/lib/routes";
 import { SessionUser } from "@/types/session";
 
+function authProxyPath(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `/api/auth${normalizedPath}`;
+}
+
 export function fetchSessionUser() {
-  return apiRequestSameOrigin<SessionUser>("/api/auth/me");
+  return apiRequestSameOrigin<SessionUser>(authProxyPath("/me"));
 }
 
 type LoginPayload = {
@@ -20,21 +25,21 @@ type RegisterPayload = {
 };
 
 export function login(payload: LoginPayload) {
-  return apiRequestSameOrigin<SessionUser & { next?: string }>("/api/auth/login", {
+  return apiRequestSameOrigin<SessionUser & { next?: string }>(authProxyPath("/login"), {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function register(payload: RegisterPayload) {
-  return apiRequestSameOrigin<SessionUser & { next?: string }>("/api/auth/register", {
+  return apiRequestSameOrigin<SessionUser & { next?: string }>(authProxyPath("/register"), {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function logout() {
-  return apiRequestSameOrigin<{ ok: boolean }>("/api/auth/logout", {
+  return apiRequestSameOrigin<{ ok: boolean }>(authProxyPath("/logout"), {
     method: "POST",
     body: JSON.stringify({}),
   });

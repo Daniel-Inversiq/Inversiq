@@ -1,4 +1,4 @@
-# app/routers/quotes.py
+﻿# app/routers/quotes.py
 from __future__ import annotations
 
 import json
@@ -22,19 +22,19 @@ from app.models.quote_calendar_link import QuoteCalendarLink
 from app.models.user import User
 from app.services.storage import get_storage, head_ok, MAX_BYTES, ALLOWED_CONTENT_TYPES
 from app.services.metrics import inc  # ✅ FASE 6 metrics
-from app.verticals.painting.calendar_ics import (
+from app.verticals.construction.calendar_ics import (
     build_quote_calendar_payload,
     build_quote_ics,
     build_quote_ics_filename,
 )
-from app.verticals.painting.google_calendar_service import (
+from app.verticals.construction.google_calendar_service import (
     create_google_calendar_event_for_tenant,
 )
-from app.verticals.painting.google_calendar_quote import build_google_event_payload
+from app.verticals.construction.google_calendar_quote import build_google_event_payload
 from app.verticals.registry import get as get_vertical
 from app.core.settings import settings
 from app.services.activity_service import log_activity_event
-from app.verticals.painting.estimate_email import (
+from app.verticals.construction.estimate_email import (
     send_estimate_ready_email_to_customer,
 )
 from app.i18n.service import setup_jinja_i18n
@@ -42,9 +42,9 @@ from app.services.quote_readiness import readiness_payload, validate_quote_readi
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 templates = Jinja2Templates(directory="app/templates")
-paintly_templates = Jinja2Templates(directory="app/verticals/painting/templates")
+construction_templates = Jinja2Templates(directory="app/verticals/construction/templates")
 setup_jinja_i18n(templates)
-setup_jinja_i18n(paintly_templates)
+setup_jinja_i18n(construction_templates)
 logger = logging.getLogger(__name__)
 
 
@@ -462,9 +462,9 @@ def quote_status_json(
 
 def _normalize_vertical_id(raw: str | None) -> str:
     """Return the canonical vertical_id for a lead, matching publish_quote logic."""
-    vid = (raw or "paintly").strip() or "paintly"
+    vid = (raw or "construction").strip() or "construction"
     if vid == "painters_us":
-        vid = "paintly"
+        vid = "construction"
     return vid
 
 
@@ -564,8 +564,8 @@ def publish_quote(
     inc("publish_requests_total")
     logger.info("LEAD %s publish_requested status=%s", lead.id, lead.status)
 
-    # Idempotent: al klaar -> direct naar lead detail offerteview
-    if lead.status in ("SUCCEEDED", "NEEDS_REVIEW", "CONFIG_NEEDED"):
+    # Idempotent: terminal quote states -> skip recompute
+    if lead.status in ("SUCCEEDED", "NEEDS_REVIEW"):
         inc("publish_idempotent_total")
         redirect_target = _publish_redirect_target(
             lead_id=str(lead.id),
@@ -581,6 +581,43 @@ def publish_quote(
         return RedirectResponse(
             url=redirect_target,
             status_code=303,
+        )
+
+    # Paintly: CONFIG_NEEDED blocks until tenant pricing exists, but once pricing is
+    # configured we must allow publish to run the engine again (do not treat as terminal).
+    if (lead.status or "").upper() == "CONFIG_NEEDED":
+        _vid_cfg = _normalize_vertical_id(getattr(lead, "vertical", None))
+        if _vid_cfg != "construction":
+            inc("publish_idempotent_total")
+            redirect_target = _publish_redirect_target(
+                lead_id=str(lead.id),
+                status="CONFIG_NEEDED",
+                is_public_flow=is_public_flow,
+            )
+            logger.info(
+                "INTAKE_REVIEW_DECISION lead_id=%s idempotent_status=CONFIG_NEEDED non_paintly redirect_target=%r",
+                lead.id,
+                redirect_target,
+            )
+            return RedirectResponse(url=redirect_target, status_code=303)
+        _tenant_cfg = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+        _ready_cfg = validate_quote_readiness(lead, _tenant_cfg)
+        if not _ready_cfg.is_ready:
+            inc("publish_idempotent_total")
+            redirect_target = _publish_redirect_target(
+                lead_id=str(lead.id),
+                status="CONFIG_NEEDED",
+                is_public_flow=is_public_flow,
+            )
+            logger.info(
+                "INTAKE_REVIEW_DECISION lead_id=%s idempotent_status=CONFIG_NEEDED still_missing_pricing redirect_target=%r",
+                lead.id,
+                redirect_target,
+            )
+            return RedirectResponse(url=redirect_target, status_code=303)
+        logger.info(
+            "PUBLISH_FLOW_CONFIG_NEEDED_RECOVERY lead_id=%s paintly_pricing_ready=1 — continuing to compute",
+            lead.id,
         )
 
     tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
@@ -682,10 +719,10 @@ def publish_quote(
     )
 
     try:
-        vertical_id = (lead.vertical or "paintly").strip() or "paintly"
+        vertical_id = (lead.vertical or "construction").strip() or "construction"
         # backward compat:
         if vertical_id == "painters_us":
-            vertical_id = "paintly"
+            vertical_id = "construction"
         lead.vertical = vertical_id
         db.commit()
 
@@ -918,7 +955,28 @@ def quote_json(
     lead = _load_lead(db, lead_id, str(current_user.tenant_id))
     if not getattr(lead, "estimate_json", None):
         raise HTTPException(status_code=404, detail="No estimate yet")
-    return json.loads(lead.estimate_json)
+    payload = json.loads(lead.estimate_json)
+    if not isinstance(payload, dict):
+        return payload
+
+    tenant = db.query(Tenant).filter(Tenant.id == str(lead.tenant_id)).first()
+    quote_readiness = validate_quote_readiness(lead, tenant)
+    payload["quote_readiness"] = readiness_payload(quote_readiness)
+    payload["lead_status"] = str(getattr(lead, "status", "") or "")
+
+    # Stale flags: CONFIG_NEEDED writes meta.missing_pricing_config into estimate_json.
+    # After tenant saves m² pricing, the DB row still carries that meta until republish.
+    # Offer detail must reflect current tenant config, not the frozen snapshot.
+    if quote_readiness.is_ready and isinstance(payload.get("meta"), dict):
+        meta = dict(payload["meta"])
+        if meta.get("missing_pricing_config") or meta.get("config_status") == "CONFIG_NEEDED":
+            meta["missing_pricing_config"] = False
+            meta["missing_config"] = []
+            if meta.get("config_status") == "CONFIG_NEEDED":
+                del meta["config_status"]
+        payload["meta"] = meta
+
+    return payload
 
 
 @router.get("/{lead_id}/html")
@@ -1099,4 +1157,4 @@ def create_quote_google_calendar_partial(
             "event_id": None,
             "html_link": None,
         }
-    return paintly_templates.TemplateResponse("app/partials/calendar_feedback.html", context)
+    return construction_templates.TemplateResponse("app/partials/calendar_feedback.html", context)

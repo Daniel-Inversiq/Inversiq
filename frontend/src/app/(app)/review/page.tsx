@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { DateFilter } from "@/components/shared/date-filter";
 import { useSessionContext } from "@/components/shared/session-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,9 +23,10 @@ import { useDateFilterQuery } from "@/hooks/use-date-filter-query";
 import { usePipelineRuns } from "@/hooks/use-pipeline-runs";
 import { useTenantLeads } from "@/hooks/use-tenant-leads";
 import { isDateInFilterRange } from "@/lib/date-filter";
-import { buildReviewQueueRowsFromPipelineAndLeads } from "@/lib/offers/review-queue-summary";
 import { t, tStatus } from "@/lib/i18n";
+import { buildReviewQueueRowsFromPipelineAndLeads } from "@/lib/offers/review-queue-summary";
 import { formatDateTime } from "@/lib/presentation";
+import { isReviewDashboardAttentionStatus } from "@/lib/product-flow";
 import { cn } from "@/lib/utils";
 
 function WorkspacePanel({ className, children }: { className?: string; children: ReactNode }) {
@@ -50,8 +52,27 @@ function reviewKpiBuckets(rows: { status: string }[]) {
   return { required, failed, flagged };
 }
 
-export default function ReviewPage() {
+function ReviewPageSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-[min(1480px,100%)] space-y-2.5">
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-28 rounded-md bg-zinc-100/90" />
+        <Skeleton className="h-8 w-64 max-w-full rounded-md bg-zinc-100/90" />
+        <Skeleton className="h-4 w-full max-w-xl rounded-md bg-zinc-100/90" />
+      </div>
+      <Skeleton className="h-14 w-full rounded-xl bg-zinc-100/90" />
+      <div className="h-[min(400px,50vh)] overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <Skeleton className="h-full w-full rounded-lg bg-zinc-100/80" />
+      </div>
+    </div>
+  );
+}
+
+function ReviewPageContent() {
   const session = useSessionContext();
+  const searchParams = useSearchParams();
+  const attentionFilter = searchParams.get("filter") === "attention";
+
   const { value: dateFilter, setValue: setDateFilter } = useDateFilterQuery();
   const tenantId = session.user?.tenant_id?.trim() ?? "";
   const canLoadTenantData = session.isAuthenticated && tenantId.length > 0;
@@ -71,22 +92,18 @@ export default function ReviewPage() {
       isDateInFilterRange(row.createdAt, dateFilter),
     );
   }, [runs, leadsQuery.data, tenantId, dateFilter]);
-  const { required, failed, flagged } = reviewKpiBuckets(queue);
+
+  const displayQueue = useMemo(() => {
+    if (!attentionFilter) {
+      return queue;
+    }
+    return queue.filter((row) => isReviewDashboardAttentionStatus(row.status));
+  }, [queue, attentionFilter]);
+
+  const { required, failed, flagged } = reviewKpiBuckets(displayQueue);
 
   if (session.isLoading || ((runsQuery.isLoading && !runsQuery.data) || (leadsQuery.isLoading && !leadsQuery.data))) {
-    return (
-      <div className="mx-auto w-full max-w-[min(1480px,100%)] space-y-2.5">
-        <div className="space-y-2">
-          <Skeleton className="h-3 w-28 rounded-md bg-zinc-100/90" />
-          <Skeleton className="h-8 w-64 max-w-full rounded-md bg-zinc-100/90" />
-          <Skeleton className="h-4 w-full max-w-xl rounded-md bg-zinc-100/90" />
-        </div>
-        <Skeleton className="h-14 w-full rounded-xl bg-zinc-100/90" />
-        <div className="h-[min(400px,50vh)] overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <Skeleton className="h-full w-full rounded-lg bg-zinc-100/80" />
-        </div>
-      </div>
-    );
+    return <ReviewPageSkeleton />;
   }
 
   if (!session.isAuthenticated) {
@@ -149,6 +166,12 @@ export default function ReviewPage() {
           description={t("review_queue.empty.description")}
           hint={t("review_queue.empty.hint")}
         />
+      ) : attentionFilter && displayQueue.length === 0 ? (
+        <EmptyState title={t("review_queue.filter_attention.empty_title")} description={t("review_queue.filter_attention.empty_description")}>
+          <Link href="/review" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            {t("review_queue.filter_attention.show_all")}
+          </Link>
+        </EmptyState>
       ) : (
         <WorkspacePanel>
           <Table>
@@ -163,7 +186,7 @@ export default function ReviewPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {queue.map((row, index) => (
+              {displayQueue.map((row, index) => (
                 <TableRow
                   key={row.runId > 0 ? `run-${row.runId}` : `lead-${row.leadId}`}
                   className="border-zinc-100 hover:bg-zinc-50/70"
@@ -202,5 +225,13 @@ export default function ReviewPage() {
         </WorkspacePanel>
       )}
     </section>
+  );
+}
+
+export default function ReviewPage() {
+  return (
+    <Suspense fallback={<ReviewPageSkeleton />}>
+      <ReviewPageContent />
+    </Suspense>
   );
 }

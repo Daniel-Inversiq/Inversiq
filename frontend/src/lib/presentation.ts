@@ -33,24 +33,34 @@ export function formatDateTime(value: string | null | undefined) {
 /**
  * Semantic colors for status chips. Intended for `<Badge variant="outline" className={statusTone(s)} />`.
  * — Brand green: completed / success
- * — Amber: in progress / needs attention
+ * — Sage: in progress / needs attention
  * — Rose: failed / error
  * — Zinc: neutral / unknown
  */
 export function statusTone(status: string | null | undefined): string {
   const normalized = (status ?? "").trim().toUpperCase();
-  if (["COMPLETED", "SUCCEEDED", "ACCEPTED", "SIGNED", "DONE"].includes(normalized)) {
+  if (["COMPLETED", "SUCCEEDED", "ACCEPTED", "SIGNED", "DONE", "SENT"].includes(normalized)) {
     return "border-primary/25 bg-primary/12 text-primary shadow-none";
   }
   if (["FAILED", "REJECTED", "ERROR", "PROCESSING_FAILED"].includes(normalized)) {
     return "border-rose-200/75 bg-rose-50 text-rose-900 shadow-none";
   }
+  if (["CONFIG_NEEDED"].includes(normalized)) {
+    return "border-amber-200/80 bg-amber-50 text-amber-900 shadow-none";
+  }
   if (
-    ["RUNNING", "NEW", "PENDING", "SCHEDULED", "PROCESSING", "NEEDS_REVIEW", "REVIEW_REQUIRED", "FLAGGED_DAMAGE"].includes(
+    ["NEEDS_REVIEW", "REVIEW_REQUIRED"].includes(
       normalized,
     )
   ) {
-    return "border-amber-200/70 bg-amber-50/90 text-amber-950 shadow-none";
+    return "border-blue-200/80 bg-blue-50 text-blue-900 shadow-none";
+  }
+  if (
+    ["RUNNING", "NEW", "PENDING", "SCHEDULED", "PROCESSING", "FLAGGED_DAMAGE"].includes(
+      normalized,
+    )
+  ) {
+    return "border-slate-200/90 bg-slate-50 text-slate-800 shadow-none";
   }
   if (normalized === "UNCERTAIN") {
     return "border-zinc-200/85 bg-zinc-100/90 text-zinc-800 shadow-none";

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import uuid
@@ -91,7 +91,7 @@ def test_quote_edit_optional_numeric_fields_are_parsed_safely(
 
     # Keep the test focused on form parsing and persistence, not rendering side-effects.
     monkeypatch.setattr(
-        "app.verticals.painting.router_app.render_quote_html_for_lead",
+        "app.verticals.construction.router_app.render_quote_html_for_lead",
         lambda _lead, _estimate_dict, _overrides: (None, False),
     )
 
@@ -126,7 +126,7 @@ def test_quote_edit_invalid_numeric_text_returns_field_specific_422(
     headers = _auth_headers_for_user(user)
 
     monkeypatch.setattr(
-        "app.verticals.painting.router_app.render_quote_html_for_lead",
+        "app.verticals.construction.router_app.render_quote_html_for_lead",
         lambda _lead, _estimate_dict, _overrides: (None, False),
     )
 
@@ -148,7 +148,7 @@ def test_quote_edit_recomputes_totals_from_line_items_for_persistence(client, db
     headers = _auth_headers_for_user(user)
 
     monkeypatch.setattr(
-        "app.verticals.painting.router_app.render_quote_html_for_lead",
+        "app.verticals.construction.router_app.render_quote_html_for_lead",
         lambda _lead, _estimate_dict, _overrides: (None, False),
     )
 
@@ -204,7 +204,7 @@ def test_quote_edit_priced_lines_clear_review_flags_for_public_render(client, db
     db.commit()
 
     monkeypatch.setattr(
-        "app.verticals.painting.router_app.render_quote_html_for_lead",
+        "app.verticals.construction.router_app.render_quote_html_for_lead",
         lambda _lead, _estimate_dict, _overrides: (None, False),
     )
 

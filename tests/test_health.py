@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_health.py
 
 Tests for GET /api/health/pipelines and GET /api/health/verticals.
@@ -291,10 +291,10 @@ class TestPipelineItemShape:
 
     def test_vertical_id_from_run(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="painting")
+        _make_run(db, tenant_id=tid, vertical_id="construction")
         resp = client.get(PIPELINE_URL, params={"tenant_id": tid}, headers=api_auth)
         item = resp.json()["items"][0]
-        assert item["vertical_id"] == "painting"
+        assert item["vertical_id"] == "construction"
 
 
 # ---------------------------------------------------------------------------
@@ -426,20 +426,20 @@ class TestVerticalEnvelope:
 class TestVerticalGrouping:
     def test_groups_by_vertical_id(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="painting")
+        _make_run(db, tenant_id=tid, vertical_id="construction")
         _make_run(db, tenant_id=tid, vertical_id="roofing")
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         body = resp.json()
         assert body["total"] == 2
         vids = {i["vertical_id"] for i in body["items"]}
-        assert vids == {"painting", "roofing"}
+        assert vids == {"construction", "roofing"}
 
     def test_pipeline_count_is_accurate(self, client, db, api_auth):
         tid = _uid()
         # 2 distinct pipelines, same vertical
-        _make_run(db, tenant_id=tid, vertical_id="painting", pipeline_name="pipe_alpha")
-        _make_run(db, tenant_id=tid, vertical_id="painting", pipeline_name="pipe_beta")
-        _make_run(db, tenant_id=tid, vertical_id="painting", pipeline_name="pipe_alpha")
+        _make_run(db, tenant_id=tid, vertical_id="construction", pipeline_name="pipe_alpha")
+        _make_run(db, tenant_id=tid, vertical_id="construction", pipeline_name="pipe_beta")
+        _make_run(db, tenant_id=tid, vertical_id="construction", pipeline_name="pipe_alpha")
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         item = resp.json()["items"][0]
         assert item["pipeline_count"] == 2
@@ -448,9 +448,9 @@ class TestVerticalGrouping:
         tid = _uid()
         # 30% failed within the vertical → unhealthy
         for _ in range(3):
-            _make_run(db, tenant_id=tid, vertical_id="painting", status="FAILED")
+            _make_run(db, tenant_id=tid, vertical_id="construction", status="FAILED")
         for _ in range(7):
-            _make_run(db, tenant_id=tid, vertical_id="painting", status="COMPLETED")
+            _make_run(db, tenant_id=tid, vertical_id="construction", status="COMPLETED")
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         item = resp.json()["items"][0]
         assert item["health_status"] == "unhealthy"

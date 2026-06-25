@@ -1,6 +1,29 @@
 import { NextResponse } from "next/server";
 import { buildBackendUrl, parseAccessTokenFromSetCookie, setFrontendAuthCookie } from "../_shared";
 
+type RegisterPayloadInput = {
+  company_name?: unknown;
+  companyName?: unknown;
+  email?: unknown;
+  phone?: unknown;
+  walls_rate_eur_per_sqm?: unknown;
+  wallsRateEurPerSqm?: unknown;
+  password?: unknown;
+};
+
+function normalizeRegisterPayload(payload: unknown): Record<string, unknown> {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return {};
+  }
+  const input = payload as RegisterPayloadInput;
+  return {
+    ...input,
+    company_name: input.company_name ?? input.companyName,
+    walls_rate_eur_per_sqm:
+      input.walls_rate_eur_per_sqm ?? input.wallsRateEurPerSqm,
+  };
+}
+
 export async function POST(request: Request) {
   let payload: unknown;
   try {
@@ -15,7 +38,7 @@ export async function POST(request: Request) {
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(normalizeRegisterPayload(payload)),
     cache: "no-store",
   });
 

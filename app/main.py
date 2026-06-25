@@ -1,4 +1,4 @@
-# app/main.py
+﻿# app/main.py
 import os
 import time
 
@@ -13,9 +13,9 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.routers.auth import public_router as auth_public_router
 from app.routers.auth import router as auth_router
-from app.verticals.painting.router_app import router as paintly_app_router
-from app.verticals.painting.router_htmx import router as paintly_htmx_router
-from app.verticals.painting.router_integrations import router as paintly_integrations_router
+from app.verticals.construction.router_app import router as construction_app_router
+from app.verticals.construction.router_htmx import router as construction_htmx_router
+from app.verticals.construction.router_integrations import router as construction_integrations_router
 from app.routers.public_estimate import router as public_estimate_router
 from app.models.job import Job
 from app.jobs.runner import start_worker
@@ -38,6 +38,7 @@ from app.routers.app_leads import router as app_leads_router
 from app.routers.app_uploads import router as app_uploads_router
 from app.routers.app_jobs import router as app_jobs_router
 from app.routers.app_settings import router as app_settings_router
+from app.routers.tenant_me import router as tenant_me_router
 from app.routers import settings_pricing_page
 from fastapi.templating import Jinja2Templates
 
@@ -85,6 +86,8 @@ from app.routers.proposed_change_execution_outcomes import router as proposed_ch
 from app.routers.proposed_change_execution_attempts import router as proposed_change_execution_attempts_router
 from app.i18n.service import SUPPORTED_LANGS, set_language_cookie, setup_jinja_i18n
 from app.routers import processing
+from app.routers.workspaces import router as workspaces_router
+from app.workspace.worker import start_workspace_worker
 
 
 # --- AWS safety guard (geen static keys) ---
@@ -222,15 +225,16 @@ app.include_router(app_leads_router)
 app.include_router(app_uploads_router)
 app.include_router(app_jobs_router)
 app.include_router(app_settings_router)
+app.include_router(tenant_me_router)
 app.include_router(tenant_pricing.router)
 app.include_router(settings_pricing_page.router)
 app.include_router(settings_logo.router)
 app.include_router(public_intake.router)
 app.include_router(debug_email_router)
 # app.include_router(app_dashboard_router)
-app.include_router(paintly_app_router)
-app.include_router(paintly_htmx_router)
-app.include_router(paintly_integrations_router)
+app.include_router(construction_app_router)
+app.include_router(construction_htmx_router)
+app.include_router(construction_integrations_router)
 app.include_router(public_estimate_router)
 app.include_router(quote_router)
 app.include_router(onboarding.router)
@@ -261,6 +265,7 @@ app.include_router(proposed_change_apply_intents_router)
 app.include_router(proposed_change_execution_requests_router)
 app.include_router(proposed_change_execution_outcomes_router)
 app.include_router(proposed_change_execution_attempts_router)
+app.include_router(workspaces_router)
 
 
 # DEV-only routes (hardening)
@@ -283,3 +288,4 @@ def on_startup():
 
     # start background worker (dev)
     start_worker()
+    start_workspace_worker()

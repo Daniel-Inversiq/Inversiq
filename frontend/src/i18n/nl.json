@@ -449,7 +449,7 @@
       },
       "open_quotes": {
         "label": "Open offertes",
-        "description": "Actie vereist in pipeline"
+      "description": "Actie vereist"
       },
       "accepted": {
         "label": "Akkoord",
@@ -462,7 +462,7 @@
     },
     "analytics": {
       "kicker": "Analytics",
-      "title": "Omzet en pipeline verdeling",
+      "title": "Omzet en voortgang",
       "subtitle": "Gebruik deze signalen om capaciteit en opvolging bij te sturen.",
       "revenue_trend": "Omzetverloop",
       "status_distribution": "Statusverdeling"
@@ -470,7 +470,7 @@
     "activity": {
       "kicker": "Recente activiteit",
       "title": "Events en opvolging",
-      "subtitle": "Realtime veranderingen binnen je tenant, op tijdlijn gesorteerd.",
+      "subtitle": "Realtime veranderingen, op tijdlijn gesorteerd.",
       "empty": "Nog geen activiteit beschikbaar.",
       "open_item": "Open item",
       "actions": {
@@ -519,13 +519,13 @@
     },
     "empty": {
       "title": "Geen data beschikbaar",
-      "description": "De API gaf geen dashboardgegevens terug. Dit kan gebeuren in een lege tenant omgeving."
+      "description": "Er zijn nog geen gegevens beschikbaar voor dit overzicht."
     },
     "errors": {
       "load_failed_title": "Dashboard laden mislukt",
       "inactive_session": "Je sessie is niet actief. Log in via de FastAPI auth-flow zodat de access_token cookie wordt meegestuurd.",
       "unauthenticated": "Niet geauthenticeerd (401). Log opnieuw in zodat de sessiecookie wordt meegestuurd.",
-      "forbidden": "Geen toegang tot tenant-data (403). Controleer of je account aan de juiste tenant is gekoppeld.",
+      "forbidden": "Je hebt geen toegang tot deze gegevens.",
       "network": "Backend niet bereikbaar. Controleer API base URL, CORS en of FastAPI draait.",
       "unknown": "Onbekende fout bij dashboard laden."
     },
@@ -535,6 +535,11 @@
     },
     "operational": {
       "header_kicker": "Overzicht",
+      "greeting": {
+        "morning": "Goedemorgen",
+        "afternoon": "Goedemiddag",
+        "evening": "Goedenavond"
+      },
       "title": "Je werk",
       "subtitle": "Zie wat aandacht vraagt en volg je klussen.",
       "errors": {
@@ -546,6 +551,15 @@
         "review_queue": "Naar review",
         "create_quote": "Offerte maken",
         "open_jobs": "Open klussen"
+      },
+      "workflow": {
+        "kicker": "Proces",
+        "title": "Werkwijze",
+        "description": "Van binnenkomst tot afronding",
+        "step1": "Aanvragen",
+        "step2": "Offertes",
+        "step3": "Klussen",
+        "link": "Volledig overzicht"
       },
       "kpi": {
         "go_to_aria": "Open {label}",
@@ -568,16 +582,19 @@
       },
       "activity": {
         "kicker": "Activiteit",
-        "title": "Nieuwe aanvragen (laatste 7 dagen)",
+        "title": "Recente activiteiten",
         "subtitle": "Ontvangen aanvragen ({count} in deze periode).",
         "scheduled_label": "Gepland",
-        "body": "In de grafiek hieronder zie je hoeveel aanvragen binnenkwamen. Dit blok vat samen wat vandaag telt."
+        "body": "Laatste bewegingen rond aanvragen en planning — geplande klussen staan hier rechts.",
+        "footer_link": "Alle activiteiten bekijken",
+        "live_badge": "Live",
+        "last_updated": "Laatst bijgewerkt {time}"
       },
       "distribution": {
         "kicker": "Verdeling",
         "title": "Status",
         "subtitle": "Offertes en klussen",
-        "no_data": "Nog geen statusdata."
+        "no_data": "Nog geen gegevens om te tonen."
       },
       "analytics_section": {
         "kicker": "Overzicht",
@@ -586,7 +603,13 @@
         "line_title": "Nieuwe aanvragen",
         "line_description": "Aanvragen per dag (laatste {days} dagen).",
         "donut_title": "Voortgang van je werk",
-        "donut_description": "Offertes en klussen per fase."
+        "donut_description": "Offertes en klussen per fase.",
+        "intake_headline": "{count} aanvragen",
+        "intake_period_caption": "Laatste {days} dagen",
+        "intake_trend_vs_prior": "{pct} t.o.v. vorige periode",
+        "intake_trend_stable": "Zelfde als vorige periode",
+        "intake_trend_no_baseline": "Nog geen eerdere periode om te vergelijken",
+        "intake_trend_no_data": "Nog geen aanvragen in deze periode"
       },
       "outcomes": {
         "accepted_label": "Geaccepteerd",
@@ -633,7 +656,7 @@
         "urgency_high": "Urgent",
         "urgency_mid": "Prioriteit"
       },
-      "fallback_customer_label": "Klantaanvraag",
+      "fallback_customer_label": "Klant",
       "new_requests_panel": {
         "title": "Aanvragen",
         "description": "Laatste klantaanvragen, nieuwste eerst.",
@@ -694,7 +717,7 @@
     },
     "reason": {
       "title": "Waarom dit gecontroleerd moet worden",
-      "what_to_do": "Wat te doen: controleer de punten, pas prijsgevoelige velden aan en ga daarna door naar de offerte.",
+      "what_to_do": "Controleer deze punten, pas indien nodig de prijs aan en ga daarna door naar de offerte.",
       "note_label": "Opmerking:",
       "status_help": {
         "manual_check": "Deze aanvraag is bewust op controle gezet voordat je veilig kunt offreren.",
@@ -713,10 +736,10 @@
         "quote_generation_failed": "De offerte kon niet automatisch gemaakt worden; met een korte controle kom je meestal verder.",
         "estimate_generation_failed": "De offerte kon niet automatisch gemaakt worden; met een korte controle kom je meestal verder.",
         "upload_failed": "Een upload is niet gelukt, dus de set kan onvolledig zijn.",
-        "repair_work_required": "Mogelijk is herstelwerk nodig volgens de foto's.",
-        "substrate_visible": "Ondergrond is zichtbaar op de foto's - controleer voorbehandeling.",
-        "surface_damage_detected": "Er is schade zichtbaar op de foto's - neem dit mee in de scope.",
-        "surface_preparation_required": "Voorbewerking lijkt nodig - controleer dit voor je offert."
+        "repair_work_required": "Herstelwerk nodig",
+        "substrate_visible": "Ondergrond zichtbaar",
+        "surface_damage_detected": "Schade aan oppervlak",
+        "surface_preparation_required": "Voorbewerking nodig"
       },
       "fallbacks": {
         "missing_photo": "Controleer de foto's (of vraag extra foto's op).",
@@ -734,6 +757,7 @@
         "generation_issue": "Generatieprobleem",
         "upload_issue": "Uploadprobleem",
         "repair_work": "Herstelwerk",
+        "surface": "Oppervlak",
         "substrate": "Ondergrond",
         "damage": "Schade",
         "preparation": "Voorbewerking"
@@ -849,6 +873,11 @@
       "not_logged_in_description": "Log in om dit overzicht te bekijken.",
       "load_failed_title": "Lijst laden mislukt",
       "load_failed_description": "We konden de gegevens nu niet laden. Probeer het opnieuw."
+    },
+    "filter_attention": {
+      "empty_title": "Niets in deze prioriteitsweergave",
+      "empty_description": "Er zijn nu geen items in deze filter. Open de volledige controlelijst om alles te zien.",
+      "show_all": "Volledige controlelijst tonen"
     }
   },
   "agenda_page": {
@@ -1038,9 +1067,9 @@
       "errors": {
         "session_expired": "Je sessie is verlopen. Log opnieuw in om offertedetails te bekijken.",
         "load_failed_title": "Offerte detail laden mislukt",
-        "load_failed_description": "Controleer of de backend draait en je tenant toegang heeft tot deze offerte.",
+        "load_failed_description": "Controleer of de backend draait en je toegang hebt tot deze offerte.",
         "lead_not_found_title": "Offerte niet gevonden",
-        "lead_not_found_description": "Deze offerte hoort niet bij je tenant of bestaat niet meer."
+        "lead_not_found_description": "Deze offerte hoort niet bij jouw account of bestaat niet meer."
       },
       "cards": {
         "status": {
@@ -1068,7 +1097,7 @@
   "customers": {
     "header": {
       "kicker": "Klanten / leads",
-      "title": "Tenant klantoverzicht",
+      "title": "Klantoverzicht",
       "subtitle": "Gebruik leads om intake-details eerst te valideren en ga daarna door naar offertedetail."
     },
     "errors": {
@@ -1078,7 +1107,7 @@
     },
     "empty": {
       "title": "Geen leads gevonden",
-      "description": "Er zijn nog geen klanten/leads in deze tenant."
+      "description": "Er zijn nog geen klanten of leads."
     },
     "table": {
       "name": "Naam",
@@ -1089,38 +1118,43 @@
     "actions": {
       "open_lead": "Open lead",
       "open_offer": "Open offerte"
+    },
+    "filter_open": {
+      "empty_title": "Geen open aanvragen",
+      "empty_description": "Alle leads hier zijn al gesloten of gearchiveerd. Open het volledige overzicht om alle klanten te zien.",
+      "show_all": "Alle klanten tonen"
     }
   },
   "workflows": {
     "header": {
       "kicker": "Workflows",
-      "title": "Pipeline runs"
+      "title": "Procesoverzicht"
     },
     "errors": {
-      "not_logged_in_description": "Log in om workflow runs op te halen.",
-      "load_failed_title": "Workflowoverzicht laden mislukt",
-      "load_failed_description": "De endpoint /api/pipeline-runs kon niet geladen worden."
+      "not_logged_in_description": "Log in om het procesoverzicht te bekijken.",
+      "load_failed_title": "Procesoverzicht laden mislukt",
+      "load_failed_description": "Het procesoverzicht kon niet geladen worden."
     },
     "empty": {
-      "title": "Geen runs gevonden",
-      "description": "Voor tenant {tenant_id} zijn nog geen workflow runs aanwezig."
+      "title": "Nog geen processen gevonden",
+      "description": "Er zijn nog geen processen beschikbaar."
     },
     "table": {
-      "run": "Run",
+      "run": "Proces",
       "lead": "Lead",
       "status": "Status",
       "created": "Aangemaakt",
       "action": "Actie"
     },
     "actions": {
-      "open_run": "Open run",
+      "open_run": "Open proces",
       "open_lead": "Open lead"
     }
   },
   "uploads": {
     "header": {
       "kicker": "Uploads",
-      "title": "Tenant uploadoverzicht"
+      "title": "Uploadoverzicht"
     },
     "errors": {
       "not_logged_in_description": "Log in om uploads op te halen.",
@@ -1129,7 +1163,7 @@
     },
     "empty": {
       "title": "Geen uploads gevonden",
-      "description": "Er zijn nog geen geverifieerde uploads in deze tenant."
+      "description": "Er zijn nog geen geverifieerde uploads."
     },
     "table": {
       "file": "Bestand",
@@ -1225,7 +1259,7 @@
   },
   "nav": {
     "workspace": "Workspace",
-    "tenant_workspace": "Tenant workspace",
+      "tenant_workspace": "Werkruimte",
     "groups": {
       "core": "Core",
       "system": "Bedrijf"
@@ -1236,6 +1270,7 @@
       "jobs": "Klussen",
       "review": "Review",
       "agenda": "Agenda",
+      "workspaces": "Werkruimten",
       "settings": "Instellingen"
     },
     "footer": {
@@ -1252,20 +1287,20 @@
   },
   "topbar": {
     "session_checking": "Sessie controleren...",
-    "logged_in_as": "Ingelogd als {email} ({tenant_id})"
+    "logged_in_as": "Ingelogd als {email}"
   },
   "workflow_detail": {
     "header": {
-      "kicker": "Workflow run",
-      "run": "Run #{run_id}",
-      "meta": "Tenant {tenant_id} - Lead {lead_id}"
+      "kicker": "Proces",
+      "run": "Proces #{run_id}",
+      "meta": "Aanvraag {lead_id}"
     },
     "errors": {
       "invalid_run_id_title": "Ongeldige run id",
-      "invalid_run_id_description": "De workflow run id in de URL is niet geldig.",
-      "not_logged_in_description": "Log in om workflow details op te halen.",
-      "load_failed_title": "Run detail laden mislukt",
-      "load_failed_description": "De endpoint /api/pipeline-runs/{run_id}/debug kon niet geladen worden."
+      "invalid_run_id_description": "De proces-id in de URL is niet geldig.",
+      "not_logged_in_description": "Log in om procesdetails op te halen.",
+      "load_failed_title": "Procesdetails laden mislukt",
+      "load_failed_description": "De detailweergave kon niet geladen worden."
     },
     "cards": {
       "status": "Status",
@@ -1289,22 +1324,22 @@
   "status": {
     "pending": "In afwachting",
     "completed": "Afgerond",
-    "review_required": "Even controleren",
-    "needs_review": "Even nakijken",
-    "processing_failed": "Nog niet bekeken",
+    "review_required": "Review nodig",
+    "needs_review": "Controle nodig",
+    "processing_failed": "Mislukt",
     "uncertain": "Ontbreekt nog iets",
     "flagged_damage": "Foto’s controleren",
-    "failed": "Nog niet bekeken",
+    "failed": "Mislukt",
     "uploaded": "Geupload",
     "scheduled": "Gepland",
-    "running": "Bezig",
-    "processing": "Verwerken",
-    "succeeded": "Geslaagd",
+    "running": "Wordt verwerkt",
+    "processing": "Offerte wordt gemaakt",
+    "succeeded": "Afgerond",
     "accepted": "Geaccepteerd",
     "signed": "Getekend",
-    "done": "Klaar",
+    "done": "Afgerond",
     "rejected": "Afgewezen",
-    "error": "Fout",
+    "error": "Er ging iets mis",
     "new": "Nieuw",
     "viewed": "Bekeken",
     "sent": "Verzonden",
@@ -1313,6 +1348,7 @@
     "in_progress": "Bezig",
     "unknown": "Onbekend",
     "active": "Actief",
-    "skipped": "Overgeslagen"
+    "skipped": "Overgeslagen",
+    "config_needed": "Prijsinstellingen ontbreken"
   }
 }

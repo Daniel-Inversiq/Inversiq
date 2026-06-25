@@ -284,7 +284,7 @@ function statusHelpText(status: string): string {
 }
 
 /** Plain-language explanation for known backend reason codes (never show raw codes to users). */
-function plainReviewReasonEnglish(reason: string): string | null {
+function plainReviewReason(reason: string): string | null {
   const normalized = reason.trim().toLowerCase();
   const map: Record<string, string> = {
     needs_review: t("review.reason.codes.needs_review"),
@@ -298,6 +298,9 @@ function plainReviewReasonEnglish(reason: string): string | null {
     quote_generation_failed: t("review.reason.codes.quote_generation_failed"),
     estimate_generation_failed: t("review.reason.codes.estimate_generation_failed"),
     upload_failed: t("review.reason.codes.upload_failed"),
+    repair_required: t("review.reason.codes.repair_work_required"),
+    surface_damage: t("review.reason.codes.surface_damage_detected"),
+    prep_required: t("review.reason.codes.surface_preparation_required"),
     "repair work required": t("review.reason.codes.repair_work_required"),
     "substrate visible": t("review.reason.codes.substrate_visible"),
     "surface damage detected": t("review.reason.codes.surface_damage_detected"),
@@ -321,7 +324,7 @@ function plainReviewReasonEnglish(reason: string): string | null {
   return null;
 }
 
-function reviewReasonChipLabelEnglish(reason: string): string {
+function reviewReasonChipLabel(reason: string): string {
   const normalized = reason.trim().toLowerCase();
   const map: Record<string, string> = {
     needs_review: t("review.reason.chips.manual_check"),
@@ -335,6 +338,13 @@ function reviewReasonChipLabelEnglish(reason: string): string {
     quote_generation_failed: t("review.reason.chips.generation_issue"),
     estimate_generation_failed: t("review.reason.chips.generation_issue"),
     upload_failed: t("review.reason.chips.upload_issue"),
+    repair_required: t("review.reason.chips.repair_work"),
+    surface_damage: t("review.reason.chips.damage"),
+    prep_required: t("review.reason.chips.preparation"),
+    repair: t("review.reason.chips.repair_work"),
+    surface: t("review.reason.chips.surface"),
+    damage: t("review.reason.chips.damage"),
+    preparation: t("review.reason.chips.preparation"),
     "repair work required": t("review.reason.chips.repair_work"),
     "substrate visible": t("review.reason.chips.substrate"),
     "surface damage detected": t("review.reason.chips.damage"),
@@ -343,12 +353,12 @@ function reviewReasonChipLabelEnglish(reason: string): string {
   if (map[normalized]) {
     return map[normalized];
   }
-  const translated = plainReviewReasonEnglish(reason);
+  const translated = plainReviewReason(reason);
   return translated ? translated.slice(0, 56) : toHumanLabel(reason).slice(0, 44);
 }
 
-function normalizeReviewReasonEnglish(reason: string): string {
-  const known = plainReviewReasonEnglish(reason);
+function normalizeReviewReason(reason: string): string {
+  const known = plainReviewReason(reason);
   if (known) {
     return known;
   }
@@ -427,7 +437,7 @@ const fieldInputClass = cn(
 );
 const fieldInputAttentionClass = cn(
   fieldInputBase,
-  "border-amber-300/90 bg-amber-50/20 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15",
+  "border-[#4A7C59]/40 bg-[#EEF4F0] focus:border-[#4A7C59] focus:ring-2 focus:ring-[#4A7C59]/15",
 );
 const fieldTextareaClass = cn(
   "min-h-[100px] w-full rounded-lg border border-zinc-200/95 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm outline-none transition duration-150 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/[0.06] motion-reduce:transition-none",
@@ -594,7 +604,7 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
       if (typeof raw !== "string" || !raw.trim()) {
         continue;
       }
-      unique.add(normalizeReviewReasonEnglish(raw));
+      unique.add(normalizeReviewReason(raw));
     }
     if (unique.size === 0) {
       unique.add(reviewReason);
@@ -1004,7 +1014,7 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
   const extraReviewReasons = reviewReasons.length > 1 ? reviewReasons.slice(1) : [];
 
   const reviewReasonChips = reviewReasons
-    .map(reviewReasonChipLabelEnglish)
+    .map(reviewReasonChipLabel)
     .filter((reason, index, all) => reason.trim().length > 0 && all.indexOf(reason) === index)
     .slice(0, 4);
 
@@ -1036,7 +1046,7 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
             {isGenerating ? t("review.cta.continuing") : t("review.cta.continue")}
           </Button>
           {!requiredFieldsComplete ? (
-            <p className="text-center text-[12px] leading-relaxed text-amber-800/95">
+            <p className="text-center text-[12px] leading-relaxed text-zinc-700">
               {t("review.cta.requirements")}
             </p>
           ) : (
@@ -1094,14 +1104,14 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="order-1 space-y-8 lg:order-none">
           {/* Why review */}
-          <div className="overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 via-amber-50/40 to-white shadow-[0_1px_0_rgba(15,23,42,0.03)]">
-            <div className="border-b border-amber-200/60 bg-amber-50/50 px-5 py-3.5 sm:px-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/75">{t("review.reason.title")}</p>
+          <div className="overflow-hidden rounded-2xl border border-[#4A7C59]/25 bg-gradient-to-br from-[#EEF4F0] via-[#EEF4F0]/60 to-white shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+            <div className="border-b border-[#4A7C59]/25 bg-[#EEF4F0] px-5 py-3.5 sm:px-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-700">{t("review.reason.title")}</p>
             </div>
             <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
-              <p className="text-[15px] font-medium leading-relaxed text-amber-950">{primaryReviewReason}</p>
+              <p className="text-[15px] font-medium leading-relaxed text-zinc-900">{primaryReviewReason}</p>
               {extraReviewReasons.length > 0 ? (
-                <ul className="list-inside list-disc space-y-1.5 text-[13px] leading-relaxed text-amber-950/90">
+                <ul className="list-inside list-disc space-y-1.5 text-[13px] leading-relaxed text-zinc-800">
                   {extraReviewReasons.map((line) => (
                     <li key={line}>{line}</li>
                   ))}
@@ -1112,18 +1122,18 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
                   {reviewReasonChips.map((reason, index) => (
                     <span
                       key={`${reason}-${index}`}
-                      className="rounded-lg border border-amber-200/90 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-amber-950/90 shadow-sm"
+                      className="rounded-lg border border-[#4A7C59]/25 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-zinc-800 shadow-sm"
                     >
                       {reason}
                     </span>
                   ))}
                 </div>
               ) : null}
-              <p className="rounded-xl border border-amber-200/70 bg-white/60 px-3.5 py-2.5 text-[13px] font-medium leading-snug text-amber-950">
+              <p className="rounded-xl border border-[#4A7C59]/25 bg-white/60 px-3.5 py-2.5 text-[13px] font-medium leading-snug text-zinc-900">
                 {t("review.reason.what_to_do")}
               </p>
               {leadDetail?.error_info ? (
-                <p className="text-[12px] leading-relaxed text-amber-900/85">
+                <p className="text-[12px] leading-relaxed text-zinc-700">
                   <span className="font-semibold">{t("review.reason.note_label")} </span>
                   {String(leadDetail.error_info)}
                 </p>
@@ -1131,7 +1141,7 @@ export function ReviewDetailView({ leadId }: ReviewDetailViewProps) {
             </div>
           </div>
           {missingPricingConfig ? (
-            <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+            <Alert className="border-[#4A7C59]/35 bg-[#EEF4F0] text-zinc-900">
               <AlertTitle>Prijsinstellingen ontbreken</AlertTitle>
               <AlertDescription className="mt-2 space-y-2">
                 <p>Je hebt nog geen prijs per m² ingesteld. Stel dit eerst in om offertes te genereren.</p>

@@ -13,7 +13,13 @@ function joinBackendPath(segments: string[], search: string): string | null {
       return null;
     }
   }
-  return `/${segments.join("/")}${search}`;
+  const normalizedSegments = [...segments];
+  // Tenant profile endpoints live under `/api/tenant/*` on FastAPI.
+  // Frontend callers use `/api/backend/tenant/*`, so map only this prefix here.
+  if (normalizedSegments[0] === "tenant") {
+    normalizedSegments.unshift("api");
+  }
+  return `/${normalizedSegments.join("/")}${search}`;
 }
 
 async function proxyRequest(

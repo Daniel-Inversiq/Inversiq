@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from app.verticals.painting.router_app import build_followup_summary
-from app.verticals.painting.router_htmx import timeline_rows_for_lead
+from app.verticals.construction.router_app import build_followup_summary
+from app.verticals.construction.router_htmx import timeline_rows_for_lead
 
 
 def test_timeline_rows_supports_english_labels() -> None:

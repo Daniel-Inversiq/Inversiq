@@ -63,12 +63,13 @@ def _map_lead_status_for_ui(
     if s in {"SUCCEEDED", "NEEDS_REVIEW", "CONFIG_NEEDED"}:
         # SUCCEEDED: quote HTML
         # NEEDS_REVIEW: internal review queue/detail (not an error state)
-        # CONFIG_NEEDED: intake data is fine, tenant pricing setup is missing.
+        # CONFIG_NEEDED: tenant pricing was missing; send users to offer detail (SPA)
+        # where they can fix settings and recalculate.
         redirect_url = (
             f"/quotes/{lead_id}/html"
             if s == "SUCCEEDED"
             else (
-                f"/app/reviews/{lead_id}?missing_pricing_config=1"
+                f"/offertes/{lead_id}"
                 if s == "CONFIG_NEEDED"
                 else f"/app/reviews/{lead_id}"
             )
@@ -177,7 +178,7 @@ def lead_status_json(
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
     is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
         lead_status == "NEEDS_REVIEW"
-    )
+    ) or (lead_status == "CONFIG_NEEDED")
     if mapped_status == "done" and is_done_available:
         response = {
             "lead_id": str(lead.id),
@@ -276,7 +277,7 @@ def processing_page(
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
     is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
         lead_status == "NEEDS_REVIEW"
-    )
+    ) or (lead_status == "CONFIG_NEEDED")
     if mapped_status == "done" and is_done_available and redirect_url:
         logger.info(
             "PROCESSING_ROUTE_EARLY_REDIRECT lead_id=%s status=%s redirect_url=%s",
@@ -384,6 +385,27 @@ def public_processing_status(flow_token: str, db: Session = Depends(get_db)) -> 
             "back_url": "/",
         }
 
+    # CONFIG_NEEDED: publish_quote exits before the engine (missing tenant pricing).
+    # Without this branch the public page polls "running" forever (see lead_status_json
+    # which maps CONFIG_NEEDED to a terminal state for logged-in flows).
+    if lead_status == "CONFIG_NEEDED":
+        logger.info(
+            "PROCESSING_STATUS_PUBLIC_CONFIG_NEEDED lead_id=%s tenant_id=%s",
+            str(lead.id),
+            str(getattr(lead, "tenant_id", "") or ""),
+        )
+        return {
+            "status": "review_pending",
+            "redirect_url": None,
+            "error": None,
+            "user_message": (
+                "Je aanvraag is ontvangen. De schilder moet nog een prijs per m² instellen "
+                "voordat je offerte automatisch kan worden berekend. Je hoort snel van hen."
+            ),
+            "can_retry": False,
+            "back_url": "/",
+        }
+
     has_estimate_html = bool((getattr(lead, "estimate_html_key", None) or "").strip())
     public_redirect = _public_redirect_for_lead(lead)
     is_done_available = (lead_status == "SUCCEEDED" and has_estimate_html) or (
@@ -405,6 +427,36 @@ def public_processing_status(flow_token: str, db: Session = Depends(get_db)) -> 
             "can_retry": False,
             "back_url": "/",
         }
+
+    # Same watchdog as /leads/{id}/status: stuck RUNNING should not spin forever in the browser.
+    if lead_status == "RUNNING":
+        updated_at = getattr(lead, "updated_at", None)
+        if isinstance(updated_at, datetime):
+            if updated_at.tzinfo is None:
+                updated_at = updated_at.replace(tzinfo=timezone.utc)
+            age = datetime.now(timezone.utc) - updated_at
+            if age > timedelta(minutes=15):
+                lead.status = "FAILED"
+                lead.error_message = (
+                    "We konden je aanvraag niet op tijd verwerken. Probeer het later opnieuw."
+                )
+                lead.updated_at = datetime.now(timezone.utc)
+                db.add(lead)
+                db.commit()
+                db.refresh(lead)
+                logger.warning(
+                    "PROCESSING_STATUS_PUBLIC_RUNNING_WATCHDOG lead_id=%s age=%s",
+                    str(lead.id),
+                    age,
+                )
+                return {
+                    "status": "failed",
+                    "redirect_url": None,
+                    "error": None,
+                    "user_message": _friendly_processing_error(lead.error_message),
+                    "can_retry": True,
+                    "back_url": "/",
+                }
 
     return {
         "status": "running",

@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_reasoning_engine.py
 
 Unit tests for app/services/reasoning_engine.py.
@@ -313,6 +313,6 @@ class TestOrdering:
         assert uiq_idx < ob_idx
 
     def test_scope_and_scope_id_preserved(self):
-        result = _reason(scope_type="vertical", scope_id="painting")
+        result = _reason(scope_type="vertical", scope_id="construction")
         assert result["scope"] == "vertical"
-        assert result["scope_id"] == "painting"
+        assert result["scope_id"] == "construction"

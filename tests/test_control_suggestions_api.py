@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_control_suggestions_api.py
 
 API-level tests for:
@@ -199,9 +199,9 @@ class TestVerticalsEnvelope:
 
     def test_vertical_item_scope_id_matches(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="painting_v2")
+        _make_run(db, tenant_id=tid, vertical_id="construction_v1")
         data = client.get(VERTICALS_URL, params={"tenant_id": tid}, headers=api_auth).json()
-        assert data["items"][0]["scope_id"] == "painting_v2"
+        assert data["items"][0]["scope_id"] == "construction_v1"
 
 
 # ---------------------------------------------------------------------------

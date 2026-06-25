@@ -161,6 +161,37 @@ export async function fetchOffers(tenantId: string, options?: FetchOffersOptions
     );
     const sanitizedOffers = offers.filter((offer): offer is OfferRow => Boolean(offer));
 
+    const leadIdsWithOfferRow = new Set(sanitizedOffers.map((o) => o.leadId));
+    for (const lead of tenantLeads) {
+      const lid = String(lead.id ?? "").trim();
+      if (!lid || leadIdsWithOfferRow.has(lid)) {
+        continue;
+      }
+      const st = String(lead.status ?? "").trim().toUpperCase();
+      if (st !== "CONFIG_NEEDED") {
+        continue;
+      }
+      leadIdsWithOfferRow.add(lid);
+      const quoteResult = await fetchLeadQuoteData(lid);
+      const canonicalLeadId = quoteResult.canonicalLeadId || lid;
+      const customerName = resolveOfferCustomerName({
+        quotePayload: quoteResult.payload,
+        leadName: lead.name,
+      });
+      sanitizedOffers.push({
+        runId: 0,
+        leadId: canonicalLeadId,
+        customerName: customerName || quoteResult.customerName || "",
+        projectDescription: quoteResult.projectDescription,
+        status: lead.status,
+        createdAt: lead.created_at ?? null,
+        updatedAt: lead.updated_at ?? null,
+        amount: quoteResult.amount,
+        amountLoadFailed: quoteResult.failed,
+        detailHref: `/offertes/${encodeURIComponent(canonicalLeadId)}`,
+      });
+    }
+
     const totalMs = Date.now() - offersQueryStartedAt;
     logDashboardOffersQuery("success", {
       tenantId,

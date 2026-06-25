@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import uuid
 
 from app.models.lead import Lead
 from app.services.dashboard_service import get_dashboard_summary
-from app.verticals.painting.router_app import _compatible_vertical_ids_for_workflow
+from app.verticals.construction.router_app import _compatible_vertical_ids_for_workflow
 
 
 def _tid(prefix: str = "dash") -> str:
@@ -40,7 +40,7 @@ def test_dashboard_summary_counts_offer_and_review_flow_statuses_as_pending(db):
 
 
 def test_painting_workflow_accepts_legacy_vertical_ids():
-    compatible = _compatible_vertical_ids_for_workflow("painting")
+    compatible = _compatible_vertical_ids_for_workflow("construction")
     assert "paintly" in compatible
-    assert "painting" in compatible
+    assert "construction" in compatible
     assert "painters_nl" in compatible

@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_intelligence.py
 
 Tests for GET /api/intelligence/signals.
@@ -91,7 +91,7 @@ def _make_run(
     run = PipelineRun(
         tenant_id=tenant_id,
         lead_id=lead_id or _uid(),
-        vertical_id="painting",
+        vertical_id="construction",
         trace_id=_uid(),
         pipeline_name=pipeline_name,
         engine_version="1.0.0",

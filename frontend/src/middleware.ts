@@ -6,6 +6,7 @@ const AUTH_PAGES: ReadonlySet<string> = new Set([APP_ROUTES.login, APP_ROUTES.re
 const PROTECTED_PREFIXES = [
   "/app",
   "/dashboard",
+  "/onboarding",
   "/review",
   "/offertes",
   "/quotes",

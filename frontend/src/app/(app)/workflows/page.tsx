@@ -72,7 +72,7 @@ export default function WorkflowsPage() {
         <Alert className="surface-card border-zinc-200/90">
           <AlertTitle>{t("workflows.empty.title")}</AlertTitle>
           <AlertDescription className="type-supporting">
-            {t("workflows.empty.description", { tenant_id: session.user?.tenant_id ?? "—" })}
+            {t("workflows.empty.description")}
           </AlertDescription>
         </Alert>
       ) : (

@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_business_metrics.py
 
 Tests for the business metrics endpoints:
@@ -39,7 +39,7 @@ def _make_run(
     db,
     *,
     tenant_id: str,
-    vertical_id: str = "painting",
+    vertical_id: str = "construction",
     lead_id: str | None = None,
     status: str = "COMPLETED",
 ) -> PipelineRun:
@@ -261,7 +261,7 @@ class TestBusinessMetricsByVertical:
 
     def test_pipeline_runs_appear_per_vertical(self, client, db, api_auth):
         tid = _tid()
-        _make_run(db, tenant_id=tid, vertical_id="painting", status="COMPLETED")
+        _make_run(db, tenant_id=tid, vertical_id="construction", status="COMPLETED")
         _make_run(db, tenant_id=tid, vertical_id="roofing", status="COMPLETED")
 
         items = client.get(
@@ -269,20 +269,20 @@ class TestBusinessMetricsByVertical:
         ).json()["items"]
 
         verticals = {i["vertical_id"] for i in items}
-        assert "painting" in verticals
+        assert "construction" in verticals
         assert "roofing" in verticals
 
     def test_vertical_pipeline_counts_correct(self, client, db, api_auth):
         tid = _tid()
-        _make_run(db, tenant_id=tid, vertical_id="painting", status="COMPLETED")
-        _make_run(db, tenant_id=tid, vertical_id="painting", status="FAILED")
-        _make_run(db, tenant_id=tid, vertical_id="painting", status="NEEDS_REVIEW")
+        _make_run(db, tenant_id=tid, vertical_id="construction", status="COMPLETED")
+        _make_run(db, tenant_id=tid, vertical_id="construction", status="FAILED")
+        _make_run(db, tenant_id=tid, vertical_id="construction", status="NEEDS_REVIEW")
 
         items = client.get(
             f"/api/metrics/business/by-vertical?tenant_id={tid}", headers=api_auth
         ).json()["items"]
 
-        painting = next(i for i in items if i["vertical_id"] == "painting")
+        painting = next(i for i in items if i["vertical_id"] == "construction")
         assert painting["pipeline"]["total"] == 3
         assert painting["pipeline"]["failed"] == 1
         assert painting["pipeline"]["needs_review"] == 1
