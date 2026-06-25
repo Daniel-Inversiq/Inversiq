@@ -427,12 +427,12 @@ class TestVerticalGrouping:
     def test_groups_by_vertical_id(self, client, db, api_auth):
         tid = _uid()
         _make_run(db, tenant_id=tid, vertical_id="construction")
-        _make_run(db, tenant_id=tid, vertical_id="roofing")
+        _make_run(db, tenant_id=tid, vertical_id="insurance")
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         body = resp.json()
         assert body["total"] == 2
         vids = {i["vertical_id"] for i in body["items"]}
-        assert vids == {"construction", "roofing"}
+        assert vids == {"construction", "insurance"}
 
     def test_pipeline_count_is_accurate(self, client, db, api_auth):
         tid = _uid()

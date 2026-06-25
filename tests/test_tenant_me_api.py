@@ -68,7 +68,7 @@ def test_tenant_me_returns_expected_shape(client, db):
     _assert_vertical_shape(body)
 
 
-@pytest.mark.parametrize("sector", ["construction", "roofing", "solar"])
+@pytest.mark.parametrize("sector", ["construction"])
 def test_patch_tenant_sector_updates_sector_and_returns_tenant_shape(client, db, sector):
     user = _seed_user_and_tenant(db, sector="construction")
     response = client.patch(
@@ -103,5 +103,5 @@ def test_patch_tenant_sector_rejects_invalid_sector(client, db):
 
 
 def test_patch_tenant_sector_requires_auth(client):
-    response = client.patch("/api/tenant/sector", json={"sector": "solar"})
+    response = client.patch("/api/tenant/sector", json={"sector": "unknown_sector"})
     assert response.status_code == 401

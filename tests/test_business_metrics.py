@@ -262,7 +262,7 @@ class TestBusinessMetricsByVertical:
     def test_pipeline_runs_appear_per_vertical(self, client, db, api_auth):
         tid = _tid()
         _make_run(db, tenant_id=tid, vertical_id="construction", status="COMPLETED")
-        _make_run(db, tenant_id=tid, vertical_id="roofing", status="COMPLETED")
+        _make_run(db, tenant_id=tid, vertical_id="insurance", status="COMPLETED")
 
         items = client.get(
             f"/api/metrics/business/by-vertical?tenant_id={tid}", headers=api_auth
@@ -270,7 +270,7 @@ class TestBusinessMetricsByVertical:
 
         verticals = {i["vertical_id"] for i in items}
         assert "construction" in verticals
-        assert "roofing" in verticals
+        assert "insurance" in verticals
 
     def test_vertical_pipeline_counts_correct(self, client, db, api_auth):
         tid = _tid()
@@ -290,7 +290,7 @@ class TestBusinessMetricsByVertical:
     def test_feedback_linked_via_pipeline_run_id_appears(self, client, db, api_auth):
         """Feedback with a pipeline_run_id → counted in by-vertical under that vertical."""
         tid = _tid()
-        run = _make_run(db, tenant_id=tid, vertical_id="solar", status="COMPLETED")
+        run = _make_run(db, tenant_id=tid, vertical_id="logistics", status="COMPLETED")
         _make_feedback(db, tenant_id=tid, outcome="won", pipeline_run_id=run.id)
         _make_feedback(db, tenant_id=tid, outcome="lost", pipeline_run_id=run.id)
 
@@ -298,11 +298,11 @@ class TestBusinessMetricsByVertical:
             f"/api/metrics/business/by-vertical?tenant_id={tid}", headers=api_auth
         ).json()["items"]
 
-        solar = next(i for i in items if i["vertical_id"] == "solar")
-        assert solar["feedback"]["won"] == 1
-        assert solar["feedback"]["lost"] == 1
-        assert solar["feedback"]["total"] == 2
-        assert solar["feedback"]["win_rate"] == pytest.approx(0.5, abs=0.001)
+        logistics = next(i for i in items if i["vertical_id"] == "logistics")
+        assert logistics["feedback"]["won"] == 1
+        assert logistics["feedback"]["lost"] == 1
+        assert logistics["feedback"]["total"] == 2
+        assert logistics["feedback"]["win_rate"] == pytest.approx(0.5, abs=0.001)
 
     def test_feedback_without_pipeline_run_id_excluded(self, client, db, api_auth):
         """Feedback rows with pipeline_run_id=None are not counted in by-vertical."""

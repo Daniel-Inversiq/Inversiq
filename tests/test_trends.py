@@ -591,12 +591,12 @@ class TestVerticalTrendsEnvelope:
     def test_groups_by_vertical_id(self, client, db, api_auth):
         tid = _uid()
         _make_run(db, tenant_id=tid, vertical_id="construction", days_ago=1)
-        _make_run(db, tenant_id=tid, vertical_id="roofing", days_ago=1)
+        _make_run(db, tenant_id=tid, vertical_id="insurance", days_ago=1)
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         body = resp.json()
         assert body["total"] == 2
         scope_ids = {item["scope_id"] for item in body["items"]}
-        assert scope_ids == {"construction", "roofing"}
+        assert scope_ids == {"construction", "insurance"}
 
     def test_item_scope_is_vertical(self, client, db, api_auth):
         tid = _uid()
@@ -607,7 +607,7 @@ class TestVerticalTrendsEnvelope:
 
     def test_envelope_has_window(self, client, db, api_auth):
         tid = _uid()
-        _make_run(db, tenant_id=tid, vertical_id="solar", days_ago=1)
+        _make_run(db, tenant_id=tid, vertical_id="logistics", days_ago=1)
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid}, headers=api_auth)
         window = resp.json()["window"]
         assert "current" in window and "previous" in window
@@ -618,7 +618,7 @@ class TestVerticalTrendsTenantIsolation:
         tid_a = _uid()
         tid_b = _uid()
         _make_run(db, tenant_id=tid_a, vertical_id="construction", days_ago=1)
-        _make_run(db, tenant_id=tid_b, vertical_id="roofing", days_ago=1)
+        _make_run(db, tenant_id=tid_b, vertical_id="insurance", days_ago=1)
 
         resp = client.get(VERTICAL_URL, params={"tenant_id": tid_a}, headers=api_auth)
         items = resp.json()["items"]

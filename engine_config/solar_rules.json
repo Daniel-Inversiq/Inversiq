@@ -1,8 +1,0 @@
-{
-    "vertical_id": "solar",
-    "version": "1.0",
-    "currency": "EUR",
-    "default_system_kw": 5.0,
-    "rate_eur_per_kw": 1500.00,
-    "minimum_total_eur": 3000.00
-}
