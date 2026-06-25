@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_proposal_apply_planning.py
 
 Unit tests for app/services/proposal_apply_planning.py.
@@ -23,7 +23,7 @@ from app.services.proposal_apply_planning import (
 # ---------------------------------------------------------------------------
 
 SCOPE_TYPE = "pipeline"
-SCOPE_ID = "paintly"
+SCOPE_ID = "construction"
 
 CID = "pipeline:paintly:confidence_threshold_tuning:review_confidence_threshold"
 CID2 = "pipeline:paintly:fallback_path_hardening:fallback_validation_strictness"

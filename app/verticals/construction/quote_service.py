@@ -209,7 +209,7 @@ def prepare_painting_assets(db: Session, lead: Any) -> Dict[str, Any]:
 
 # Module-level vertical definition — passed to compute_quote_for_lead_v15.
 _PAINTLY_VERTICAL = VerticalDefinition(
-    vertical_id="paintly",
+    vertical_id="construction",
     register_steps_fn=_register_construction_steps,
     prepare_assets_fn=prepare_painting_assets,
 )

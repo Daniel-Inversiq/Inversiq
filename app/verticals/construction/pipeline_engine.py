@@ -25,7 +25,7 @@ def compute_quote_for_lead_engine(db: Session, lead: Lead) -> dict:
     # 3) context
     ctx = EngineContext(
         tenant_id=str(lead.tenant_id),
-        vertical_id="paintly",
+        vertical_id="construction",
         lead_id=str(lead.id),
     )
 

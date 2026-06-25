@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_proposal_conflicts.py
 
 Unit tests for app/services/proposal_conflicts.py.
@@ -25,7 +25,7 @@ def _change(
     parameter: str = "review_confidence_threshold",
     direction: str = "decrease",
     scope_type: str = "pipeline",
-    scope_id: str = "paintly",
+    scope_id: str = "construction",
     risk_level: str = "medium",
 ) -> dict:
     return {
@@ -50,7 +50,7 @@ def _change(
     }
 
 
-def _detect(changes: list[dict], scope_type: str = "pipeline", scope_id: str = "paintly") -> dict:
+def _detect(changes: list[dict], scope_type: str = "pipeline", scope_id: str = "construction") -> dict:
     return detect_proposal_conflicts(
         scope_type=scope_type,
         scope_id=scope_id,
@@ -297,7 +297,7 @@ def test_output_shape():
     assert "conflicts" in result
 
     assert result["scope"] == "pipeline"
-    assert result["scope_id"] == "paintly"
+    assert result["scope_id"] == "construction"
     assert result["proposal_count"] == 2
 
 
@@ -320,7 +320,7 @@ def test_conflict_id_includes_scope():
     c1 = _change("id_a", parameter="review_confidence_threshold")
     c2 = _change("id_b", parameter="review_confidence_threshold")
 
-    r_paintly = _detect([c1, c2], scope_id="paintly")
+    r_paintly = _detect([c1, c2], scope_id="construction")
     r_other = _detect([c1, c2], scope_id="other_pipe")
 
     ids_paintly = {c["conflict_id"] for c in r_paintly["conflicts"]}
@@ -337,7 +337,7 @@ def test_no_action_proposed_excluded():
     no_action = {
         "change_id": "id_no_action",
         "change_type": "no_action_proposed",
-        "target": {"parameter": "review_confidence_threshold", "scope_type": "pipeline", "scope_id": "paintly"},
+        "target": {"parameter": "review_confidence_threshold", "scope_type": "pipeline", "scope_id": "construction"},
         "proposed_change": {"direction": "none", "suggested_delta": None, "bounded_range": None},
         "approval_intent": {"risk_level": "low"},
     }

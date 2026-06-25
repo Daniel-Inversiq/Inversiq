@@ -463,7 +463,7 @@ def quote_status_json(
 def _normalize_vertical_id(raw: str | None) -> str:
     """Return the canonical vertical_id for a lead, matching publish_quote logic."""
     vid = (raw or "construction").strip() or "construction"
-    if vid == "painters_us":
+    if vid == "construction":
         vid = "construction"
     return vid
 
@@ -721,7 +721,7 @@ def publish_quote(
     try:
         vertical_id = (lead.vertical or "construction").strip() or "construction"
         # backward compat:
-        if vertical_id == "painters_us":
+        if vertical_id == "construction":
             vertical_id = "construction"
         lead.vertical = vertical_id
         db.commit()

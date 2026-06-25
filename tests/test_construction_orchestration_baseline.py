@@ -90,7 +90,7 @@ def _make_lead(
     lead = Lead(
         id=uuid4().hex,
         tenant_id=f"tenant-{uuid4().hex[:8]}",
-        vertical="paintly",
+        vertical="construction",
         name="Baseline Customer",
         email="baseline@example.com",
         status=status,

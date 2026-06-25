@@ -1,4 +1,4 @@
-# scripts/seed_dashboard_demo.py
+﻿# scripts/seed_dashboard_demo.py
 """
 DEV-ONLY: Seed realistic demo leads + jobs so dashboard charts and KPIs are populated.
 
@@ -229,7 +229,7 @@ def seed(tenant_id: str, db) -> None:
 
         lead = Lead(
             tenant_id=tenant_id,
-            vertical="painters_nl",
+            vertical="construction",
             name=name,
             email=email,
             phone=phone,

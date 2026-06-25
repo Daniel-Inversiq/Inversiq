@@ -1,4 +1,4 @@
-"""
+﻿"""
 tests/test_proposal_approval_readiness.py
 
 Unit tests for app/services/proposal_approval_readiness.py.
@@ -23,7 +23,7 @@ from app.services.proposal_approval_readiness import (
 # ---------------------------------------------------------------------------
 
 SCOPE_TYPE = "pipeline"
-SCOPE_ID = "paintly"
+SCOPE_ID = "construction"
 
 
 def _change(

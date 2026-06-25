@@ -1,4 +1,4 @@
-# scripts/bootstrap_dev_auth.py
+﻿# scripts/bootstrap_dev_auth.py
 import uuid
 from datetime import datetime, timezone
 
@@ -37,7 +37,7 @@ def main():
                 changed = True
                 print("✅ tenant slug set:", tenant.slug)
             if tenant.enabled_verticals is None:
-                tenant.enabled_verticals = ["painting"]
+                tenant.enabled_verticals = ["construction"]
                 changed = True
                 print("✅ tenant enabled_verticals set:", tenant.enabled_verticals)
             if changed:

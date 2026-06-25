@@ -51,10 +51,9 @@ def _start_processing_for_lead_sync(lead_id: str) -> None:
 def _normalize_vertical_id(vertical: str) -> str:
     """
     Accept slugs like:
-      - painters-us
-      - painters_us
-      - Painters-US
-    Normalize to registry key: painters_us
+      - construction
+      - Construction
+    Normalize to registry key.
     """
     return (vertical or "").strip().lower().replace("-", "_")
 

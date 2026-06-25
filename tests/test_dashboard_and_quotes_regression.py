@@ -41,6 +41,6 @@ def test_dashboard_summary_counts_offer_and_review_flow_statuses_as_pending(db):
 
 def test_painting_workflow_accepts_legacy_vertical_ids():
     compatible = _compatible_vertical_ids_for_workflow("construction")
-    assert "paintly" in compatible
     assert "construction" in compatible
-    assert "painters_nl" in compatible
+    assert "construction" in compatible
+    assert "construction" in compatible

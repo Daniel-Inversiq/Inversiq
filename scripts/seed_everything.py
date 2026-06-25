@@ -1,4 +1,4 @@
-# scripts/seed_everything.py
+﻿# scripts/seed_everything.py
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -68,7 +68,7 @@ def main():
     # NEW (geen estimate)
     l_new = Lead(
         tenant_id=tenant_id,
-        vertical="painters_us",
+        vertical="construction",
         name="Seed Lead NEW",
         email="new@example.com",
         phone="555-0101",
@@ -81,7 +81,7 @@ def main():
     # SUCCEEDED-ish (heeft estimate_html_key maar nog niet sent)
     l_ready = Lead(
         tenant_id=tenant_id,
-        vertical="painters_us",
+        vertical="construction",
         name="Seed Lead READY",
         email="ready@example.com",
         phone="555-0102",
@@ -95,7 +95,7 @@ def main():
     # SENT (public token + sent_at)
     l_sent = Lead(
         tenant_id=tenant_id,
-        vertical="painters_us",
+        vertical="construction",
         name="Seed Lead SENT",
         email="sent@example.com",
         phone="555-0103",
@@ -111,7 +111,7 @@ def main():
     # VIEWED (viewed_at)
     l_viewed = Lead(
         tenant_id=tenant_id,
-        vertical="painters_us",
+        vertical="construction",
         name="Seed Lead VIEWED",
         email="viewed@example.com",
         phone="555-0104",
@@ -128,7 +128,7 @@ def main():
     # ACCEPTED + Job NEW
     l_acc = Lead(
         tenant_id=tenant_id,
-        vertical="painters_us",
+        vertical="construction",
         name="Seed Lead ACCEPTED",
         email="accepted@example.com",
         phone="555-0105",
@@ -151,7 +151,7 @@ def main():
     # ACCEPTED + Job DONE (dashboard DONE count test)
     l_done = Lead(
         tenant_id=tenant_id,
-        vertical="painters_us",
+        vertical="construction",
         name="Seed Lead DONE",
         email="done@example.com",
         phone="555-0106",

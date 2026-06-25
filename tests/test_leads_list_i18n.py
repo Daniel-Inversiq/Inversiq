@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -19,13 +19,13 @@ def test_leads_list_catalog_has_dutch_defaults() -> None:
 def test_leads_list_templates_use_i18n_helper() -> None:
     root = Path(__file__).resolve().parents[1]
     page_template = (
-        root / "app" / "verticals" / "paintly" / "templates" / "app" / "leads_list.html"
+        root / "app" / "verticals" / "construction" / "templates" / "app" / "leads_list.html"
     ).read_text(encoding="utf-8")
     table_template = (
         root
         / "app"
         / "verticals"
-        / "paintly"
+        / "construction"
         / "templates"
         / "leads"
         / "partials"
